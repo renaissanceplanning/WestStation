@@ -72,7 +72,6 @@ ALPHAS = {
     "NHB": [7.456, 1.305, 3.266, 2.860, 1.387, 4.226]
     }
 
-
 PURPOSES = ["HBW", "HBO", "HBSch", "NHB"]
 MODES = ["walk", "bike", "driver", "passenger", "WAT", "DAT"]
 MODE_DICT = {
@@ -87,7 +86,7 @@ DECAY_REFS = {
     "driver": "auto",
     "passenger": "auto",
     "WAT": "transit",
-    "DAT": "transit_da_gen",
+    "DAT": "transit_da",
     "bike": "auto",
     "walk": "auto"}
 TNC_MODE_ORDER = ["walk", "bike", "WAT", "DAT", "driver", "passenger"]
@@ -138,23 +137,48 @@ if ESTIMATE_TNC_COSTS:
         print(purpose)
         logger.info(f"\n {purpose} \n-------------------------------")
         # Initialize TNC Arrays
-        tnc_skim_f = r"scen\{}\TNC_costs_{}_{}.h5".format(scen, PERIOD, purpose)
-        # -- Costs    
-        tnc_cost_skim = initTNCCostArray(scen, purpose, PERIOD, 
-                                         hdf_store=tnc_skim_f, 
-                                         node_path="/", name="costs", 
+        tnc_skim_f = r"scen\{}\TNC_costs_{}_{}.h5".format(
+            scen, PERIOD, purpose)
+        # -- Costs
+        tnc_cost_skim = TNC.initTNCCostArray(scen, purpose, PERIOD,
+                                         hdf_store=tnc_skim_f,
+                                         node_path="/", name="costs",
                                          overwrite=True)
         # -- Probabilities
-        tnc_ratio_skim = initTNCRatioArray(scen, purpose, PERIOD, 
-                                         hdf_store=tnc_skim_f, 
-                                         node_path="/", name="ratios", 
+        tnc_ratio_skim = TNC.initTNCRatioArray(scen, purpose, PERIOD,
+                                         hdf_store=tnc_skim_f,
+                                         node_path="/", name="ratios",
                                          overwrite=True)
         # Estimate TNC costs
-        estimateTNCCosts(net_config, purpose, tnc_cost_skim)
+        value_of_time = VALUE_OF_TIME[purpose]
+        # Open auto skim
+        auto_f = r"net\{}\auto.h5".format(net_config)
+        auto_skim = emma.od.openSkim_HDF(auto_f, AUTO_IMPEDANCE_NODE)
+        TNC.estimateTNCCosts(auto_skim,
+                            purpose=purpose,
+                            tnc_cost_skim=tnc_cost_skim,
+                            value_of_time=value_of_time,
+                            tnc_base_fare=TNC_BASE_FARE,
+                            tnc_service_fee=TNC_SERVICE_FEE,
+                            tnc_cost_per_mile=TNC_COST_PER_MILE,
+                            tnc_decay_mu=TNC_DECAY_MU[purpose],
+                            tnc_decay_sigma=TNC_DECAY_SIGMA[purpose],
+                            imp_axis=AUTO_IMPEDANCE_AXIS,
+                            time_label=AUTO_IMPEDANCE_TIME_LBL,
+                            dist_label=AUTO_IMPEDANCE_DIST_LBL,
+                            logger=logger)
         
         # Estimate TNC prob ratio/likelihood
-        estimateTNCProb(net_config, purpose, tnc_ratio_skim, tnc_cost_skim,
-                        use_units=USE_UNITS)
+        TNC.estimateTNCProb(net_config=net_config,
+                            purpose=purpose,
+                            tnc_ratio_skim=tnc_ratio_skim,
+                            tnc_cost_skim=tnc_cost_skim,
+                            decay_refs=DECAY_REFS,
+                            mode_dict=MODE_DICT,
+                            mode_impedances=MODE_IMPEDANCES,
+                            use_units=USE_UNITS,
+                            all_purposes=PURPOSES,
+                            logger=logger)
     
 # %% APPLY TNC ESTIMATION
 for purpose in PURPOSES:
@@ -163,7 +187,8 @@ for purpose in PURPOSES:
     tnc_skim_f = r"scen\{}\TNC_costs_{}_{}.h5".format(scen, PERIOD, purpose)
     tnc_ratio_skim = emma.od.openSkim_HDF(tnc_skim_f, "/ratios")
     # Setup estimation
-    trip_table_f = r"scen\{}\Trip_dist_TAZ_{}_{}.h5".format(scen, PERIOD, purpose)
+    trip_table_f = r"scen\{}\Trip_dist_TAZ_{}_{}.h5".format(
+        scen, PERIOD, purpose)
     trip_table = emma.od.openSkim_HDF(trip_table_f, "/dist")
     tnc_hdf = r"scen\{}\TNC_trips_{}_{}.h5".format(scen, PERIOD, purpose)
     # Calc alphas if needed
@@ -171,27 +196,27 @@ for purpose in PURPOSES:
         alphas = []
         # Read ipf seed
         seed_xl = r"input\TNC_target_setting.xlsx"
-        seed_array = fetchTNCSeed(seed_xl, named_range="ipf_seed",
-                                 purp_col="Purpose", modes=MODES)
+        seed_array = TNC.fetchTNCSeed(seed_xl, named_range="ipf_seed",
+                                      purp_col="Purpose", modes=MODES)
         # Read mode targets
-        mode_targets = fetchTNCModeTargets(seed_xl, named_range="mode_targets",
-                                           modes=TNC_MODE_ORDER)
+        mode_targets = TNC.fetchTNCModeTargets(seed_xl,
+                                               named_range="mode_targets",
+                                               modes=TNC_MODE_ORDER)
         # Align targets with seed array axes
         purp_targets = seed_array.sum("Purpose").data
         mode_targets = mode_targets.reindex(seed_array.Mode.labels).values
         # Apply IPF
         mp_targets = ipf.IPF(seed_array, [purp_targets, mode_targets])
         for mode in trip_table.Mode.labels:
-            alpha = estimateAlphas(trip_table, tnc_ratio_skim, mp_targets,
-                                   mode, purpose)
+            alpha = TNC.estimateAlphas(trip_table, tnc_ratio_skim, mp_targets,
+                                       mode, purpose)
             print(f".. alpha for {mode}: {alpha}")
             logger.info(f".. alpha for {mode}: {alpha}")
             alphas.append(alpha)
     else:
         alphas = ALPHAS[purpose]
-                
-            
+
     # -- run probability ratios
-    tnc_prob = applyTNCProbRatio(trip_table, tnc_ratio_skim, alphas,
-                                 hdf_store=tnc_hdf, node_path="/",
-                                 name="ProbRatio", overwrite=True)
+    tnc_prob = TNC.applyTNCProbRatio(trip_table, tnc_ratio_skim, alphas,
+                                     hdf_store=tnc_hdf, node_path="/",
+                                     name="ProbRatio", overwrite=True)

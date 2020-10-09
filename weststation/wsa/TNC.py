@@ -204,7 +204,7 @@ def initTNCRatioArray(scen, purpose, period, hdf_store=None, node_path=None,
     
     # Cast into new axes
     comp_axis = lba.LbAxis("Components", 
-                           ["Mode_trip_prob", "TNC_prob_ratio", "TNC_likelihood"])
+                           ["Mode_trip_prob", "TNC_prob_ratio"])
     zeros = base.stamp(fill_with=0.0)
     tnc_array = zeros.cast(comp_axis, hdf_store=hdf_store, node_path=node_path,
                           name=name, overwrite=overwrite)
@@ -213,7 +213,11 @@ def initTNCRatioArray(scen, purpose, period, hdf_store=None, node_path=None,
     return tnc_array
 
 
-def estimateTNCCosts(net_config, purpose, tnc_cost_skim):
+def estimateTNCCosts(auto_skim, purpose, tnc_cost_skim, value_of_time,
+                     tnc_base_fare, tnc_service_fee, tnc_cost_per_mile,
+                     tnc_decay_mu, tnc_decay_sigma, imp_axis="Impedance",
+                     time_label="TravelTime", dist_label="Distance",
+                     logger=None):
     """
     Estimate TNC cost components. Pulls data for estimates of auto trip
     durations and distances, calculates TNC estimated costs (time and money)
@@ -222,41 +226,62 @@ def estimateTNCCosts(net_config, purpose, tnc_cost_skim):
 
     Parameters
     ----------
-    net_config : String
+    auto_skim: Skim
+        A skim with time and distance impedances for traveling by car. These
+        are used to estimate TNC travel costs.
     purpose : String
     tnc_cost_skim : String
+        A labeled array that will holds the dimensions of TNC costs and the
+        final generalized cost estimate for TNCs for all OD pairs.
+    value_of_time: Numeric
+        A factor to convert between time and monetary units, expressed as
+        dollars per hour.
+    tnc_base_fare: Numeric
+    tnc_service_fee: Numeric
+    tnc_cost_per_mile: Numeric
+    tnc_decay_mu: {"minutes": Numeric, "dollars": Numeric}
+        A parameter in the lognormal decay expression used to estimate TNC
+        trip propensities, `mu` varies for cost-based or time-based analyses.
+        The `mu` values are therefor provided in a dictionary.
+    tnc_decay_sigma: Numeric
+        A parameter in the lognormal decay expression used to estimate TNC
+        trip propensities, `sigma` varies for cost-based or time-based
+        analyses. The `sigma` values are therefor provided in a dictionary.
+    imp_axis: String, default="Impedance"
+        The name of the axis in `auto_skim` along which to find various
+        impedances
+    time_label: String, default="TravelTime"
+        The impedance axis label where OD travel time estimates are stored.
+    dist_label: String, default="Distance"
+        The impedance axis label where OD distance estimates are stored.
+    logger: Logger
 
     Returns
     -------
     None - the `tnc_cost_skim` is modified in place.
 
-    """
-    global VALUE_OF_TIME, TNC_BASE_FARE, TNC_SERVICE_FEE, TNC_COST_PER_MILE
-    global TNC_DECAY_MU, TNC_DECAY_SIGMA
-    vot = VALUE_OF_TIME[purpose]
-    
+    """    
     print("Estimating TNC costs")
-    logger.info("Estimating TNC costs")
-
-    # Open auto skim
-    auto_f = r"net\{}\auto.h5".format(net_config)
-    auto_imps = emma.od.openSkim_HDF(auto_f, AUTO_IMPEDANCE_NODE)
+    if logger is not None:
+        logger.info("Estimating TNC costs")
     
     # Place times
     print(" -- Recording estimated duration")
-    logger.info(" -- Recording estimated duration")
-    crit = {AUTO_IMPEDANCE_AXIS: AUTO_IMPEDANCE_TIME_LBL}
+    if logger is not None:
+        logger.info(" -- Recording estimated duration")
+    crit = {imp_axis: time_label}
     tnc_cost_skim.put(
-        auto_imps.take(squeeze=True, **crit).data,
+        auto_skim.take(squeeze=True, **crit).data,
         Components="Duration"
         )
     
     # Place distance
     print(" -- Recording estimated distance")
-    logger.info(" -- Recording estimated distance")
-    crit = {AUTO_IMPEDANCE_AXIS: AUTO_IMPEDANCE_DIST_LBL}
+    if logger is not None:
+        logger.info(" -- Recording estimated distance")
+    crit = {imp_axis: dist_label}
     tnc_cost_skim.put(
-        auto_imps.take(squeeze=True, **crit).data,
+        auto_skim.take(squeeze=True, **crit).data,
         Components="Distance"
         )
     
@@ -267,33 +292,36 @@ def estimateTNCCosts(net_config, purpose, tnc_cost_skim):
     # denom = (vot * 60))
     # And add resulting "minutes" to duration
     print(" -- Recording estimated total (weighted) time")
-    logger.info(" -- Recording estimated (weighted) time")
+    if logger is not None:
+        logger.info(" -- Recording estimated (weighted) time")
     duration = tnc_cost_skim.take(Components="Duration", squeeze=True).data[:]
     distance = tnc_cost_skim.take(Components="Distance", squeeze=True).data[:]
-    numer = TNC_BASE_FARE + TNC_SERVICE_FEE + (TNC_COST_PER_MILE * distance)
-    denom = vot * 60    
+    numer = tnc_base_fare + tnc_service_fee + (tnc_cost_per_mile * distance)
+    denom = value_of_time * 60
     tnc_cost_skim.put((numer/denom) + duration,
-                      Components="EstCostMinutes")  
+                      Components="EstCostMinutes")
     
     # Calculate costs in dollars
     # Numerator (already expressed in dollars) + duration converted to dollars
     print(" -- Recording estimated total monetary costs")
-    logger.info(" -- Recording estimated monetary costs")
+    if logger is not None:
+        logger.info(" -- Recording estimated monetary costs")
     dollars = numer + (duration / 60 * vot)
     tnc_cost_skim.put(dollars, Components="EstCostDollars")
     
     # Setup decay rates
-    time_mu = TNC_DECAY_MU[purpose]["minutes"]
-    time_sigma = TNC_DECAY_SIGMA[purpose]["minutes"]
+    time_mu = tnc_decay_mu["minutes"]
+    time_sigma = tnc_decay_sigma["minutes"]
     time_decay = emma.decay.LogNormalDecay_cdf(time_mu, time_sigma)
     
-    money_mu = TNC_DECAY_MU[purpose]["dollars"]
-    money_sigma = TNC_DECAY_SIGMA[purpose]["dollars"]
+    money_mu = tnc_decay_mu["dollars"]
+    money_sigma = tnc_decay_sigma["dollars"]
     money_decay = emma.decay.LogNormalDecay_cdf(money_mu, money_sigma)
     
     # Apply Decay rates
     print(" -- Recording decay factors")
-    logger.info(" -- Recording decay factors")    
+    if logger is not None:
+        logger.info(" -- Recording decay factors")
     tnc_cost_skim.put(
         1 - time_decay.apply(
                 tnc_cost_skim.take(
@@ -312,12 +340,13 @@ def estimateTNCCosts(net_config, purpose, tnc_cost_skim):
 
 
 def estimateTNCProb(net_config, purpose, tnc_ratio_skim, tnc_cost_skim,
-                    use_units="Dollars"):
+                    decay_refs, mode_dict, mode_impedances,
+                    use_units="Dollars",
+                    all_purposes=["HBW", "HBO", "HBSch", "NHB"], logger=None):
     """
-    Estimate probability ratio and likelihood. Pulls data for mode- and
+    Estimate probability ratios for TNC trips. Pulls data for mode- and
     purpose-specific decay, calculates modal cdf, and creates probability
-    ratio of modal cdf over tnc cdf and "TNC likelihood" as conditional 
-    probability of the OD interchange using TNC given an observed mode.    
+    ratio of modal cdf over tnc cdf.
 
     Parameters
     ----------
@@ -325,11 +354,26 @@ def estimateTNCProb(net_config, purpose, tnc_ratio_skim, tnc_cost_skim,
     purpose : String
     tnc_ratio_skim : Skim
     tnc_cost_skim : Skim
+    decay_refs: dict
+        A dictionary whose keys corespond to mode names in the emma analysis
+        and whose values are strings identifying the name of the hdf file
+        containing OD decay factor estimates for that mode.
+    mode_dict: dict
+        A dictionary whose keys corespond to mode names in the emma analysis
+        and whose values are strings identifying the general mode referred to
+        in the `decay_specs` input file.
+    mode_impedances: dict
+        A dictionary whose keys correspond to mode names in the emma analysis
+        and whose values are tuples of strings. Each tuple specifies details
+        for obtaining mode-specific costs from a skim file, providing the
+        hdf node path, axis, label, and units of analysis.
     use_units : String, default="Dollars"
         If "Dollars", the TNC decay in dollars is always referenced; 
         if "Minutes", the TNC decay in minutes is always referenced;
         if "align", the TNC decay referened varies based on the units used
         for each mode's generalized costs.
+    all_purposes: [String,...], default=["HBW", "HBO", "HBSch", "NHB"]
+    logger: Logger
 
     Raises
     ------
@@ -342,26 +386,27 @@ def estimateTNCProb(net_config, purpose, tnc_ratio_skim, tnc_cost_skim,
 
     """
     print("Estimating TNC ratios")
-    logger.info(f"Estimating TNC ratios (use_units={use_units})")
-    global DECAY_REFS, MODE_IMPEDANCES, MODE_DICT
+    if logger is not None:
+        logger.info(f"Estimating TNC ratios (use_units={use_units})")
     _quants_ = np.linspace(0, 1, 10)  
     
     # Iterate over modes
     for mode in tnc_ratio_skim.Mode.labels:
         print(f" -- {mode}")
-        logger.info(f" -- {mode}")
+        if logger is not None:
+            logger.info(f" -- {mode}")
         # Calculate modal trip prob
         # -- Get impedance skim file, hdf node, axis, and label
-        decay_ref = DECAY_REFS[mode]
+        decay_ref = decay_refs[mode]
         decay_file = r"net\{}\{}.h5".format(net_config, decay_ref)
-        node, axis, label, units = MODE_IMPEDANCES[mode]
-        if label == PURPOSES:
-            lbl_idx = PURPOSES.index(purpose)
+        node, axis, label, units = mode_impedances[mode]
+        if label == all_purposes:
+            lbl_idx = all_purposes.index(purpose)
             label = label[lbl_idx]
         decay_skim = emma.od.openSkim_HDF(decay_file, node)
         
         # -- Handle decay specs
-        if axis is None:       
+        if axis is None:
             decay_crit ={}
         else:
             decay_crit = {axis: label}
@@ -382,7 +427,7 @@ def estimateTNCProb(net_config, purpose, tnc_ratio_skim, tnc_cost_skim,
         # -- Get modal decay specs
         specs_f = "input\DecaySpecs.csv"
         specs = pd.read_csv(specs_f)
-        spec_mode = MODE_DICT[mode]
+        spec_mode = mode_dict[mode]
         fltr = np.logical_and.reduce(
             [
                 specs.Mode == spec_mode,
@@ -395,7 +440,8 @@ def estimateTNCProb(net_config, purpose, tnc_ratio_skim, tnc_cost_skim,
         
         # -- Build the decay object
         print(" -- -- Recording decay factors")
-        logger.info(" -- -- Recording decay factors")
+        if logger is not None:
+            logger.info(" -- -- Recording decay factors")
         decay = emma.decay.LogNormalDecay_cdf(mu, sigma)
         # -- Apply decay object
         cdf_decay = 1 - decay.apply(
@@ -405,13 +451,15 @@ def estimateTNCProb(net_config, purpose, tnc_ratio_skim, tnc_cost_skim,
             neg_value=0
             )
         cdf_quants = np.round(np.quantile(cdf_decay, _quants_), 4)
-        logger.info(f" -- -- CDF Decay quantiles: {cdf_quants}")
+        if logger is not None:
+            logger.info(f" -- -- CDF Decay quantiles: {cdf_quants}")
         # -- Push decay result to skim
         tnc_ratio_skim.put(cdf_decay, Components="Mode_trip_prob", Mode=mode)
         
         # Divide tnc_trip_prob by modal trip prob
         print(" -- -- Recording probability ratios")
-        logger.info(" -- -- Recording probability ratios")
+        if logger is not None:
+            logger.info(" -- -- Recording probability ratios")
         
         tnc_ratio_skim.put(
             np.divide(
@@ -424,30 +472,12 @@ def estimateTNCProb(net_config, purpose, tnc_ratio_skim, tnc_cost_skim,
             Components="TNC_prob_ratio", Mode=mode
             )
         
-        print(" -- -- Recording TNC likelihood")
-        logger.info(" -- -- Recording TNC likelihood")
-        # Calculate likelihood
-        prob_ratio = tnc_ratio_skim.take(
-            squeeze=True, Components="TNC_prob_ratio", Mode=mode).data
-        
-        tnc_ratio_skim.put(
-            np.divide(prob_ratio, (1 + prob_ratio)),
-            Components="TNC_likelihood", Mode=mode
-            )
-        
         # Report summaries of results
         pr_quants = np.round(np.quantile(
             tnc_ratio_skim.take(
                 Components="TNC_prob_ratio", Mode=mode).data[:],
             _quants_), 4)
         logger.info(f" -- -- TNC prob ratio quantiles: {pr_quants}")
-
-        tl_quants = np.round(np.quantile(
-            tnc_ratio_skim.take(
-                Components="TNC_likelihood", Mode=mode).data[:],
-            _quants_), 4)
-        logger.info(f" -- -- TNC likelihood quantiles: {tl_quants}")
-  
 
 def applyTNCProbRatio(trip_table, tnc_ratio_skim, alpha, hdf_store=None,
                       node_path=None, name=None, overwrite=False,
