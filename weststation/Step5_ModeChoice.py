@@ -72,7 +72,7 @@ import logging
 #  will be analyzed. Resulting accessibility scores will reflect land
 #  development in the named `lu_config` and travel costs in the named
 #  `net_config`.  Outputs are stored in the `scen` subfolder.
-root = r"K:\Projects\MAPC\WestStationScenarios"
+root = r"K:\Projects\MAPC\FInalData"
 os.chdir(root)
 
 scen = "RV_gc_parking_tt"
