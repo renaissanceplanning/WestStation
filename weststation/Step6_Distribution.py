@@ -4,7 +4,7 @@ Created on Thu Aug 20 13:20:47 2020
 
 @author: Alex Bell
 
-This script models trips distribution in #### steps:
+This script models trips distribution in five steps:
 
 1. Creates empty trip tables for each purpose. Each table has an axis
    for each travel mode in addition to `From` and `To` axes.

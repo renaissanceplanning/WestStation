@@ -17,7 +17,7 @@ Modes of travel for which skim data are provided include:
             - Rapid transit
     - Bicyling
     - Walking
-    
+
 The typical procedure for translating skim data from tables to Skim matrices
 includes:
     - Identifying the csv data source
@@ -178,7 +178,7 @@ if USE_TERM_TIME:
     tt_fields = ["Hwy_P_TermTime", "Hwy_A_TermTime"]
     origin_cost = True
     for tt_field in tt_fields:
-        impfuncs.addZonalCosts(auto_costs, "Impedance", "TravelTime", 
+        impfuncs.addZonalCosts(auto_costs, "Impedance", "TravelTime",
                                zone_costs, tt_field, origin_cost=origin_cost)
         origin_cost = False
             
