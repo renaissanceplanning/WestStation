@@ -1,0 +1,287 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Step 2 - Import Skims &#8212; wsa October 2020 documentation</title>
+    <link rel="stylesheet" href="_static/nature.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Step 3 - Summarize Access" href="Step3.html" />
+    <link rel="prev" title="Step 1 - Clean Skims" href="Step1.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="Step3.html" title="Step 3 - Summarize Access"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="Step1.html" title="Step 1 - Clean Skims"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">wsa October 2020 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Step 2 - Import Skims</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <span class="target" id="module-wsa.impfuncs"></span><div class="toctree-wrapper compound">
+</div>
+<div class="section" id="step-2-import-skims">
+<h1>Step 2 - Import Skims<a class="headerlink" href="#step-2-import-skims" title="Permalink to this headline">¶</a></h1>
+<p>This script reads skim data from csv files into the emma.od.Skim format
+for use in accessibility and downstream travel modeling analyses.</p>
+<dl class="simple">
+<dt>Modes of travel for which skim data are provided include:</dt><dd><ul class="simple">
+<li><p>Auto (SOV)</p></li>
+<li><dl class="simple">
+<dt>Transit</dt><dd><ul>
+<li><p>Walk access (all technologies)</p></li>
+<li><dl class="simple">
+<dt>Drive access (various technologies)</dt><dd><ul>
+<li><p>Commuter rail</p></li>
+<li><p>Ferry</p></li>
+<li><p>Local bus</p></li>
+<li><p>Rapid transit</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><p>Bicyling</p></li>
+<li><p>Walking</p></li>
+</ul>
+</dd>
+</dl>
+<p>The typical procedure for translating skim data from tables to Skim matrices
+includes:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>Identifying the csv data source</p></li>
+<li><p>Defining the origin_id and destination_id columns in the csv</p></li>
+<li><p>Defining the Skim zones index and axis labels</p></li>
+<li><p>Define how value columns in the csv relate to axes</p></li>
+<li><p>Initialize the skim object (pointing to an HDF store if desired)</p></li>
+<li><p>Import data</p></li>
+</ul>
+</div></blockquote>
+<p>Workflow:</p>
+<ul class="simple">
+<li><p>Specify the network configuration and lu configuration (for parking costs and terminal times, e.g.)</p></li>
+<li><p>Specify global assumptions</p></li>
+<li><dl class="simple">
+<dt>Import auto travel costs from csv</dt><dd><ul>
+<li><p>Calculate TAZ-level walking and biking costs</p></li>
+<li><p>Add parking and terminal times</p></li>
+<li><p>Estimate parking durations / typical charges</p></li>
+<li><p>Calculate generalized cost by purpose</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>Import transit (WAT) costs from csv</dt><dd><ul>
+<li><p>Calculate total travel time from IVTT + OVTT</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>Import transit (DAT) costs from csv</dt><dd><ul>
+<li><p>Calculate total times by submode</p></li>
+<li><p>Generalize best available DAT costs</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><p>Import walk travel costs from csv (block level)</p></li>
+<li><p>Import bike travel costs from csv (block level)</p></li>
+</ul>
+<div class="section" id="functions">
+<h2>Functions<a class="headerlink" href="#functions" title="Permalink to this headline">¶</a></h2>
+<dl class="py function">
+<dt id="wsa.impfuncs.initImpSkim_wsa">
+<code class="sig-prename descclassname">wsa.impfuncs.</code><code class="sig-name descname">initImpSkim_wsa</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">zones_array</span></em>, <em class="sig-param"><span class="n">index_fields</span></em>, <em class="sig-param"><span class="n">impedance_attributes</span></em>, <em class="sig-param"><span class="n">hdf_store</span></em>, <em class="sig-param"><span class="n">node_path</span></em>, <em class="sig-param"><span class="n">name</span></em>, <em class="sig-param"><span class="n">overwrite</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">desc</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">init_val</span><span class="o">=</span><span class="default_value">- 1.0</span></em><span class="sig-paren">)</span><a class="headerlink" href="#wsa.impfuncs.initImpSkim_wsa" title="Permalink to this definition">¶</a></dt>
+<dd><p>Build a basic skim to hold impedance data for a given mode.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>zones_array</strong> (<em>pd.DataFrame</em>) – The zones array has rows representing zones, with fields to identify
+each zone. Used to set the i and j dimensions of the skim.</p></li>
+<li><p><strong>index_fields</strong> (<em>[</em><em>String</em><em>,</em><em>..</em><em>]</em>) – A list of columns in <cite>zones_array</cite> (or a single column name) to use as
+zone indices in the skim.</p></li>
+<li><p><strong>impedance_attributes</strong> (<em>[</em><em>String</em><em>,</em><em>..</em><em>]</em>) – A list of impedance attributes that will be stored in the skim.</p></li>
+<li><p><strong>hdf_store</strong> (<em>String</em>) – A path to an hdf file to store the skim data.</p></li>
+<li><p><strong>node_path</strong> (<em>String</em>) – The node in <cite>hdf_store</cite> where the skim array will be stored.</p></li>
+<li><p><strong>name</strong> (<em>String</em>) – The name of skim array at <cite>node_path</cite>.</p></li>
+<li><p><strong>overwrite</strong> (<em>Boolean</em><em>, </em><em>default=False</em>) – If True, the data in the hdf file at <cite>node_path/name</cite> will be
+overwritten.</p></li>
+<li><p><strong>desc</strong> (<em>String</em><em>, </em><em>default=None</em>) – A brief description of the skim’s contents.</p></li>
+<li><p><strong>init_val</strong> (<em>numeric</em><em>, </em><em>default=-1.0</em>) – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>A skim object. All values are initialized to <cite>init_val</cite>. These values
+will be updated when skim data are loaded from csv files.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>Skim</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="wsa.impfuncs.estimateParkingDuration">
+<code class="sig-prename descclassname">wsa.impfuncs.</code><code class="sig-name descname">estimateParkingDuration</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">time_array</span></em>, <em class="sig-param"><span class="n">cost_array</span></em>, <em class="sig-param"><span class="n">purpose</span></em>, <em class="sig-param"><span class="n">max_dur</span><span class="o">=</span><span class="default_value">420</span></em><span class="sig-paren">)</span><a class="headerlink" href="#wsa.impfuncs.estimateParkingDuration" title="Permalink to this definition">¶</a></dt>
+<dd><p>Estimated parking costs are a function of 1/2-day pricing pro-rated to
+hourly assuming 1/2 day is 4 hours.</p>
+<p>Hourly estimates are then applied based on the estimated duration of the
+activity (i.e, how long are you parked?)</p>
+<p>The parking duration estimate is a function of trip duration, parking cost
+(1/2 day charge), and trip purpose</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>time_array</strong> (<em>np.ndarray</em>) – An array of OD travel times (in  minutes)</p></li>
+<li><p><strong>cost_array</strong> (<em>np.ndarray</em>) – An array of destination-end hourly parking charges cast into the full
+OD matrix</p></li>
+<li><p><strong>purpose</strong> (<em>String</em><em> (</em><em>&quot;HBW&quot;</em><em>, </em><em>&quot;HBO&quot;</em><em>, </em><em>&quot;HBSch&quot;</em><em>, or </em><em>&quot;NHB&quot;</em><em>)</em>) – The purpose of travel</p></li>
+<li><p><strong>max_dur</strong> (<em>Integer</em><em>, </em><em>default=420</em>) – Cap the estimated parking duration at the specified value (in minutes)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p></p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>np.ndarray</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="wsa.impfuncs.addZonalCosts">
+<code class="sig-prename descclassname">wsa.impfuncs.</code><code class="sig-name descname">addZonalCosts</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">skim</span></em>, <em class="sig-param"><span class="n">imped_axis</span></em>, <em class="sig-param"><span class="n">imped_name</span></em>, <em class="sig-param"><span class="n">zone_df</span></em>, <em class="sig-param"><span class="n">column</span></em>, <em class="sig-param"><span class="n">factor</span><span class="o">=</span><span class="default_value">1.0</span></em>, <em class="sig-param"><span class="n">zone_id_level</span><span class="o">=</span><span class="default_value">'TAZ'</span></em>, <em class="sig-param"><span class="n">origin_cost</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="headerlink" href="#wsa.impfuncs.addZonalCosts" title="Permalink to this definition">¶</a></dt>
+<dd><p>Given a data frame of zonal costs (parking charges, terminal times, e.g.),
+add these cost to the specified axis and label for the input skim.</p>
+<p>Origin-end costs are added when origin_cost=True; otherwise costs
+are assumed to apply to the destination end.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>skim</strong> (<em>Skim</em>) – </p></li>
+<li><p><strong>imped_axis</strong> (<em>String</em>) – The name of the axis in <cite>skim</cite> in which values will be recorded</p></li>
+<li><p><strong>imped_name</strong> (<em>String</em>) – The label in <cite>imped_axis</cite> where values will be recorded.</p></li>
+<li><p><strong>zone_df</strong> (<em>pd.DataFrame</em>) – A table of zonal costs. It is assumed its index values correspond
+to those in <cite>skim.zones</cite></p></li>
+<li><p><strong>column</strong> (<em>String</em>) – The column in <cite>zone_df</cite> with zonal cost values</p></li>
+<li><p><strong>factor</strong> (<em>numeric</em><em>, </em><em>default=1.0</em>) – A factor by which to scale zonal costs upon import</p></li>
+<li><p><strong>taz_id_level</strong> (<em>String</em><em>, </em><em>default=&quot;TAZ&quot;</em>) – If <cite>skim</cite> uses a multiindex for its <cite>zones</cite> attribute, provide the name
+of the level against which <cite>zone_df</cite> will be reindexed.</p></li>
+<li><p><strong>origin_cost</strong> (<em>Boolean</em><em>, </em><em>default=False</em>) – If True, costs are applied to OD pairs by origin location. Otherwise,
+costs are applied based on destination.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<ul class="simple">
+<li><p><a class="reference internal" href="genindex.html"><span class="std std-ref">Index</span></a></p></li>
+<li><p><a class="reference internal" href="py-modindex.html"><span class="std std-ref">Module Index</span></a></p></li>
+<li><p><a class="reference internal" href="search.html"><span class="std std-ref">Search Page</span></a></p></li>
+</ul>
+</div>
+</div>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h3><a href="index.html">Table of Contents</a></h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="Step1.html">Step 1 - Clean Skims</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Step 2 - Import Skims</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#functions">Functions</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="Step3.html">Step 3 - Summarize Access</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Step4.html">Step 4 - Trip Generation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Step5.html">Step 5 - Mode Choice</a></li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="Step1.html"
+                        title="previous chapter">Step 1 - Clean Skims</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="Step3.html"
+                        title="next chapter">Step 3 - Summarize Access</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/Step2.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="Step3.html" title="Step 3 - Summarize Access"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="Step1.html" title="Step 1 - Clean Skims"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">wsa October 2020 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Step 2 - Import Skims</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2020, Alex Bell.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 3.1.1.
+    </div>
+  </body>
+</html>

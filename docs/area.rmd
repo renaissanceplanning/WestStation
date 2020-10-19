@@ -1,0 +1,8 @@
+---
+title: "WEST STATION AREA FINDINGS"
+output: html_document
+---
+
+This page will eventually have full data visualizations embedded in iframes or in multiple tabsets depending on the visualizations. 
+
+Will be a more indepth review of the findings and cover multiple steps of processing. Could become its own navbar tab.

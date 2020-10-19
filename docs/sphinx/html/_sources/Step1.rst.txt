@@ -1,0 +1,36 @@
+.. module:: wsa.cs
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Contents:
+
+
+Step 1 - Clean Skims
+======================
+
+This script is used to read data from source csv files representing OD skims
+in long form. The skims are filtered and columns renamed on the fly to prepare
+the tables to be imported in the emma `Skim` object.
+
+Workflow:
+
+- Specify the network configuration
+- Specify input/output files for each travel mode
+- Specify column renaming specifications, as needed
+- Specify criteria for row exclusions, as needed
+- Clean skims
+
+
+Functions
+----------
+.. autofunction:: previewSkim
+
+
+.. autofunction:: cleanSkims
+
+
+
+
+* :ref:`genindex`
+* :ref:`modindex`
+* :ref:`search`

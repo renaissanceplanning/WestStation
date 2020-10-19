@@ -1,0 +1,212 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Step 1 - Clean Skims &#8212; wsa October 2020 documentation</title>
+    <link rel="stylesheet" href="_static/nature.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Step 2 - Import Skims" href="Step2.html" />
+    <link rel="prev" title="West Station Area Multimodal Accessibility Analysis" href="index.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="Step2.html" title="Step 2 - Import Skims"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="West Station Area Multimodal Accessibility Analysis"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">wsa October 2020 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Step 1 - Clean Skims</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <span class="target" id="module-wsa.cs"></span><div class="toctree-wrapper compound">
+</div>
+<div class="section" id="step-1-clean-skims">
+<h1>Step 1 - Clean Skims<a class="headerlink" href="#step-1-clean-skims" title="Permalink to this headline">¶</a></h1>
+<p>This script is used to read data from source csv files representing OD skims
+in long form. The skims are filtered and columns renamed on the fly to prepare
+the tables to be imported in the emma <cite>Skim</cite> object.</p>
+<p>Workflow:</p>
+<ul class="simple">
+<li><p>Specify the network configuration</p></li>
+<li><p>Specify input/output files for each travel mode</p></li>
+<li><p>Specify column renaming specifications, as needed</p></li>
+<li><p>Specify criteria for row exclusions, as needed</p></li>
+<li><p>Clean skims</p></li>
+</ul>
+<div class="section" id="functions">
+<h2>Functions<a class="headerlink" href="#functions" title="Permalink to this headline">¶</a></h2>
+<dl class="py function">
+<dt id="wsa.cs.previewSkim">
+<code class="sig-prename descclassname">wsa.cs.</code><code class="sig-name descname">previewSkim</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">in_file</span></em>, <em class="sig-param"><span class="n">nrows</span><span class="o">=</span><span class="default_value">5</span></em>, <em class="sig-param"><span class="n">logger</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#wsa.cs.previewSkim" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the top rows of a csv file to preview its contents.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>in_file</strong> (<em>String</em>) – Path to csv file</p></li>
+<li><p><strong>nrows</strong> (<em>Integer</em>) – The number of rows at the top of the table to load in the preview.</p></li>
+<li><p><strong>logger</strong> (<em>Logger</em>) – If desired, pass a logger object to record the skim preview.
+All logging is done at the INFO level.</p></li>
+<li><p><strong>kwargs</strong> – Keyword arguments that can be passed to pandas.read_csv</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>preview</strong></p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>pd.DataFrame</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="wsa.cs.cleanSkims">
+<code class="sig-prename descclassname">wsa.cs.</code><code class="sig-name descname">cleanSkims</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">in_file</span></em>, <em class="sig-param"><span class="n">out_file</span></em>, <em class="sig-param"><span class="n">criteria</span></em>, <em class="sig-param"><span class="n">rename</span><span class="o">=</span><span class="default_value">{}</span></em>, <em class="sig-param"><span class="n">chunksize</span><span class="o">=</span><span class="default_value">50000</span></em>, <em class="sig-param"><span class="n">logger</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#wsa.cs.cleanSkims" title="Permalink to this definition">¶</a></dt>
+<dd><p>Ingest a raw skim and retain only those rows that meet the provided
+criteria (all criteria must be true).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>in_file</strong> (<em>String</em>) – Path to the raw csv data</p></li>
+<li><p><strong>out_file</strong> (<em>String</em>) – Path to the new csv output</p></li>
+<li><p><strong>criteria</strong> (<em>[</em><em>(</em><em>String</em><em>, </em><em>String</em><em>, </em><em>Var</em><em>)</em><em>,</em><em>..</em><em>]</em>) – <p>A list of tuples. Each tuple contains specifications for filtering
+the raw csv data by a particular criterion. The tuple consists of
+three parts: (reference column, comparator, value). Use column names
+expected after renaming, if <cite>rename</cite> if provided. Comparators may
+by provided as strings corresponding to built-in class comparison
+methods:</p>
+<blockquote>
+<div><ul>
+<li><p>__eq__() = equals [==]</p></li>
+<li><p>__ne__() = not equal to [!=]</p></li>
+<li><p>__lt__() = less than [&lt;]</p></li>
+<li><p>__le__() = less than or equal to [&lt;=]</p></li>
+<li><p>__gt__() = greater than [&gt;]</p></li>
+<li><p>__ge__() = greater than or equal to [&gt;=]</p></li>
+</ul>
+</div></blockquote>
+</p></li>
+<li><p><strong>rename</strong> (<em>{String: String</em><em>,</em><em>..}</em><em>, </em><em>default={}</em>) – Optionally rename columns in the raw data based on key: value
+pairs in a dictionary. The key is the existing column name, and
+the value is the new name for that column. Only columns for which
+renaming is desired need to be included in the dictionary.</p></li>
+<li><p><strong>chunksize</strong> (<em>Int</em>) – The number of rows to read in from <cite>in_file</cite> at one time. All rows
+are evaluated in chunks to manage memory consumption.</p></li>
+<li><p><strong>logger</strong> (<em>Logger</em>) – If desired, pass a logger object to record information about the
+skim cleaning process. All logging is done at the INFO level.</p></li>
+<li><p><strong>kwargs</strong> – Any keyword arguments passed to pandas.read_csv for loading <cite>in_file</cite>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p></p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>None - outfile is written during this process.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<ul class="simple">
+<li><p><a class="reference internal" href="genindex.html"><span class="std std-ref">Index</span></a></p></li>
+<li><p><a class="reference internal" href="py-modindex.html"><span class="std std-ref">Module Index</span></a></p></li>
+<li><p><a class="reference internal" href="search.html"><span class="std std-ref">Search Page</span></a></p></li>
+</ul>
+</div>
+</div>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h3><a href="index.html">Table of Contents</a></h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Step 1 - Clean Skims</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#functions">Functions</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="Step2.html">Step 2 - Import Skims</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Step3.html">Step 3 - Summarize Access</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Step4.html">Step 4 - Trip Generation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Step5.html">Step 5 - Mode Choice</a></li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="index.html"
+                        title="previous chapter">West Station Area Multimodal Accessibility Analysis</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="Step2.html"
+                        title="next chapter">Step 2 - Import Skims</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/Step1.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="Step2.html" title="Step 2 - Import Skims"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="West Station Area Multimodal Accessibility Analysis"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">wsa October 2020 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Step 1 - Clean Skims</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2020, Alex Bell.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 3.1.1.
+    </div>
+  </body>
+</html>

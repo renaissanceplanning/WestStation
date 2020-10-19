@@ -1,0 +1,8 @@
+---
+title: "WEST STATION AREA"
+output: html_document
+---
+
+This page will eventually have summary data visualizations embedded in iframes or in multiple tabsets depending on the visualizations. 
+
+Will be a cursory level review of our findings

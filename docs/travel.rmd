@@ -1,0 +1,8 @@
+---
+title: "TRAVEL BEHAVIOR AND ACCESSIBILITY"
+output: html_document
+---
+
+A more in depth summary of how accessibility is affected by travel behaviors and other factors.
+
+Will include a interactive network diagram illustrating these interactions

@@ -1,0 +1,539 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Step 4 - Trip Generation &#8212; wsa October 2020 documentation</title>
+    <link rel="stylesheet" href="_static/nature.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Step 5 - Mode Choice" href="Step5.html" />
+    <link rel="prev" title="Step 3 - Summarize Access" href="Step3.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="Step5.html" title="Step 5 - Mode Choice"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="Step3.html" title="Step 3 - Summarize Access"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">wsa October 2020 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Step 4 - Trip Generation</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <span class="target" id="module-wsa.tg"></span><div class="toctree-wrapper compound">
+</div>
+<div class="section" id="step-4-trip-generation">
+<h1>Step 4 - Trip Generation<a class="headerlink" href="#step-4-trip-generation" title="Permalink to this headline">¶</a></h1>
+<p>Trip generation proceeds in two parts:</p>
+<div class="section" id="trips-by-zone">
+<h2>Trips by zone<a class="headerlink" href="#trips-by-zone" title="Permalink to this headline">¶</a></h2>
+<p>This script estimates trip generation for home-based trip productions and
+non-home-based trip attractions.</p>
+<dl class="simple">
+<dt>Home-based productions are stratified by household type.</dt><dd><ul class="simple">
+<li><dl class="simple">
+<dt>Reads estimates of households in each zone across 4 dimensions</dt><dd><ul>
+<li><p>HH size (1, 2, 3, 4+)</p></li>
+<li><p>Number of workers (0, 1, 2, 3+)</p></li>
+<li><p>Income group (1, 2, 3, 4)</p></li>
+<li><p>Vehicle ownership (0, 1, 2, 3+)</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><p>Reads trip generation rates and seed data for household cross-class</p></li>
+<li><p>Cross-classifies households into 256 HH types using IPF</p></li>
+</ul>
+</dd>
+</dl>
+<p>Attractions are estimated based on destination activities (jobs by type,
+school enrollments, etc.)</p>
+<p>Non-home-based productions are estimated based on household variables but
+redistributed to match the spatial allocation implied by non-home generators.</p>
+<p>This script needs to be run for each land use configuration. Results are
+stored in the “lu” folder corresponding to each land use configuration.
+Results generated include:</p>
+<blockquote>
+<div><ul class="simple">
+<li><dl class="simple">
+<dt><strong>hh_by_type_sum.csv</strong>: csv</dt><dd><p>Summary table of households by type by focus and window area
+inclusion (for high-level QA of results).</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt><strong>trip_gen_summary.csv</strong>: csv</dt><dd><p>Summary table of trips by purpose and end by focus and window area
+inclusion.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt><strong>trips_by_zone.csv</strong>: csv</dt><dd><p>TAZ-level tabulation of trips by purpose and end.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt><strong>HHs_by_type_taz.h5</strong>: LbArray</dt><dd><p>cross-classified households by type in each taz.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt><strong>trips_by_taz.h5</strong>: LbArray</dt><dd><p>trip productions and attractions by purpose and household type in
+each taz.</p>
+</dd>
+</dl>
+</li>
+</ul>
+</div></blockquote>
+</div>
+<div class="section" id="trips-by-block-in-window">
+<h2>Trips by block (in window)<a class="headerlink" href="#trips-by-block-in-window" title="Permalink to this headline">¶</a></h2>
+<p>This script estimates block-level trips by household type and non-home
+attractions based on TAZ-level trip estimates and block-level activity
+estimates. This is accomplished in 5 major steps:</p>
+<blockquote>
+<div><ol class="arabic">
+<li><dl>
+<dt>Estimate activity-based block trip gen propensity by purpose</dt><dd><ul>
+<li><p>Propensities are estimated such that every block has an extremely
+small starting propensity, and this grows based on block activities.
+This is to alleviate potential discontinuities between block-level
+and TAZ-level activity estimates.</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>Production propensity is informed by HH types</p></li>
+<li><p>Attraction propensity is informed by job types and enrollments</p></li>
+</ul>
+</div></blockquote>
+</li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>Summarize total block trip-making propensity by purpose</dt><dd><ul class="simple">
+<li><p>Summarize the activity-based propensities to yield the total
+trip-making propensity for the block.The resultsing score is the
+total trip gen propensity (either for P’s or A’s) by purpose.</p></li>
+<li><p>Summarize the block-level totals to TAZs. This will be used to
+determine each block’s share of total trip-making propensity.</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><p>Normalize the activity-based propensities such that they sum to 1.0
+within each block.</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>When each block’s trip total is estimated, these shares will
+determine trips by activity type.</p></li>
+</ul>
+</div></blockquote>
+</li>
+<li><dl class="simple">
+<dt>Summarize block-level total trip propensity to TAZ and estimate block-</dt><dd><p>level shares of TAZ totals (by purpose and trip-end) by activity.</p>
+</dd>
+</dl>
+</li>
+<li><p>Multiply TAZ-level trip estimates by purpose and trip-end to block-
+level, activity-based normalized propensities. This yields activity-
+based trips by block.</p></li>
+</ol>
+</div></blockquote>
+</div>
+<div class="section" id="functions">
+<h2>Functions<a class="headerlink" href="#functions" title="Permalink to this headline">¶</a></h2>
+<dl class="py function">
+<dt id="wsa.tg.readTAZs">
+<code class="sig-prename descclassname">wsa.tg.</code><code class="sig-name descname">readTAZs</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">lu_config</span></em>, <em class="sig-param"><span class="n">taz_table</span><span class="o">=</span><span class="default_value">'MAPC_TAZ_data.xlsx'</span></em>, <em class="sig-param"><span class="n">taz_sheet</span><span class="o">=</span><span class="default_value">'Zdata'</span></em>, <em class="sig-param"><span class="n">taz_id</span><span class="o">=</span><span class="default_value">'TAZ'</span></em>, <em class="sig-param"><span class="n">zones_in_model</span><span class="o">=</span><span class="default_value">'input\\model_area_zones.csv'</span></em>, <em class="sig-param"><span class="n">zim_id</span><span class="o">=</span><span class="default_value">'ID'</span></em><span class="sig-paren">)</span><a class="headerlink" href="#wsa.tg.readTAZs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Reads zone input tables from default locations.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>lu_config</strong> (<em>String</em>) – </p></li>
+<li><p><strong>taz_table</strong> (<em>String</em><em>, </em><em>default=&quot;MAPC_TAZ_data.xlsx&quot;</em>) – </p></li>
+<li><p><strong>taz_sheet</strong> (<em>String</em><em>, </em><em>default=&quot;Zdata&quot;</em>) – </p></li>
+<li><p><strong>taz_id</strong> (<em>String</em><em>, </em><em>default=&quot;TAZ&quot;</em>) – </p></li>
+<li><p><strong>zones_in_model</strong> (<em>String</em><em>, </em><em>default=&quot;inputmodel_area_zones.csv&quot;</em>) – </p></li>
+<li><p><strong>zim_id</strong> (<em>String</em><em>, </em><em>default=&quot;ID&quot;</em>) – The field that identifies each TAZ in <cite>zones_in_model</cite>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>taz_df</strong> – TAZ records from <cite>taz_table</cite> filtered by values in <cite>zones_in_model</cite></p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>pd.DataFrame</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="wsa.tg.readBlocks">
+<code class="sig-prename descclassname">wsa.tg.</code><code class="sig-name descname">readBlocks</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">lu_config</span></em>, <em class="sig-param"><span class="n">block_hh_table</span><span class="o">=</span><span class="default_value">'Household_Types_by_Block.csv'</span></em>, <em class="sig-param"><span class="n">block_emp_table</span><span class="o">=</span><span class="default_value">'Jobs_Enroll_by_Block.csv'</span></em>, <em class="sig-param"><span class="n">hh_id_field</span><span class="o">=</span><span class="default_value">'block_id'</span></em>, <em class="sig-param"><span class="n">emp_id_field</span><span class="o">=</span><span class="default_value">'block_id'</span></em>, <em class="sig-param"><span class="n">window_blocks</span><span class="o">=</span><span class="default_value">'input\\window_blocks.csv'</span></em>, <em class="sig-param"><span class="n">wb_id</span><span class="o">=</span><span class="default_value">'GEOID10'</span></em><span class="sig-paren">)</span><a class="headerlink" href="#wsa.tg.readBlocks" title="Permalink to this definition">¶</a></dt>
+<dd><p>Reads block input tables from default locations.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>lu_config</strong> (<em>String</em>) – </p></li>
+<li><p><strong>block_hh_table</strong> (<em>String</em><em>, </em><em>default=&quot;Household_Types_by_Block.csv&quot;</em>) – </p></li>
+<li><p><strong>block_emp_table</strong> (<em>String</em><em>, </em><em>default=&quot;Jobs_Enroll_by_Block.csv&quot;</em>) – </p></li>
+<li><p><strong>hh_id_field</strong> (<em>String</em><em>, </em><em>default=&quot;block_id&quot;</em>) – </p></li>
+<li><p><strong>hh_field</strong> (<em>String</em><em>, </em><em>default=&quot;Households&quot;</em>) – </p></li>
+<li><p><strong>emp_id_field</strong> (<em>String</em><em>, </em><em>default=&quot;block_id&quot;</em>) – </p></li>
+<li><p><strong>emp_act_field</strong> (<em>String</em><em>, </em><em>default=&quot;tot_emp&quot;</em>) – </p></li>
+<li><p><strong>window_blocks</strong> (<em>String</em><em>, </em><em>default=&quot;window_blocks.csv&quot;</em>) – </p></li>
+<li><p><strong>wb_id</strong> (<em>String</em><em>, </em><em>default=&quot;GEOID10&quot;</em>) – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>hh_df</strong> (<em>pd.DataFrame</em>) – Block-level households by type. Rows reflect only the blocks listed
+in window_blocks.</p></li>
+<li><p><strong>nh_df</strong> (<em>pd.DataFrame</em>) – Block-level non-home activities. Rows reflect only the blocks listed
+in window_blocks.</p></li>
+<li><p><strong>wb_df</strong> (<em>pd.DataFrame</em>) – Block ids with TAZ ids. Rows reflect only the blocks listed
+in window_blocks.</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="wsa.tg.relabel">
+<code class="sig-prename descclassname">wsa.tg.</code><code class="sig-name descname">relabel</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">row</span></em>, <em class="sig-param"><span class="n">column</span></em>, <em class="sig-param"><span class="n">value_dict</span></em><span class="sig-paren">)</span><a class="headerlink" href="#wsa.tg.relabel" title="Permalink to this definition">¶</a></dt>
+<dd><p>Supporting funciton to replace values based on a dictionary lookup.
+Called from DataFrame.apply().</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>row</strong> (<em>Iterable</em>) – A row in a pandas DataFrame</p></li>
+<li><p><strong>column</strong> (<em>String</em>) – The column to relabel</p></li>
+<li><p><strong>value_dict</strong> (<em>{String: String</em><em>, </em><em>..}</em>) – A dictionary with keys reflecting original value at this row/column
+location and values reflecting the value to write to this location.
+If the original value is not in the dictionary, the original value
+remains in place.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="wsa.tg.prepSeed">
+<code class="sig-prename descclassname">wsa.tg.</code><code class="sig-name descname">prepSeed</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">seed_df</span></em><span class="sig-paren">)</span><a class="headerlink" href="#wsa.tg.prepSeed" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert seed data to a long form data frame. Use when reading in household
+cross-classification seeds. Transforms the seed from its original format
+to a long format compatible with later components of the trip-generation
+process.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>seed_df</strong> (<em>pd.DataFrame</em>) – </p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>long_seed</strong></p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>pd.DataFrame</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="wsa.tg.getSeedByTAZ">
+<code class="sig-prename descclassname">wsa.tg.</code><code class="sig-name descname">getSeedByTAZ</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">taz_id</span></em>, <em class="sig-param"><span class="n">lookup_df</span></em>, <em class="sig-param"><span class="n">seed_df</span></em>, <em class="sig-param"><span class="n">veh_df</span></em><span class="sig-paren">)</span><a class="headerlink" href="#wsa.tg.getSeedByTAZ" title="Permalink to this definition">¶</a></dt>
+<dd><p>Lookup seed matrices based on the PUMA ID associated with each TAZ. Add
+the vehicle ownership dimension (not included in seed source) from values
+provided in a separate data frame.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>taz_id</strong> (<em>Numeric</em>) – The taz for which to fetch the appropriate HH cross-classification
+seed.</p></li>
+<li><p><strong>lookup_df</strong> (<em>pd.DataFrame</em>) – A data frame in which taz’s are related to PUMA id’s so that the
+appropriate seed can be pulled for the provided <cite>taz_id</cite>.</p></li>
+<li><p><strong>seed_df</strong> (<em>pd.DataFrame</em>) – A data frame with seed details by PUMA.</p></li>
+<li><p><strong>veh_df</strong> (<em>pd.DataFrame</em>) – A simple data frame with assumed seed values by vehicle ownership
+categories.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>seed_vo</strong> – The seed details for this taz (based on its PUMA location), with
+vehicle ownership seed estimated from regional averages.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>pd.DataFrame</p>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="#wsa.tg.fetchSeedArray" title="wsa.tg.fetchSeedArray"><code class="xref py py-func docutils literal notranslate"><span class="pre">fetchSeedArray()</span></code></a></p>
+</div>
+</dd></dl>
+
+<dl class="py function">
+<dt id="wsa.tg.fetchSeedArray">
+<code class="sig-prename descclassname">wsa.tg.</code><code class="sig-name descname">fetchSeedArray</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">taz_id</span></em>, <em class="sig-param"><span class="n">lookup_df</span></em>, <em class="sig-param"><span class="n">long_seed</span></em>, <em class="sig-param"><span class="n">veh_df</span></em><span class="sig-paren">)</span><a class="headerlink" href="#wsa.tg.fetchSeedArray" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert a seed matrix to a labeled array. The seed matrix is first
+looked up based on TAZ ID and the lookup data frame.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>taz_id</strong> (<em>Numeric</em>) – The TAZ for which to fetch the seed data.</p></li>
+<li><p><strong>lookup_df</strong> (<em>pd.DataFrame</em>) – A data frame relating TAZs to PUMA ID’s.</p></li>
+<li><p><strong>long_seed</strong> (<em>pd.DataFrame</em>) – A long-form data frame with IPF seed values for a PUMA</p></li>
+<li><p><strong>veh_df</strong> (<em>pd.DataFrame</em>) – A data frame with generalize vehicle ownership seed shares.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>seed_array</strong></p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>LbArray</p>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="#wsa.tg.getSeedByTAZ" title="wsa.tg.getSeedByTAZ"><code class="xref py py-func docutils literal notranslate"><span class="pre">getSeedByTAZ()</span></code></a></p>
+</div>
+</dd></dl>
+
+<dl class="py function">
+<dt id="wsa.tg.dfToLabeledArray_tg">
+<code class="sig-prename descclassname">wsa.tg.</code><code class="sig-name descname">dfToLabeledArray_tg</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">tg_df</span></em>, <em class="sig-param"><span class="n">ref_array</span></em>, <em class="sig-param"><span class="n">dims</span></em>, <em class="sig-param"><span class="n">act_col</span></em>, <em class="sig-param"><span class="n">block_id</span><span class="o">=</span><span class="default_value">'block_id'</span></em>, <em class="sig-param"><span class="n">excl_labels</span><span class="o">=</span><span class="default_value">'-'</span></em>, <em class="sig-param"><span class="n">levels</span><span class="o">=</span><span class="default_value">['block_id', 'TAZ', 'INWINDOW', 'INFOCUS']</span></em><span class="sig-paren">)</span><a class="headerlink" href="#wsa.tg.dfToLabeledArray_tg" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert a data frame of block-level activities to a labeled array. Fill
+in label values based on a reference array (taz activities, e.g.) and
+enrich and align axes for clean downstream operations.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>tg_df</strong> (<em>pd.DataFrame</em>) – A data frame with block-level activity data. WARNING! The data frame
+is modified in-place (NaN values are replaced by labels)</p></li>
+<li><p><strong>ref_array</strong> (<em>LbArray</em>) – A labeled array with activities by TAZ. This provdes the basic form
+for the block-level array returned by the function.</p></li>
+<li><p><strong>dims</strong> (<em>[</em><em>String</em><em>,</em><em>..</em><em>]</em>) – Axis names in <cite>ref_array</cite> corresponding to activity dimensions.</p></li>
+<li><p><strong>act_col</strong> (<em>String</em>) – The column in <cite>tg_df</cite> that contains activity value estimates.</p></li>
+<li><p><strong>block_id</strong> (<em>String</em><em>, </em><em>default=&quot;block_id&quot;</em>) – The column in`tg_df` that identifies each block.</p></li>
+<li><p><strong>excl_labels</strong> (<em>String</em><em> or </em><em>[</em><em>String</em><em>,</em><em>..</em><em>]</em><em>, </em><em>default=&quot;-&quot;</em>) – A collection of labels (in any axis) whose values are dropped when
+casting the block-level array returned by the function.</p></li>
+<li><p><strong>levels</strong> (<em>[</em><em>String</em><em>,</em><em>..</em><em>]</em><em>, </em><em>default=</em><em>[</em><em>&quot;block_id&quot;</em><em>, </em><em>&quot;TAZ&quot;</em><em>, </em><em>&quot;INWINDOW&quot;</em><em>, </em><em>&quot;INFOCUS&quot;</em><em>]</em>) – The names of columns in <cite>tg_df</cite> that will be used to add levels
+to the block-level array returned by the function. These keep intact
+block-level nesting information.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>act_array</strong> – A block level array of activity data (based on <cite>tg_df</cite>) whose axis
+labels align with those in <cite>ref_array</cite>.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>LbArray</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="wsa.tg.disaggregateTrips_hb">
+<code class="sig-prename descclassname">wsa.tg.</code><code class="sig-name descname">disaggregateTrips_hb</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">taz_trips</span></em>, <em class="sig-param"><span class="n">block_trips</span></em>, <em class="sig-param"><span class="n">act_array</span></em>, <em class="sig-param"><span class="n">act_dims</span></em>, <em class="sig-param"><span class="n">purposes</span></em>, <em class="sig-param"><span class="n">end</span></em>, <em class="sig-param"><span class="n">propensities</span></em>, <em class="sig-param"><span class="n">base_prop</span></em>, <em class="sig-param"><span class="n">block_axis</span><span class="o">=</span><span class="default_value">'block_id'</span></em>, <em class="sig-param"><span class="n">block_id</span><span class="o">=</span><span class="default_value">'block_id'</span></em>, <em class="sig-param"><span class="n">block_taz_id</span><span class="o">=</span><span class="default_value">'TAZ'</span></em>, <em class="sig-param"><span class="n">taz_axis</span><span class="o">=</span><span class="default_value">'TAZ'</span></em>, <em class="sig-param"><span class="n">taz_id</span><span class="o">=</span><span class="default_value">'TAZ'</span></em>, <em class="sig-param"><span class="n">logger</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#wsa.tg.disaggregateTrips_hb" title="Permalink to this definition">¶</a></dt>
+<dd><p>A function to disaggregate TAZ-level home-based trip estimates to block
+level based on activities in each block and trip-making propensity
+factors defined by activity dimension.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>taz_trips</strong> (<em>LbArray</em>) – A labeled array of trips by TAZ. Expected axes include ‘Purpose’,
+‘End’, and one or more activity dimensions.</p></li>
+<li><p><strong>block_trips</strong> (<em>LbArray</em>) – A labeled array that will contain trips by block (expected to be
+passed to the function with initial values of 0.0). Expected axes
+match those in <cite>taz_trips</cite></p></li>
+<li><p><strong>act_array</strong> (<em>LbArray</em>) – A labeled array of activities by block. Expected axes include
+activity dimensions that match those in <cite>taz_trips</cite>. WARNING!
+This array is modified in-place during processing.</p></li>
+<li><p><strong>act_dims</strong> (<em>[</em><em>String</em><em>,</em><em>..</em><em>]</em>) – The name of the activity dimensions used in each labeled array.</p></li>
+<li><p><strong>purposes</strong> (<em>[</em><em>String</em><em>,</em><em>..</em><em>]</em>) – The purposes for which trip disaggregation is conducted.</p></li>
+<li><p><strong>end</strong> (<em>String</em>) – The trip end (‘P’ or ‘A’) for which trip disaggregation is conducted.</p></li>
+<li><p><strong>propensities</strong> (<em>{String: {String: {String:</em><em> [</em><em>numeric</em><em>,</em><em>..</em><em>]</em><em>}}}</em>) – A nested dictionary of trip-making propensities. At the outer level,
+keys are trip purposes; at the middle level, keys are axis names;
+at the inner level, keys are axis labels and values are propensity
+weights.</p></li>
+<li><p><strong>base_prop</strong> (<em>numeric</em>) – A baseline trip-making propensity. This is a small value that ensures
+all blocks have a nominal trip-making potential. Blocks with
+activities will have significantly higher propensities based on the
+number of activities and the <cite>propensities</cite> dictionary.</p></li>
+<li><p><strong>block_axis</strong> (<em>String</em><em>, </em><em>default=&quot;block_id&quot;</em>) – The name of the axis in <cite>block_trips</cite> and <cite>act_array</cite> that identifies
+block features.</p></li>
+<li><p><strong>block_id</strong> (<em>String</em><em>, </em><em>default=&quot;block_id&quot;</em>) – The level in <cite>block_axis</cite> that uniquely identifies each block.</p></li>
+<li><p><strong>block_taz_id</strong> (<em>String</em>) – The level in <cite>block_axis</cite> that identifies the TAZ each block is
+nested in.</p></li>
+<li><p><strong>taz_axis</strong> (<em>String</em><em>, </em><em>default=&quot;TAZ&quot;</em>) – The axis in <cite>taz_trips</cite> that identifies TAZ features.</p></li>
+<li><p><strong>taz_id</strong> (<em>String</em><em>, </em><em>default=&quot;TAZ&quot;</em>) – The level in <cite>taz_axis</cite> that uniquely identifies each TAZ.</p></li>
+<li><p><strong>logger</strong> (<em>Logger</em><em>, </em><em>default=None</em>) – An initialized logger object may be provided to log processing steps.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><cite>block_trips</cite> is modified in place.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="#wsa.tg.disaggregateTrips_nh" title="wsa.tg.disaggregateTrips_nh"><code class="xref py py-func docutils literal notranslate"><span class="pre">disaggregateTrips_nh()</span></code></a></p>
+</div>
+</dd></dl>
+
+<dl class="py function">
+<dt id="wsa.tg.disaggregateTrips_nh">
+<code class="sig-prename descclassname">wsa.tg.</code><code class="sig-name descname">disaggregateTrips_nh</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">taz_trips</span></em>, <em class="sig-param"><span class="n">block_trips</span></em>, <em class="sig-param"><span class="n">nh_df</span></em>, <em class="sig-param"><span class="n">lbl_col</span></em>, <em class="sig-param"><span class="n">act_col</span></em>, <em class="sig-param"><span class="n">purposes</span></em>, <em class="sig-param"><span class="n">end</span></em>, <em class="sig-param"><span class="n">propensities</span></em>, <em class="sig-param"><span class="n">base_prop</span></em>, <em class="sig-param"><span class="n">wb_df</span></em>, <em class="sig-param"><span class="n">block_axis</span><span class="o">=</span><span class="default_value">'block_id'</span></em>, <em class="sig-param"><span class="n">block_id</span><span class="o">=</span><span class="default_value">'block_id'</span></em>, <em class="sig-param"><span class="n">block_taz_id</span><span class="o">=</span><span class="default_value">'TAZ'</span></em>, <em class="sig-param"><span class="n">taz_axis</span><span class="o">=</span><span class="default_value">'TAZ'</span></em>, <em class="sig-param"><span class="n">taz_id</span><span class="o">=</span><span class="default_value">'TAZ'</span></em>, <em class="sig-param"><span class="n">wb_block_id</span><span class="o">=</span><span class="default_value">'block_id'</span></em>, <em class="sig-param"><span class="n">act_crit</span><span class="o">=</span><span class="default_value">'-'</span></em>, <em class="sig-param"><span class="n">levels</span><span class="o">=</span><span class="default_value">['block_id', 'TAZ', 'INFOCUS', 'INWINDOW']</span></em>, <em class="sig-param"><span class="n">act_dims</span><span class="o">=</span><span class="default_value">['HHSize', 'Income', 'VehOwn', 'Workers']</span></em>, <em class="sig-param"><span class="n">logger</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#wsa.tg.disaggregateTrips_nh" title="Permalink to this definition">¶</a></dt>
+<dd><p>A function to disaggregate TAZ-level non-home trip estimates to block
+level based on activities in each block and trip-making propensity
+factors defined by activity label.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>taz_trips</strong> (<em>LbArray</em>) – A labeled array of trips by TAZ. Expected axes include ‘Purpose’,
+‘End’, and one or more activity dimensions.</p></li>
+<li><p><strong>block_trips</strong> (<em>LbArray</em>) – A labeled array that will contain trips by block (expected to be
+passed to the function with initial values of 0.0). Expected axes
+match those in <cite>taz_trips</cite></p></li>
+<li><p><strong>nh_df</strong> (<em>pd.DataFrame</em>) – A data frame of non-home activities by block.</p></li>
+<li><p><strong>lbl_col</strong> (<em>String</em>) – The column in <cite>nh_df</cite> that identifies each block’s activity by type.</p></li>
+<li><p><strong>act_col</strong> (<em>String</em>) – The column in <cite>nh_df</cite> that stores the number of each activity.</p></li>
+<li><p><strong>act_dims</strong> (<em>[</em><em>String</em><em>,</em><em>..</em><em>]</em>) – The name of the activity dimensions used in each labeled array.</p></li>
+<li><p><strong>purposes</strong> (<em>[</em><em>String</em><em>,</em><em>..</em><em>]</em>) – The purposes for which trip disaggregation is conducted.</p></li>
+<li><p><strong>end</strong> (<em>String</em>) – The trip end (‘P’ or ‘A’) for which trip disaggregation is conducted.</p></li>
+<li><p><strong>propensities</strong> (<em>{String: {String: {String:</em><em> [</em><em>numeric</em><em>,</em><em>..</em><em>]</em><em>}}}</em>) – A nested dictionary of trip-making propensities. At the outer level,
+keys are trip purposes; at the middle level, keys are axis names;
+at the inner level, keys are axis labels and values are propensity
+weights.</p></li>
+<li><p><strong>base_prop</strong> (<em>numeric</em>) – A baseline trip-making propensity. This is a small value that ensures
+all blocks have a nominal trip-making potential. Blocks with
+activities will have significantly higher propensities based on the
+number of activities and the <cite>propensities</cite> dictionary.</p></li>
+<li><p><strong>block_axis</strong> (<em>String</em><em>, </em><em>default=&quot;block_id&quot;</em>) – The name of the axis in <cite>block_trips</cite> and <cite>act_array</cite> that identifies
+block features.</p></li>
+<li><p><strong>block_id</strong> (<em>String</em><em>, </em><em>default=&quot;block_id&quot;</em>) – The level in <cite>block_axis</cite> that uniquely identifies each block.</p></li>
+<li><p><strong>block_taz_id</strong> (<em>String</em>) – The level in <cite>block_axis</cite> that identifies the TAZ each block is
+nested in.</p></li>
+<li><p><strong>taz_axis</strong> (<em>String</em><em>, </em><em>default=&quot;TAZ&quot;</em>) – The axis in <cite>taz_trips</cite> that identifies TAZ features.</p></li>
+<li><p><strong>taz_id</strong> (<em>String</em><em>, </em><em>default=&quot;TAZ&quot;</em>) – The level in <cite>taz_axis</cite> that uniquely identifies each TAZ.</p></li>
+<li><p><strong>logger</strong> (<em>Logger</em><em>, </em><em>default=None</em>) – An initialized logger object may be provided to log processing steps.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><cite>block_trips</cite> is modified in place.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="#wsa.tg.disaggregateTrips_hb" title="wsa.tg.disaggregateTrips_hb"><code class="xref py py-func docutils literal notranslate"><span class="pre">disaggregateTrips_hb()</span></code></a></p>
+</div>
+</dd></dl>
+
+<ul class="simple">
+<li><p><a class="reference internal" href="genindex.html"><span class="std std-ref">Index</span></a></p></li>
+<li><p><a class="reference internal" href="py-modindex.html"><span class="std std-ref">Module Index</span></a></p></li>
+<li><p><a class="reference internal" href="search.html"><span class="std std-ref">Search Page</span></a></p></li>
+</ul>
+</div>
+</div>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h3><a href="index.html">Table of Contents</a></h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="Step1.html">Step 1 - Clean Skims</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Step2.html">Step 2 - Import Skims</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Step3.html">Step 3 - Summarize Access</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Step 4 - Trip Generation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#trips-by-zone">Trips by zone</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#trips-by-block-in-window">Trips by block (in window)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#functions">Functions</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="Step5.html">Step 5 - Mode Choice</a></li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="Step3.html"
+                        title="previous chapter">Step 3 - Summarize Access</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="Step5.html"
+                        title="next chapter">Step 5 - Mode Choice</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/Step4.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="Step5.html" title="Step 5 - Mode Choice"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="Step3.html" title="Step 3 - Summarize Access"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">wsa October 2020 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Step 4 - Trip Generation</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2020, Alex Bell.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 3.1.1.
+    </div>
+  </body>
+</html>

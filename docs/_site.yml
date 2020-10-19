@@ -1,0 +1,41 @@
+name: "MAPC-Project-Site"
+output_dir: "."
+navbar:
+  title: "MAPC Accessability Modeling"
+  left:
+    - text: "Home"
+      href: index.html
+    - text: "West Station Summary"
+      href: west_station_exec.html
+    - text: "Findings"
+      menu:
+        - text: "Theoretical Foundations"
+        - text: "Travel Behavior and Accessibility"
+          href: travel.html
+        - text: "---------"
+        - text: "Indepth Findings"
+        - text: "West Station Area"
+          href: area.html
+    - text: "Further Reading"
+      menu:
+        - text: "White Papers"
+        - text: "Naive Estimators"
+          href: NaiveEstimatorsV1.html
+        - text: "Trip Decay"
+          href: TripDecayV2.html
+        - text: "---------"
+        - text: "Analysis Scripts"
+        - text: "Trip Generation"
+          href: trip.html
+        - text: "Summarize Accessibility"
+          href: summarize.html
+    - text: "Documentation"
+      menu:
+        - text: "West Station Analysis"
+          href: ./sphinx/html/index.html
+        - text: "Emma Site"
+          href: https://renaissanceplanning.github.io/emma-docs/
+
+output: 
+  html_document:
+    css: RPG_Bootstrap_Arial.css

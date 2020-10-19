@@ -1,0 +1,4 @@
+﻿Trip,Classification
+NM,"Mode = 1 or 2, with any number of travellers"
+SOV,"Mode = 3, 4, 11, 12, or 97, with one traveller"
+HOV,"Mode = 3, 4, 11, 12, or 97, with two or more travellers; Mode = 8, 9, or 10"

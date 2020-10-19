@@ -1,0 +1,59 @@
+West Station Area Multimodal Accessibility Analysis
+=======================================================
+
+There are 7 main steps executed in 8 scripts:
+
+1. **Clean skims** (`Step1_CleanSkims.py`) - process csv OD tables to ensure
+   column names are consistent across scenarios and extraneous rows are 
+   excluded.
+
+2. **Import skims** (`Step2_ImportSkims.py`) - convert csv OD tables to emma
+   `Skim` objects for all modes. Calculate derived values, such as generalized
+   cost.
+
+3. **Summarize access** (`Step3_SummarizeAccess.py`) - using skims and tabular
+   activity data by zone, summarize access to jobs, enrollments, etc.
+
+4. **Trip generation**
+
+    a. *Regional trips* (`Step4_TripGen.py`) - use regional trip generation
+       rates and TAZ-level activity data to estimate person trip productions
+       and attractions.
+    
+    b. *Window trips* (`Step4_TripGenDisag.py`) - use block-level activity
+       data and assumptions about trip-making propensity to disaggregate
+       productions and attractions from the TAZ level to the block level in
+       the window area.
+
+5. **Mode choice** (`Step5_ModeChoice.py`) - use access scores and demographic
+   data to apply a series of mode choice models to estimate productions and
+   attractions by mode for TAZs (region) and blocks (window).
+
+6. **Distribution** (`Step6_Distribution.py`) - estimate trip OD patterns by
+   mode and purpose for a given time period, applying K factors if specified.
+
+7. **Estimate TNC trips** (`Step7_TNC.py`) - use assumptions about TNC costs,
+   utilization by purpose, trip substitution by mode, and decay rates to
+   identify OD pairs with high probabilities to substitute trips by a given
+   mode for TNC trips.
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Contents:
+  
+   README
+   Step1
+   Step2
+   Step3
+   Step4
+   Step5
+   Step6
+   Step7
+
+
+Indices and tables
+==================
+
+* :ref:`genindex`
+* :ref:`modindex`
+* :ref:`search`

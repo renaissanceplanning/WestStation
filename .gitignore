@@ -1,2 +1,10 @@
 previous_scripting
 weststation/__pycache__
+*.rst
+.vscode
+Makefile
+make.bat
+conf.py
+.Rproj.user
+ModeChoiceR/
+TutorialData/

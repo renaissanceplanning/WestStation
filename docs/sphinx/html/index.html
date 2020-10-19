@@ -1,0 +1,176 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>West Station Area Multimodal Accessibility Analysis &#8212; wsa October 2020 documentation</title>
+    <link rel="stylesheet" href="_static/nature.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Step 1 - Clean Skims" href="Step1.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="Step1.html" title="Step 1 - Clean Skims"
+             accesskey="N">next</a> |</li>
+        <li class="nav-item nav-item-0"><a href="#">wsa October 2020 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">West Station Area Multimodal Accessibility Analysis</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="west-station-area-multimodal-accessibility-analysis">
+<h1>West Station Area Multimodal Accessibility Analysis<a class="headerlink" href="#west-station-area-multimodal-accessibility-analysis" title="Permalink to this headline">¶</a></h1>
+<p>There are 7 main steps executed in 8 scripts:</p>
+<ol class="arabic">
+<li><p><strong>Clean skims</strong> (<cite>Step1_CleanSkims.py</cite>) - process csv OD tables to ensure
+column names are consistent across scenarios and extraneous rows are
+excluded.</p></li>
+<li><p><strong>Import skims</strong> (<cite>Step2_ImportSkims.py</cite>) - convert csv OD tables to emma
+<cite>Skim</cite> objects for all modes. Calculate derived values, such as generalized
+cost.</p></li>
+<li><p><strong>Summarize access</strong> (<cite>Step3_SummarizeAccess.py</cite>) - using skims and tabular
+activity data by zone, summarize access to jobs, enrollments, etc.</p></li>
+<li><p><strong>Trip generation</strong></p>
+<blockquote>
+<div><ol class="loweralpha simple">
+<li><p><em>Regional trips</em> (<cite>Step4_TripGen.py</cite>) - use regional trip generation
+rates and TAZ-level activity data to estimate person trip productions
+and attractions.</p></li>
+<li><p><em>Window trips</em> (<cite>Step4_TripGenDisag.py</cite>) - use block-level activity
+data and assumptions about trip-making propensity to disaggregate
+productions and attractions from the TAZ level to the block level in
+the window area.</p></li>
+</ol>
+</div></blockquote>
+</li>
+<li><p><strong>Mode choice</strong> (<cite>Step5_ModeChoice.py</cite>) - use access scores and demographic
+data to apply a series of mode choice models to estimate productions and
+attractions by mode for TAZs (region) and blocks (window).</p></li>
+<li><p><strong>Distribution</strong> (<cite>Step6_Distribution.py</cite>) - estimate trip OD patterns by
+mode and purpose for a given time period, applying K factors if specified.</p></li>
+<li><p><strong>Estimate TNC trips</strong> (<cite>Step7_TNC.py</cite>) - use assumptions about TNC costs,
+utilization by purpose, trip substitution by mode, and decay rates to
+identify OD pairs with high probabilities to substitute trips by a given
+mode for TNC trips.</p></li>
+</ol>
+<div class="toctree-wrapper compound">
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="Step1.html">Step 1 - Clean Skims</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="Step1.html#functions">Functions</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="Step2.html">Step 2 - Import Skims</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="Step2.html#functions">Functions</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="Step3.html">Step 3 - Summarize Access</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="Step3.html#functions">Functions</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="Step4.html">Step 4 - Trip Generation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="Step4.html#trips-by-zone">Trips by zone</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Step4.html#trips-by-block-in-window">Trips by block (in window)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Step4.html#functions">Functions</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="Step5.html">Step 5 - Mode Choice</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="Step5.html#functions">Functions</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</div>
+<div class="section" id="indices-and-tables">
+<h1>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this headline">¶</a></h1>
+<ul class="simple">
+<li><p><a class="reference internal" href="genindex.html"><span class="std std-ref">Index</span></a></p></li>
+<li><p><a class="reference internal" href="py-modindex.html"><span class="std std-ref">Module Index</span></a></p></li>
+<li><p><a class="reference internal" href="search.html"><span class="std std-ref">Search Page</span></a></p></li>
+</ul>
+</div>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h3><a href="#">Table of Contents</a></h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="Step1.html">Step 1 - Clean Skims</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Step2.html">Step 2 - Import Skims</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Step3.html">Step 3 - Summarize Access</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Step4.html">Step 4 - Trip Generation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Step5.html">Step 5 - Mode Choice</a></li>
+</ul>
+
+  <h4>Next topic</h4>
+  <p class="topless"><a href="Step1.html"
+                        title="next chapter">Step 1 - Clean Skims</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/index.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="Step1.html" title="Step 1 - Clean Skims"
+             >next</a> |</li>
+        <li class="nav-item nav-item-0"><a href="#">wsa October 2020 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">West Station Area Multimodal Accessibility Analysis</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2020, Alex Bell.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 3.1.1.
+    </div>
+  </body>
+</html>

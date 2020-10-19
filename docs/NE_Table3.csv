@@ -1,0 +1,4 @@
+﻿Trip purpose,Origin purpose,Destination purpose
+HBW,"1, 2","3, 4, or 12"
+HBNW,"1, 2","Not 3, 4, or 12"
+NHB,Not 1 or 2,Not 1 or 2

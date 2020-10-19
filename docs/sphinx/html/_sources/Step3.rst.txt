@@ -1,0 +1,38 @@
+.. module:: wsa.access
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Contents:
+
+
+Step 3 - Summarize Access
+============================
+This script reads modal impedances from skim files, specifies decay
+rates by purpose, and calculates purpose-specific OD decay factors.
+It then summarizes access scores using zonal activity data and the
+calculated decay factors.
+
+Workflow:
+  - Read data
+    - Travel cost skims
+    - Zonal activity data
+  - Specify decay rates
+  - Calculate decay factors (using emma.Decay methods)
+  - Summarize access scores (using `emma.od.summarizeAccess`)
+  - Export results
+
+
+Functions
+----------
+.. autofunction:: loadInputZones
+
+
+.. autofunction:: decaysFromTable
+
+
+
+
+* :ref:`genindex`
+* :ref:`modindex`
+* :ref:`search`
+

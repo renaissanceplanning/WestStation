@@ -1,0 +1,190 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Step 3 - Summarize Access &#8212; wsa October 2020 documentation</title>
+    <link rel="stylesheet" href="_static/nature.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Step 4 - Trip Generation" href="Step4.html" />
+    <link rel="prev" title="Step 2 - Import Skims" href="Step2.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="Step4.html" title="Step 4 - Trip Generation"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="Step2.html" title="Step 2 - Import Skims"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">wsa October 2020 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Step 3 - Summarize Access</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <span class="target" id="module-wsa.access"></span><div class="toctree-wrapper compound">
+</div>
+<div class="section" id="step-3-summarize-access">
+<h1>Step 3 - Summarize Access<a class="headerlink" href="#step-3-summarize-access" title="Permalink to this headline">¶</a></h1>
+<p>This script reads modal impedances from skim files, specifies decay
+rates by purpose, and calculates purpose-specific OD decay factors.
+It then summarizes access scores using zonal activity data and the
+calculated decay factors.</p>
+<dl class="simple">
+<dt>Workflow:</dt><dd><ul class="simple">
+<li><p>Read data
+- Travel cost skims
+- Zonal activity data</p></li>
+<li><p>Specify decay rates</p></li>
+<li><p>Calculate decay factors (using emma.Decay methods)</p></li>
+<li><p>Summarize access scores (using <cite>emma.od.summarizeAccess</cite>)</p></li>
+<li><p>Export results</p></li>
+</ul>
+</dd>
+</dl>
+<div class="section" id="functions">
+<h2>Functions<a class="headerlink" href="#functions" title="Permalink to this headline">¶</a></h2>
+<dl class="py function">
+<dt id="wsa.access.loadInputZones">
+<code class="sig-prename descclassname">wsa.access.</code><code class="sig-name descname">loadInputZones</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">lu_config</span></em>, <em class="sig-param"><span class="n">taz_table</span><span class="o">=</span><span class="default_value">'MAPC_TAZ_data.xlsx'</span></em>, <em class="sig-param"><span class="n">taz_sheet</span><span class="o">=</span><span class="default_value">'Zdata'</span></em>, <em class="sig-param"><span class="n">block_table_hh</span><span class="o">=</span><span class="default_value">'Household_Types_by_Block.csv'</span></em>, <em class="sig-param"><span class="n">block_table_emp</span><span class="o">=</span><span class="default_value">'Jobs_Enroll_by_Block.csv'</span></em>, <em class="sig-param"><span class="n">taz_id</span><span class="o">=</span><span class="default_value">'TAZ'</span></em>, <em class="sig-param"><span class="n">block_id</span><span class="o">=</span><span class="default_value">'block_id'</span></em><span class="sig-paren">)</span><a class="headerlink" href="#wsa.access.loadInputZones" title="Permalink to this definition">¶</a></dt>
+<dd><p>Reads zone input tables from default locations.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>lu_config</strong> (<em>String</em>) – </p></li>
+<li><p><strong>taz_table</strong> (<em>String</em><em>, </em><em>default=&quot;MAPC_TAZ_data.xlsx&quot;</em>) – </p></li>
+<li><p><strong>taz_sheet</strong> (<em>String</em><em>, </em><em>default=&quot;Zdata&quot;</em>) – </p></li>
+<li><p><strong>block_table_hh</strong> (<em>String</em><em>, </em><em>default=&quot;Household_Types_by_Block.csv&quot;</em>) – </p></li>
+<li><p><strong>block_table_emp</strong> (<em>String</em><em>, </em><em>default=&quot;Jobs_Enroll_by_Block.csv&quot;</em>) – </p></li>
+<li><p><strong>taz_id</strong> (<em>String</em><em>, </em><em>default=&quot;TAZ&quot;</em>) – </p></li>
+<li><p><strong>block_id</strong> (<em>String</em><em>, </em><em>default=&quot;block_id&quot;</em>) – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>taz_df</strong> (<em>pd.DataFrame</em>)</p></li>
+<li><p><strong>block_hh_df</strong> (<em>pd.DataFrame</em>)</p></li>
+<li><p><strong>block_emp_df</strong> (<em>pd.DataFrame</em>)</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="wsa.access.decaysFromTable">
+<code class="sig-prename descclassname">wsa.access.</code><code class="sig-name descname">decaysFromTable</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">decay_table</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">selection_criteria</span></em><span class="sig-paren">)</span><a class="headerlink" href="#wsa.access.decaysFromTable" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create Decay objects based on parameters specified in a csv file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>decay_table</strong> (<em>String</em>) – Path to a well-formed csv file with decay curve specifications.</p></li>
+<li><p><strong>selection_criteria</strong> – Keyword arguments for selecting rows from the table when constructing
+decay objects (<cite>Mode=”auto”</cite> will only construct auto decay curves,
+e.g.).</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<ul class="simple">
+<li><p><a class="reference internal" href="genindex.html"><span class="std std-ref">Index</span></a></p></li>
+<li><p><a class="reference internal" href="py-modindex.html"><span class="std std-ref">Module Index</span></a></p></li>
+<li><p><a class="reference internal" href="search.html"><span class="std std-ref">Search Page</span></a></p></li>
+</ul>
+</div>
+</div>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h3><a href="index.html">Table of Contents</a></h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="Step1.html">Step 1 - Clean Skims</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Step2.html">Step 2 - Import Skims</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Step 3 - Summarize Access</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#functions">Functions</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="Step4.html">Step 4 - Trip Generation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Step5.html">Step 5 - Mode Choice</a></li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="Step2.html"
+                        title="previous chapter">Step 2 - Import Skims</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="Step4.html"
+                        title="next chapter">Step 4 - Trip Generation</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/Step3.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="Step4.html" title="Step 4 - Trip Generation"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="Step2.html" title="Step 2 - Import Skims"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">wsa October 2020 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Step 3 - Summarize Access</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2020, Alex Bell.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 3.1.1.
+    </div>
+  </body>
+</html>

@@ -1,0 +1,409 @@
+---
+title: "Summarizing Accessibility"
+output: html_document
+---
+
+This will eventually be replaced with sphinx autodocs but for now.
+
+# Imports and Setup
+```{python, eval=FALSE}
+import sys
+sys.path.append(r"K:\Tools\RP\emma\scripts")
+
+
+import emma
+from emma import labeled_array as lba
+#import tables as tb
+import numpy as np
+import pandas as pd
+import os
+
+root = r"K:\Projects\MAPC\WestStationScenarios"
+os.chdir(root)
+
+
+lu_config = "Base"
+net_config = "Base_gc_parking"
+scen = "Base_gc_parking"
+rerun=True ## ** TOGGLE THIS AS NEEDED ** ##
+transit_only=False  ## ** TOGGLE THIS AS NEEDED ** ##
+imped_group="GC" #"Time" or "GC"
+
+
+modes = ["auto", "transit", "bike", "walk", 
+         "transit_da_BT", "transit_da_CR", "transit_da_LB", "transit_da_RT"]
+```
+
+# Input Data
+```{python eval=FALSE}
+#read taz data
+taz_file = r"input\Zones\{}\MAPC_TAZ_data.xlsx".format(lu_config)
+taz_sheet = "Zdata"
+taz_df = pd.read_excel(taz_file, taz_sheet)
+
+#read block emp and enrollment data
+block_file = r"input\Zones\{}\Jobs_Enroll_by_Block.csv".format(lu_config)
+block_df = pd.read_csv(block_file, dtype={"block_id": str})
+
+#pivot block data to wide form
+block_df_wide = pd.pivot_table(block_df, index="block_id", columns="GenSector",
+                              values="tot_emp").fillna(0)
+
+#calc total emp, total enrollment
+job_fields = ["Basic", "Retail", "Service"]
+block_df_wide["Total Emp"] = block_df_wide[job_fields].sum(axis=1)
+
+enrollment_fields = ["EnrollPreK", "EnrollK12", "EnrollCU"]
+block_df_wide["TotEnroll"] = block_df_wide[enrollment_fields].sum(axis=1)
+
+#read block hh data
+block_hh_file = r"input\Zones\{}\Household_Types_by_Block.csv".format(
+                    lu_config)
+block_hh_df = pd.read_csv(block_hh_file, dtype={"block_id": str})
+
+#pivot block data to wide form for income and vehicle ownership groups
+block_hh_df_wide = pd.pivot_table(block_hh_df, index="block_id", 
+                                  columns=["Income"],
+                                  values="Households").fillna(0)
+block_hh_df_wide_vo = pd.pivot_table(block_hh_df, index="block_id", 
+                                  columns=["VehOwn"],
+                                  values="Households").fillna(0)
+
+#calc tot hh's and merge income, vo data
+block_hh_df_wide["TotalHH"] = block_hh_df_wide[
+                ["Income1", "Income2", "Income3", "Income4"]].sum(axis=1)
+block_hh_df_wide = block_hh_df_wide.merge(block_hh_df_wide_vo, how="outer",
+                                          left_index=True, right_index=True)
+
+#connect to skim files
+skim_files = []
+skim_objs = []
+for mode in modes:
+        skim_file = r"net\{}\{}.h5".format(net_config, mode)
+        skim = emma.od.openSkim_HDF(skim_file, "/costs")
+        skim_files.append(skim_file)
+        skim_objs.append(skim)
+```
+
+# Decay Rates
+```{python eval=FALSE}
+if imped_group.lower() == "time":
+    #time-based decay rates using CDF form
+    auto_decays = {"HBW": emma.od.ExpDecay(1.281, -0.044),
+                    "HBO": emma.od.ExpDecay(1.147, -0.078),
+                    "NHB": emma.od.ExpDecay(1.038, -0.059)}
+    
+    transit_decays = {"HBW": emma.od.LogDecay(4.581, -0.085),
+                      "HBO": emma.od.LogDecay(3.50, -0.072),
+                      "NHB": emma.od.LogDecay(3.304, -0.076)}
+    
+    trans_da_decays = {"HBW": emma.od.LogDecay(5.507, -0.072),
+                        "HBO": emma.od.LogDecay(3.241, -0.037),
+                        "NHB": emma.od.LogDecay(4.503, -0.062)}
+    
+    nm_decays = {"HBW": emma.od.ExpDecay(1.156, -0.064),
+                  "HBO": emma.od.ExpDecay(1.034, -0.081),
+                  "NHB": emma.od.ExpDecay(1.004, -0.114)}
+    
+elif imped_group.lower() == "gc":
+    #GC - based
+    auto_decays = {"HBW": emma.od.ExpDecay(1.2247, -0.033),
+                    "HBO": emma.od.ExpDecay(1.170, -0.056),
+                    "NHB": emma.od.ExpDecay(1.038, -0.044),
+                    "HBSch": emma.od.ExpDecay(1.171, -0.067)}
+    
+    transit_decays = {"HBW": emma.od.LogDecay(4.048, -0.201),
+                      "HBO": emma.od.LogDecay(3.977, -0.239),
+                      "NHB": emma.od.LogDecay(3.791, -0.253)}
+    
+    trans_da_decays = {"HBW": emma.od.LogDecay(3.831, -0.113),
+                        "HBO": emma.od.LogDecay(3.511, -0.118),
+                        "NHB": emma.od.LogDecay(3.122, -0.102)}
+    
+    nm_decays = {"HBW": emma.od.ExpDecay(1.156, -0.064),
+                  "HBO": emma.od.ExpDecay(1.034, -0.081),
+                  "NHB": emma.od.ExpDecay(1.004, -0.114)}
+
+#assemble all decays in list (nm twice for walk and bike)
+cdf_decays = [auto_decays, transit_decays, nm_decays, nm_decays]
+cdf_decays.extend([trans_da_decays for _ in range(4)])
+
+#### PDF DECAYS (meanlog, sdlog)
+if imped_group.lower() == "time":
+    ## Time-based
+    auto_decays_p = {"HBW": emma.od.LogNormalDecay(3.093, 0.786),
+                      "HBO": emma.od.LogNormalDecay(2.448, 0.807),
+                      "NHB": emma.od.LogNormalDecay(2.514, 0.967)}
+    
+    transit_decays_p = {"HBW": emma.od.LogNormalDecay(3.931, 0.441),
+                        "HBO": emma.od.LogNormalDecay(3.814, 0.565),
+                        "NHB": emma.od.LogNormalDecay(3.692, 0.587)}
+    
+    nm_decays_p = {"HBW": emma.od.LogNormalDecay(2.547, 0.958),
+                    "HBO": emma.od.LogNormalDecay(2.198, 0.981),
+                    "NHB": emma.od.LogNormalDecay(1.843, 0.96)}
+    
+    trans_da_decays_p = {"HBW": emma.od.LogNormalDecay(3.931, 0.441),
+                        "HBO": emma.od.LogNormalDecay(3.814, 0.565),
+                        "NHB": emma.od.LogNormalDecay(3.692, 0.587)}
+
+elif imped_group.lower() == "gc":
+    ## GC-Based
+    auto_decays_p = {"HBW": emma.od.LogNormalDecay(3.305, 0.838),
+                      "HBO": emma.od.LogNormalDecay(2.774, 0.817),
+                      "NHB": emma.od.LogNormalDecay(2.799, 0.934),
+                      "HBSch": emma.od.LogNormalDecay(2.640, 0.775)}    
+    
+    transit_decays_p = {"HBW": emma.od.LogNormalDecay(2.931, 0.480),
+                        "HBO": emma.od.LogNormalDecay(2.739, 0.496),
+                        "NHB": emma.od.LogNormalDecay(2.629, 0.504)}
+    
+    nm_decays_p = {"HBW": emma.od.LogNormalDecay(2.547, 0.958),
+                    "HBO": emma.od.LogNormalDecay(2.198, 0.981),
+                    "NHB": emma.od.LogNormalDecay(1.843, 0.96)}
+    
+    trans_da_decays_p = {"HBW": emma.od.LogNormalDecay(3.452, 0.518),
+                        "HBO": emma.od.LogNormalDecay(3.312, 0.533),
+                        "NHB": emma.od.LogNormalDecay(3.278, 0.585)}
+else:
+    raise ValueError(f"Invalid impedance specified (imped_group)")
+
+pdf_decays = [auto_decays_p, transit_decays_p, nm_decays_p, nm_decays_p]
+pdf_decays.extend([trans_da_decays_p for _ in range(4)])
+```
+
+# Connect/Create Skims
+```{python eval=FALSE}
+#%% connect/create skims
+#for each mode, create a "decays" node (zones x zones x rates) and cast values
+if imped_group.lower() == "time":
+    imped_fields = ["CongTime", "Total_Time", 
+                    "Total_Minutes", "Total_Minutes"]
+    #include drive access to transit skims
+    imped_fields.extend(["Total_Time" for _ in range(4)])
+else:
+    #note auto defaults to gc_other. Work gc is handled later in this section.
+    imped_fields = ["GenCost_other", "GeneralizedCost", 
+                    "Total_Minutes", "Total_Minutes"]
+    imped_fields.extend(["GeneralizedCost" for _ in range(4)])
+cdf_skims = []
+pdf_skims = []
+   
+
+if rerun:
+    for mode_i, mode in enumerate(modes):
+        print("connecting decay skim for", mode)
+        #point to the decay skim and connect to the cdf and pdf nodes
+        decay_file = r"net\{}\{}_decay.h5".format(net_config, mode)
+        cdf_skim = emma.od.openSkim_HDF(decay_file, "/cdf")
+        pdf_skim = emma.od.openSkim_HDF(decay_file, "/pdf")
+        
+        cdf_skims.append(cdf_skim)
+        pdf_skims.append(pdf_skim)
+        
+elif transit_only:
+    _modes = [m for m in modes if "transit" in m]
+    for mode in _modes:
+        mode_i = modes.index(mode)
+        print("anaylysing decay for", mode)
+        #connect to the impedance skim and look up field, rate references
+        skim = skim_objs[mode_i]
+        imped_field = imped_fields[mode_i]
+        cdf_rates = cdf_decays[mode_i]
+        pdf_rates = pdf_decays[mode_i]
+                                
+        #cast the skim's key travel impedance attribute into a new array with
+        #a "purposes" dimension
+        decay_file = r"net\{}\{}_decay.h5".format(net_config, mode)
+        node_path = "/"
+        cdf_name = "cdf"
+        pdf_name = "pdf"
+        new_axis = lba.LbAxis("purposes", ["HBW", "HBO", "NHB"])
+    
+        #Squeezing the cast will drop the `impedances` dimension which will 
+        #only have one time field anyway
+        cdf_skim = skim.cast(new_axis, hdf_store=decay_file, 
+                               node_path=node_path, name=cdf_name, 
+                               impedances=imped_field, squeeze=True)
+        #same thing for the pdf skim
+        pdf_skim = skim.cast(new_axis, hdf_store=decay_file, 
+                             node_path=node_path, name=pdf_name,
+                             impedances=imped_field, squeeze=True)
+    
+        #Apply decay rates by purpose
+        for purpose in cdf_rates.keys():
+            cdf_rate = cdf_rates[purpose]
+            pdf_rate = pdf_rates[purpose]
+            #cdf application
+            cdf_skim.put(
+                cdf_rate.apply(cdf_skim.purposes[purpose]), purposes=purpose)
+            #pdf application
+            pdf_skim.put(
+                pdf_rate.apply(pdf_skim.purposes[purpose]), purposes=purpose)
+        
+    for mode_i, mode in enumerate(modes):
+        print("connecting decay skim for", mode)
+        #point to the decay skim and connect to the cdf and pdf nodes
+        decay_file = r"net\{}\{}_decay.h5".format(net_config, mode)
+        cdf_skim = emma.od.openSkim_HDF(decay_file, "/cdf")
+        pdf_skim = emma.od.openSkim_HDF(decay_file, "/pdf")
+        
+        cdf_skims.append(cdf_skim)
+        pdf_skims.append(pdf_skim)
+    
+else:        
+    for mode_i, mode in enumerate(modes):
+        print("anaylysing decay for", mode, "and connecting to decay skim")
+        #connect to the impedance skim and look up field, rate references
+        skim = skim_objs[mode_i]
+        imped_field = imped_fields[mode_i]
+        cdf_rates = cdf_decays[mode_i]
+        pdf_rates = pdf_decays[mode_i]
+                                    
+        #cast the skim's key travel time attribute into a new array with
+        #a "purposes" dimension
+        decay_file = r"net\{}\{}_decay.h5".format(net_config, mode)
+        node_path = "/"
+        cdf_name = "cdf"
+        pdf_name = "pdf"
+        new_axis = lba.LbAxis("purposes", ["HBW", "HBO", "NHB"])
+        
+        #Squeezing the cast will drop the `impedances` dimension which will 
+        #only have one time field anyway
+        cdf_skim = skim.cast(new_axis, hdf_store=decay_file, 
+                               node_path=node_path, name=cdf_name, 
+                               impedances=imped_field, squeeze=True)
+        #same thing for the pdf skim
+        pdf_skim = skim.cast(new_axis, hdf_store=decay_file, 
+                             node_path=node_path, name=pdf_name,
+                             impedances=imped_field, squeeze=True)
+        
+        #if using generalized costs, handle auto work costs
+        if imped_group.lower() == "gc" and mode == "auto":
+            cdf_skim.put(skim.take(impedances="GenCost_work", squeeze=True).data,
+                         purposes="HBW")
+            pdf_skim.put(skim.take(impedances="GenCost_work", squeeze=True).data,
+                         purposes="HBW")
+        
+        #Apply decay rates by purpose
+        for purpose in cdf_rates.keys():
+            cdf_rate = cdf_rates[purpose]
+            pdf_rate = pdf_rates[purpose]
+            #cdf application
+            cdf_skim.put(
+                cdf_rate.apply(cdf_skim.purposes[purpose]), purposes=purpose)
+            #pdf application
+            pdf_skim.put(
+                pdf_rate.apply(pdf_skim.purposes[purpose]), purposes=purpose)
+            
+        cdf_skims.append(cdf_skim)
+        pdf_skims.append(pdf_skim)
+```
+
+# TAZ Level Bike and Walk
+```{python eval=FALSE}
+auto_skim = skim_objs[0]
+auto_skim.impedances.labels
+
+decay_file = r"net\{}\nonmotor_decay_TAZ.h5".format(net_config)
+
+if rerun or transit_only:
+    nm_taz_dec_skim = emma.od.openSkim_HDF(decay_file, "/cdf")
+
+else:
+    node_path = "/"
+    array_name = "cdf"
+    new_axis = lba.LbAxis("purposes", ["HBW", "HBO", "NHB"])
+    
+    #we will not squeeze these since there are two impedance fields
+    nm_taz_dec_skim = auto_skim.cast(new_axis, hdf_store=decay_file, 
+                                     node_path=node_path, name=array_name, 
+                                     impedances=["WalkTime", "BikeTime"])
+    
+    #apply the nonmotorized decay rates to both impedances
+    cdf_rates = cdf_decays[-1]
+    for purpose in cdf_rates.keys():
+        cdf_rate = cdf_rates[purpose]
+        pdf_rate = pdf_rates[purpose]
+        #cdf application
+        nm_taz_dec_skim.put(
+            cdf_rate.apply(nm_taz_dec_skim.purposes[purpose]), purposes=purpose)
+
+```
+
+# Summarize Access
+```{python eval=FALSE}
+jobs_fields = ["Total Emp", "Retail", "Service", "Basic", "TotEnroll"]
+access_sums = {}
+
+for mode, dec_skim in zip(modes, cdf_skims):
+    print(mode)
+    cdf_rates = cdf_decays[mode_i]
+    pdf_rates = pdf_decays[mode_i]
+    
+    for purpose in cdf_rates.keys():
+        print("...", purpose)
+        if mode in ["bike", "walk"]:
+            access_to_jobs = emma.od.summarizeAccess(block_df_wide,
+                                 jobs_fields, dec_skim, key_level="GEOID10", 
+                                 purposes=purpose)
+        else:
+            access_to_jobs = emma.od.summarizeAccess(taz_df.set_index("TAZ"),
+                                 jobs_fields, dec_skim, key_level="ID",
+                                 purposes=purpose)
+        mode_dict = access_sums.get(mode, {})
+        mode_dict[purpose] = access_to_jobs
+        access_sums[mode] = mode_dict
+        
+        out_csv = r"scen\{}\access_to_jobs_{}_{}.csv".format(
+            scen, mode, purpose)
+        access_to_jobs.to_csv(out_csv)
+
+cdf_rates = cdf_decays[-1]
+dec_skim = nm_taz_dec_skim
+nm_taz_access = {}
+
+for mode, imped in zip(["walk", "bike"], ["WalkTime", "BikeTime"]):
+    print(mode, "(TAZ)")
+    for purpose in cdf_rates.keys():
+        print("...", purpose)
+        access_to_jobs = emma.od.summarizeAccess(taz_df.set_index("TAZ"),
+                               jobs_fields, dec_skim, key_level="ID", 
+                               purposes=purpose, impedances=imped)
+        mode_dict = nm_taz_access.get(mode, {})
+        mode_dict[purpose] = access_to_jobs
+        nm_taz_access[mode] = mode_dict
+        
+        out_csv = r"scen\{}\access_to_jobs_{}_{}_TAZ.csv".format(
+            scen, mode, purpose)
+        access_to_jobs.to_csv(out_csv)
+
+```
+
+# Access from HHs
+```{python eval=FALSE}
+hh_fields = ["Income1", "Income2", "Income3", "Income4", 
+             "Veh0", "Veh1", "Veh2", "Veh3p", "TotalHH"]
+access_sums_hh = {}
+
+for mode, dec_skim in zip(modes, cdf_skims):
+    print(mode)
+    for purpose in cdf_rates.keys():
+        print("...", purpose)
+        if mode in ["bike", "walk"]:
+            access_from_hh = emma.od.summarizeAccess(block_hh_df_wide,
+                                 hh_fields, dec_skim, key_level="GEOID10", 
+                                 purposes=purpose, access_to_dests=False)
+        else:
+            access_from_hh = emma.od.summarizeAccess(taz_df.set_index("TAZ"),
+                                 hh_fields, dec_skim, key_level="ID",
+                                 purposes=purpose, access_to_dests=False)
+        mode_dict = access_sums_hh.get(mode, {})
+        mode_dict[purpose] = access_from_hh
+        access_sums_hh[mode] = mode_dict
+        
+        out_csv = r"scen\{}\access_from_hh_{}_{}.csv".format(
+            scen, mode, purpose)
+        access_from_hh.to_csv(out_csv)
+```
+

@@ -1,0 +1,711 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+
+<meta name="author" content="Aaron Weinstock" />
+
+<meta name="date" content="2019-11-27" />
+
+<title>A SURVIVAL ANALYSIS APPROACH TO UNDERSTANDING TRAVEL TIME DECAY</title>
+
+<script src="site_libs/jquery-1.11.3/jquery.min.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link href="site_libs/bootstrap-3.3.5/css/bootstrap.min.css" rel="stylesheet" />
+<script src="site_libs/bootstrap-3.3.5/js/bootstrap.min.js"></script>
+<script src="site_libs/bootstrap-3.3.5/shim/html5shiv.min.js"></script>
+<script src="site_libs/bootstrap-3.3.5/shim/respond.min.js"></script>
+<script src="site_libs/jqueryui-1.11.4/jquery-ui.min.js"></script>
+<link href="site_libs/tocify-1.9.1/jquery.tocify.css" rel="stylesheet" />
+<script src="site_libs/tocify-1.9.1/jquery.tocify.js"></script>
+<script src="site_libs/navigation-1.1/tabsets.js"></script>
+<link href="site_libs/highlightjs-9.12.0/default.css" rel="stylesheet" />
+<script src="site_libs/highlightjs-9.12.0/highlight.js"></script>
+<link href="site_libs/tabwid-1.0.0/tabwid.css" rel="stylesheet" />
+<script src="site_libs/tabwid-1.0.0/tabwid.js"></script>
+
+<style type="text/css">code{white-space: pre;}</style>
+<style type="text/css">
+  pre:not([class]) {
+    background-color: white;
+  }
+</style>
+<script type="text/javascript">
+if (window.hljs) {
+  hljs.configure({languages: []});
+  hljs.initHighlightingOnLoad();
+  if (document.readyState && document.readyState === "complete") {
+    window.setTimeout(function() { hljs.initHighlighting(); }, 0);
+  }
+}
+</script>
+
+
+
+<style type="text/css">
+h1 {
+  font-size: 34px;
+}
+h1.title {
+  font-size: 38px;
+}
+h2 {
+  font-size: 30px;
+}
+h3 {
+  font-size: 24px;
+}
+h4 {
+  font-size: 18px;
+}
+h5 {
+  font-size: 16px;
+}
+h6 {
+  font-size: 12px;
+}
+.table th:not([align]) {
+  text-align: left;
+}
+</style>
+
+<link rel="stylesheet" href="RPG_Bootstrap_Arial.css" type="text/css" />
+
+
+
+<style type = "text/css">
+.main-container {
+  max-width: 940px;
+  margin-left: auto;
+  margin-right: auto;
+}
+code {
+  color: inherit;
+  background-color: rgba(0, 0, 0, 0.04);
+}
+img {
+  max-width:100%;
+}
+.tabbed-pane {
+  padding-top: 12px;
+}
+.html-widget {
+  margin-bottom: 20px;
+}
+button.code-folding-btn:focus {
+  outline: none;
+}
+summary {
+  display: list-item;
+}
+</style>
+
+
+<style type="text/css">
+/* padding for bootstrap navbar */
+body {
+  padding-top: 51px;
+  padding-bottom: 40px;
+}
+/* offset scroll position for anchor links (for fixed navbar)  */
+.section h1 {
+  padding-top: 56px;
+  margin-top: -56px;
+}
+.section h2 {
+  padding-top: 56px;
+  margin-top: -56px;
+}
+.section h3 {
+  padding-top: 56px;
+  margin-top: -56px;
+}
+.section h4 {
+  padding-top: 56px;
+  margin-top: -56px;
+}
+.section h5 {
+  padding-top: 56px;
+  margin-top: -56px;
+}
+.section h6 {
+  padding-top: 56px;
+  margin-top: -56px;
+}
+.dropdown-submenu {
+  position: relative;
+}
+.dropdown-submenu>.dropdown-menu {
+  top: 0;
+  left: 100%;
+  margin-top: -6px;
+  margin-left: -1px;
+  border-radius: 0 6px 6px 6px;
+}
+.dropdown-submenu:hover>.dropdown-menu {
+  display: block;
+}
+.dropdown-submenu>a:after {
+  display: block;
+  content: " ";
+  float: right;
+  width: 0;
+  height: 0;
+  border-color: transparent;
+  border-style: solid;
+  border-width: 5px 0 5px 5px;
+  border-left-color: #cccccc;
+  margin-top: 5px;
+  margin-right: -10px;
+}
+.dropdown-submenu:hover>a:after {
+  border-left-color: #ffffff;
+}
+.dropdown-submenu.pull-left {
+  float: none;
+}
+.dropdown-submenu.pull-left>.dropdown-menu {
+  left: -100%;
+  margin-left: 10px;
+  border-radius: 6px 0 6px 6px;
+}
+</style>
+
+<script>
+// manage active state of menu based on current page
+$(document).ready(function () {
+  // active menu anchor
+  href = window.location.pathname
+  href = href.substr(href.lastIndexOf('/') + 1)
+  if (href === "")
+    href = "index.html";
+  var menuAnchor = $('a[href="' + href + '"]');
+
+  // mark it active
+  menuAnchor.parent().addClass('active');
+
+  // if it's got a parent navbar menu mark it active as well
+  menuAnchor.closest('li.dropdown').addClass('active');
+});
+</script>
+
+<!-- tabsets -->
+
+<style type="text/css">
+.tabset-dropdown > .nav-tabs {
+  display: inline-table;
+  max-height: 500px;
+  min-height: 44px;
+  overflow-y: auto;
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.tabset-dropdown > .nav-tabs > li.active:before {
+  content: "";
+  font-family: 'Glyphicons Halflings';
+  display: inline-block;
+  padding: 10px;
+  border-right: 1px solid #ddd;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open > li.active:before {
+  content: "&#xe258;";
+  border: none;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open:before {
+  content: "";
+  font-family: 'Glyphicons Halflings';
+  display: inline-block;
+  padding: 10px;
+  border-right: 1px solid #ddd;
+}
+
+.tabset-dropdown > .nav-tabs > li.active {
+  display: block;
+}
+
+.tabset-dropdown > .nav-tabs > li > a,
+.tabset-dropdown > .nav-tabs > li > a:focus,
+.tabset-dropdown > .nav-tabs > li > a:hover {
+  border: none;
+  display: inline-block;
+  border-radius: 4px;
+  background-color: transparent;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open > li {
+  display: block;
+  float: none;
+}
+
+.tabset-dropdown > .nav-tabs > li {
+  display: none;
+}
+</style>
+
+<!-- code folding -->
+
+
+
+<style type="text/css">
+
+#TOC {
+  margin: 25px 0px 20px 0px;
+}
+@media (max-width: 768px) {
+#TOC {
+  position: relative;
+  width: 100%;
+}
+}
+
+@media print {
+.toc-content {
+  /* see https://github.com/w3c/csswg-drafts/issues/4434 */
+  float: right;
+}
+}
+
+.toc-content {
+  padding-left: 30px;
+  padding-right: 40px;
+}
+
+div.main-container {
+  max-width: 1200px;
+}
+
+div.tocify {
+  width: 20%;
+  max-width: 260px;
+  max-height: 85%;
+}
+
+@media (min-width: 768px) and (max-width: 991px) {
+  div.tocify {
+    width: 25%;
+  }
+}
+
+@media (max-width: 767px) {
+  div.tocify {
+    width: 100%;
+    max-width: none;
+  }
+}
+
+.tocify ul, .tocify li {
+  line-height: 20px;
+}
+
+.tocify-subheader .tocify-item {
+  font-size: 0.90em;
+}
+
+.tocify .list-group-item {
+  border-radius: 0px;
+}
+
+
+</style>
+
+
+
+</head>
+
+<body>
+
+
+<div class="container-fluid main-container">
+
+
+<!-- setup 3col/9col grid for toc_float and main content  -->
+<div class="row-fluid">
+<div class="col-xs-12 col-sm-4 col-md-3">
+<div id="TOC" class="tocify">
+</div>
+</div>
+
+<div class="toc-content col-xs-12 col-sm-8 col-md-9">
+
+
+
+
+<div class="navbar navbar-default  navbar-fixed-top" role="navigation">
+  <div class="container">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar">
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="index.html">MAPC Accessability Modeling</a>
+    </div>
+    <div id="navbar" class="navbar-collapse collapse">
+      <ul class="nav navbar-nav">
+        <li>
+  <a href="index.html">Home</a>
+</li>
+<li>
+  <a href="west_station_exec.html">West Station Summary</a>
+</li>
+<li class="dropdown">
+  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
+    Findings
+     
+    <span class="caret"></span>
+  </a>
+  <ul class="dropdown-menu" role="menu">
+    <li class="dropdown-header">Theoretical Foundations</li>
+    <li>
+      <a href="travel.html">Travel Behavior and Accessibility</a>
+    </li>
+    <li class="divider"></li>
+    <li class="dropdown-header">Indepth Findings</li>
+    <li>
+      <a href="area.html">West Station Area</a>
+    </li>
+  </ul>
+</li>
+<li class="dropdown">
+  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
+    Further Reading
+     
+    <span class="caret"></span>
+  </a>
+  <ul class="dropdown-menu" role="menu">
+    <li class="dropdown-header">White Papers</li>
+    <li>
+      <a href="NaiveEstimatorsV1.html">Naive Estimators</a>
+    </li>
+    <li>
+      <a href="TripDecayV2.html">Trip Decay</a>
+    </li>
+    <li class="divider"></li>
+    <li class="dropdown-header">Analysis Scripts</li>
+    <li>
+      <a href="trip.html">Trip Generation</a>
+    </li>
+    <li>
+      <a href="summarize.html">Summarize Accessibility</a>
+    </li>
+  </ul>
+</li>
+<li class="dropdown">
+  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
+    Documentation
+     
+    <span class="caret"></span>
+  </a>
+  <ul class="dropdown-menu" role="menu">
+    <li>
+      <a href="./sphinx/html/index.html">West Station Analysis</a>
+    </li>
+    <li>
+      <a href="https://renaissanceplanning.github.io/emma-docs/">Emma Site</a>
+    </li>
+  </ul>
+</li>
+      </ul>
+      <ul class="nav navbar-nav navbar-right">
+        
+      </ul>
+    </div><!--/.nav-collapse -->
+  </div><!--/.container -->
+</div><!--/.navbar -->
+
+<div class="fluid-row" id="header">
+
+
+
+<h1 class="title toc-ignore">A SURVIVAL ANALYSIS APPROACH TO UNDERSTANDING TRAVEL TIME DECAY</h1>
+<h4 class="author">Aaron Weinstock</h4>
+<h4 class="date">November 27, 2019</h4>
+
+</div>
+
+
+<style type="text/css">
+caption {
+  color:black;
+  line-height: 1.5em;
+  font-size: 16px;
+}
+</style>
+<p><br /></p>
+<div id="introduction" class="section level2">
+<h2><span class="header-section-number">0.1</span> 1. INTRODUCTION</h2>
+<p>Historically, travel time decay curves have been estimated via exponential regression on time. First, for each time <em>t</em> in a set of travel times <span class="math inline">\({\scriptstyle t = 1, 2, ..., t_{max}}\)</span>, number of trips lasting at least <em>t</em> minutes would be calculated. Then, assuming the functional form y = Aebt, a regression would be fit with <em>t</em> (time) as the sole explanatory variable and <em>y</em> (the number of trips lasting at least <em>t</em> minutes) as the response.</p>
+<p>While this method does elucidate the underlying decay curve, it is a naive approach in that it assumes travel time decay relies only on time. By considering time as the only covariate, this type of model ignores the impact other variables could have on travel time decay. For example, increased age could be associated with shorter tripmaking for walking trips, and thus a steeper travel time decay. Thus, a more informative travel time decay model may seek to include the effects of both time and other relevant covariates. This would not only produce a more realistic travel time decay curve, but allow for a quantification of the relationship between included covariates and travel time decay.</p>
+<p>This paper suggests the use of a survival analysis approach to modeling travel time decay. Survival analysis encompasses a set of statistical methods interested in modeling the time to an “event” using a set of predictor variables. It is most often seen in clinical trials, where a researcher may be interested in how long patients survive after being given a particular treatment. It can be extended to travel time decay by considering the ending of a trip as the “event” of interest. Table 1 provides the travel time decay analogs of a more common survival analysis example.</p>
+<div class="tabwid"><table style='border-collapse:collapse;'><caption>Table 1: Definitions for NM, SOV, and HOV trips</caption><thead><tr style="overflow-wrap:break-word;"><td style="width:21px;background-color:transparent;vertical-align: middle;border-bottom: 2.00px solid rgba(0, 0, 0, 1.00);border-top: 2.00px solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;"><p style="margin:0;text-align:left;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);padding-bottom:2px;padding-top:2px;padding-left:5px;padding-right:5px;background-color:transparent;"><span style="font-family:'Arial';font-size:11px;font-weight:bold;font-style:normal;text-decoration:none;color:rgba(17, 17, 17, 1.00);background-color:transparent;"></span></p></td><td style="width:21px;background-color:transparent;vertical-align: middle;border-bottom: 2.00px solid rgba(0, 0, 0, 1.00);border-top: 2.00px solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;"><p style="margin:0;text-align:left;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);padding-bottom:2px;padding-top:2px;padding-left:5px;padding-right:5px;background-color:transparent;"><span style="font-family:'Arial';font-size:11px;font-weight:bold;font-style:normal;text-decoration:none;color:rgba(17, 17, 17, 1.00);background-color:transparent;"></span></p></td></tr></thead><tbody><tr style="overflow-wrap:break-word;"><td style="width:21px;background-color:transparent;vertical-align: middle;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;"><p style="margin:0;text-align:left;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);padding-bottom:2px;padding-top:2px;padding-left:5px;padding-right:5px;background-color:transparent;"><span style="font-family:'Arial';font-size:11px;font-weight:normal;font-style:normal;text-decoration:none;color:rgba(17, 17, 17, 1.00);background-color:transparent;"></span></p></td><td style="width:21px;background-color:transparent;vertical-align: middle;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;"><p style="margin:0;text-align:left;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);padding-bottom:2px;padding-top:2px;padding-left:5px;padding-right:5px;background-color:transparent;"><span style="font-family:'Arial';font-size:11px;font-weight:normal;font-style:normal;text-decoration:none;color:rgba(17, 17, 17, 1.00);background-color:transparent;"></span></p></td></tr><tr style="overflow-wrap:break-word;"><td style="width:21px;background-color:transparent;vertical-align: middle;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;"><p style="margin:0;text-align:left;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);padding-bottom:2px;padding-top:2px;padding-left:5px;padding-right:5px;background-color:transparent;"><span style="font-family:'Arial';font-size:11px;font-weight:normal;font-style:normal;text-decoration:none;color:rgba(17, 17, 17, 1.00);background-color:transparent;"></span></p></td><td style="width:21px;background-color:transparent;vertical-align: middle;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;"><p style="margin:0;text-align:left;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);padding-bottom:2px;padding-top:2px;padding-left:5px;padding-right:5px;background-color:transparent;"><span style="font-family:'Arial';font-size:11px;font-weight:normal;font-style:normal;text-decoration:none;color:rgba(17, 17, 17, 1.00);background-color:transparent;"></span></p></td></tr><tr style="overflow-wrap:break-word;"><td style="width:21px;background-color:transparent;vertical-align: middle;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;"><p style="margin:0;text-align:left;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);padding-bottom:2px;padding-top:2px;padding-left:5px;padding-right:5px;background-color:transparent;"><span style="font-family:'Arial';font-size:11px;font-weight:normal;font-style:normal;text-decoration:none;color:rgba(17, 17, 17, 1.00);background-color:transparent;"></span></p></td><td style="width:21px;background-color:transparent;vertical-align: middle;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;"><p style="margin:0;text-align:left;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);padding-bottom:2px;padding-top:2px;padding-left:5px;padding-right:5px;background-color:transparent;"><span style="font-family:'Arial';font-size:11px;font-weight:normal;font-style:normal;text-decoration:none;color:rgba(17, 17, 17, 1.00);background-color:transparent;"></span></p></td></tr><tr style="overflow-wrap:break-word;"><td style="width:21px;background-color:transparent;vertical-align: middle;border-bottom: 2.00px solid rgba(0, 0, 0, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;"><p style="margin:0;text-align:left;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);padding-bottom:2px;padding-top:2px;padding-left:5px;padding-right:5px;background-color:transparent;"><span style="font-family:'Arial';font-size:11px;font-weight:normal;font-style:normal;text-decoration:none;color:rgba(17, 17, 17, 1.00);background-color:transparent;"></span></p></td><td style="width:21px;background-color:transparent;vertical-align: middle;border-bottom: 2.00px solid rgba(0, 0, 0, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;"><p style="margin:0;text-align:left;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);padding-bottom:2px;padding-top:2px;padding-left:5px;padding-right:5px;background-color:transparent;"><span style="font-family:'Arial';font-size:11px;font-weight:normal;font-style:normal;text-decoration:none;color:rgba(17, 17, 17, 1.00);background-color:transparent;"></span></p></td></tr></tbody></table></div>
+</div>
+<div id="data" class="section level2">
+<h2><span class="header-section-number">0.2</span> 2. DATA</h2>
+<p>The data comes from the Massachusetts Travel Survey (MTS), conducted by the Massachusetts Department of Transportation and published in June 2012. It was provided by the Metropolitan Area Planning Council (MAPC), which serves Boston, MA and its metropolitan region.</p>
+<p>The data includes 190,215 trip records from 37,023 persons across 15,033 households in Massachusetts. The trip dataset includes attributes such as duration, mode, purpose, cost, destination, etc. The person dataset includes attributes such as age, education, employment status, etc. The household dataset includes size, number of workers, number of vehicles, income, location, etc.</p>
+<p>This analysis required known values for all model variables, so some trip records were filtered out prior to model fitting based on survey responses. In addition, models were fit individually on different classes of modes, so different filtering conditions were necessary to create each model set. Table 2 details the modes used for each model, the conditions on which model variables were filtered, and the resulting number of trip records used for model fitting.</p>
+<pre><code>## [1] &quot;insert table 2&quot;</code></pre>
+</div>
+<div id="modeling-methods" class="section level2">
+<h2><span class="header-section-number">0.3</span> 3. MODELING METHODS</h2>
+<div id="the-cox-proportional-hazards-model" class="section level3">
+<h3><span class="header-section-number">0.3.1</span> 3.1 THE COX PROPORTIONAL HAZARDS MODEL</h3>
+<p>Of particular interest for travel time decay modeling is the Cox proportional hazards model (henceforth referred to as the Cox model). The Cox model is, in essense, a multivariate regression. It attempts to model the <em>hazard function h(t)</em> using a set of predictor variables. The hazard function can then be used to calculate the <em>survival function S(t)</em>, or the probability that a trip lasts longer than <em>t</em>. Though hazard is <em>not</em> a probability, it is helpful to think of hazard as the probability that a trip will end in an infinitesimally small time window <span class="math inline">\(\scriptstyle [t, t + δt]\)</span>, provided that the trip has lasted until time <em>t</em>. In other words, it is the instantaneous risk of a trip ending, given that it has lasted to that point. The mathematical relationship between the survival function and the hazard function is <span class="math inline">\(\scriptstyle S(t) = e^{−\int^t_0 h(y)dy}\)</span>, where <span class="math inline">\(\scriptstyle \int^t_0 h(y)dy\)</span> is the cumulative hazard function, or the total accumulated risk up to time t. Details are left out for clarity, but this is based on the definition of <em>h(t)</em> as a limit of event probability as <span class="math inline">\(\scriptstyle δ → 0\)</span>.</p>
+<p>The Cox model is multiplicative, in that it assumes a multiplicative relationship between the covariates and the hazard. It takes the following form:</p>
+<p><span class="math display">\[ h(t|x_{i1}, ...x_{ip}) = h0(t) ∗ e^{β1xi1+...+βpxip} \]</span></p>
+<p>Where:</p>
+<ul>
+<li>t is time,</li>
+<li><span class="math inline">\(\scriptstyle h(t|xi)\)</span> is the hazard function for trip <em>i</em> with covariates <span class="math inline">\(\scriptstyle xi1, ..., xip\)</span>,</li>
+<li><span class="math inline">\(\scriptstyle h0(t)\)</span> is the baseline hazard function,</li>
+<li><em>βj</em> is the effect of the <em>j</em> th covariate, and</li>
+<li><span class="math inline">\(\scriptstyle x_{ij}\)</span> is the value of the <span class="math inline">\(\scriptstyle j^{th}\)</span> covariate for the <span class="math inline">\(\scriptstyle i^{th}\)</span> trip</li>
+</ul>
+<p>An important feature of the Cox model is that <em>the baseline hazard function is not specified.</em> This is due to the <em>proportional hazards assumption:</em> the ratio of hazards between two unique observations should <strong>not</strong> rely on time. For example, if after 15 minutes, a walking trip taken by a 60 year old carries twice the risk of ending as a walking trip taken by a 20 year old, it should also carry twice the risk after 10 minutes, 30 minutes, or indeed any other time. Non-proportional hazards may be thought of as an interaction between a covariate and time. Because hazards are all proportional under the proportional hazards assumption, the baseline hazard is arbitrary.</p>
+<p>The Cox model is “semi-parametric”, in that it requires no assumptions about the baseline hazard function. Parametric methods can be used if the baseline hazard itself is of interest, and these methods indeed rely on specifying a distribution for the baseline hazard (common selections include the Exponential, Weibull, and Lognormal distributions). Though these models have more power when this distribution is correctly specified, they are not robust to misspecifications, and thus are highly risky. For this particular application of travel time decay curves, the baseline hazard was not of particular interest, and it sufficed to assume a general decrease in trip survival with time in the absence of covariate information (as is the outcome of Cox modeling). However, it stands to reason that understanding the baseline hazard may be of interest in other travel time decay modeling applications.</p>
+</div>
+<div id="selectin-of-covariates" class="section level3">
+<h3><span class="header-section-number">0.3.2</span> 3.2 SELECTIN OF COVARIATES</h3>
+<p>Covariates to be considered for each mode-specific model were selected from the set of available attributes in the trip, person, and household datasets reviewed in the Data section. Importantly, only covariates that would be (1) known for a given trip/person/household in a predictive setting or (2) easy to estimate for a given trip/person/household were selected for the model. These conditions were established for easier use of final model in practice. For example, though it is easy to see how age may be a relevant predictor of travel time decay for walking trips (older people may tend to take shorter trips, for example), it is unlikely a trip taker’s age is a readily available data point in a predictive setting. Furthermore, attempts to predict age for inclusion in a final model could be complicated and add uncertainty to travel time decay estimates.</p>
+<p>Table 3 details the candidate covariates considered for each mode-specific model.</p>
+<pre><code>## [1] &quot;insert table 3&quot;</code></pre>
+<p>In all models, trip purpose was collapsed from 24 categories provided in the MTS data to three broad “purpose groups”: home, work, and non-work. Table 4 details how purposes were collapsed. “Loop trips” were classified according to their secondary purpose (which were also coded according to Table 4), or filtered out if no secondary purpose was provided.</p>
+<pre><code>## [1] &quot;insert table 4&quot;</code></pre>
+</div>
+<div id="initial-models" class="section level3">
+<h3><span class="header-section-number">0.3.3</span> 3.3 INITIAL MODELS</h3>
+<p>Initial model fitting began by including all candidate covariates for each mode-specific model a linear form (see Table 3). Backward selection was applied to create a “statistically valid” model – one with only significant covariates. Backward selection involves iteratively eliminating the least significant covariate from the model [from the set of insignificant covarites], and refitting the model until all remaining covariates are significant. If all variables were significant in the first model fit, backwards selection was not applied, as there was no need for it.</p>
+</div>
+<div id="the-proportional-hazards-assumption" class="section level3">
+<h3><span class="header-section-number">0.3.4</span> 3.4 THE PROPORTIONAL HAZARDS ASSUMPTION</h3>
+<p>Though there are multiple assumptions underlying the Cox model, by far the most important assumption is that of proportional hazards (see Section 3.1, The Cox proportional hazards model). Without this assumption, the Cox model is uninterpretable and completely invalid. Exploration of model diagnostics thus began with the proportional hazards assumption, and proceeded to other assumptions only once proportional hazards was verified.</p>
+<p>The proportional hazards assumption was tested for each covariate using the <em>Schoenfeld Residuals Test</em> (also known as the <em>Schoenfeld Individual Test</em>). The null hypothesis of this test is that time and scaled Schoenfeld residuals are uncorrelated, which should be true in the case of proportional hazards. The alternative hypothesis is that time and scaled Schoenfeld residuals are correlated. Thus, a significant result indicates that a lack of proportional hazards - this would indicate the model results are dependent on time. If no time dependence was observed in any covariate at <em>α</em> = 0.05, diagnostics proceeded to validation of other assumptions. Otherwise, a new model accounting for time dependence was fit.</p>
+<div id="time--dependent-models" class="section level4">
+<h4><span class="header-section-number">0.3.4.1</span> 3.4.1 TIME- DEPENDENT MODELS</h4>
+<p>Multiple strategies exist to account for time dependence in Cox models. One such method is the use of “time-dependent coefficients”, which involves unique effect sizes for covariates depending on the period of time. Essentially, time-dependent coefficients create a step function of survival time, where each covariate is time-independent within each step. This is particularly relevant and interpretable in the context of travel time decay, be ause it allows for a sense of “bracketing” trip times, and understanding unique effects across travel times. Again, consider the theoretical use of age as a covariate in predicting walking travel time decay. For very short trips, there is likely a minimal effect of age (if any), as all people are likely equally comfortable walking less than five minutes. For longer trips, however, the effect size might increase, as young adults may be comfortable walking 20-30 minutes while senior citizens are not.</p>
+<p>To fit a time-dependent coefficients model, variables for which the Schoenfeld Residuals test was significant at <em>α</em> = 0.05 were explored visually using plots of the scaled Schoenfeld residuals against time. This graphical exploration demonstrated the functional form of the effect of these covariates over time, informing decisions on potential break points for intervals in which covariates may be time-independent. Interval break points were also subject to the researcher’s discretion of an “interpretable interval”: in other words, intervals would be created on 5 or 10 minute break points rather than odd-valued break points which would have less practical significance</p>
+<p>Once interval break points were identified, the data was reconfigured with dummy entries to reflect the selected intervals. For example, if trip <em>T</em> lasted 16 minutes, and intervals of 0-10 minutes and 10-20 minutes were identified from the plots, trip <em>T</em> would be split into two entries <span class="math inline">\(\scriptstyle T_1\)</span> and <span class="math inline">\(\scriptstyle T_2\)</span>. Trip <span class="math inline">\(\scriptstyle T_1\)</span> would start at 0 minutes, go until 10 minutes, and would not end (i.e. would not experience an “event”); trip <span class="math inline">\(\scriptstyle T_2\)</span> would start at 10 minutes, go until 20 minutes, and end somewhere in that interval (i.e. would experience an “event”). A time-dependent model was then fit on this reconfigured “interval” data, and the Schoenfeld Residuals Test was again applied to observe if any time dependence remained. This process was repeated until all time dependence was eliminated, yielding a model which adhered to the proportional hazards assumption.</p>
+</div>
+</div>
+<div id="other-diagnostics" class="section level3">
+<h3><span class="header-section-number">0.3.5</span> 3.5 OTHER DIAGNOSTICS</h3>
+<p>In addition to the proportional hazards assumption, the Cox model also makes assumptions similar to those of standard regression. For this analysis, diagnostics for the assumptions of (1) no outliers in the data and (2) proper functional form of continuous covariates (which, in this case, was linear) were explored. These two assumptions were checked only after proportional hazards had been verified, either in a standard model or in a time-dependent coefficients model.</p>
+<div id="outliers" class="section level4">
+<h4><span class="header-section-number">0.3.5.1</span> 3.5.1 OUTLIERS</h4>
+<p>Outliers were explored using a plot of the deviance residuals against the index of the residuals. Unusually large positive or negative deviance residuals were indicative of an outlier (large positive-valued deviance residuals indicate a trip that ended far earlier than expected according to the model, while large negativevalued residuals indicate a trip that ended far later than expected according to the model). Trips that were considered outliers by this visual exploration were looked at individually for an inclusion/exclusion decision.</p>
+<p>Given that the trips all came from the same survey and the same state, outlier points would rarely be considered erroneous or apart from the population of interest, and thus would only be excluded in a very extreme case.</p>
+</div>
+<div id="linearity-of-continuous-covariates" class="section level4">
+<h4><span class="header-section-number">0.3.5.2</span> 3.5.2 LINEARITY OF CONTINUOUS COVARIATES</h4>
+<p>Linearity of continuous covariates was explored using plots of martingale residuals of a “null Cox model” (including only one covariate) against that covariate. If the relationship between that covariate and hazard is truly linear, then a linear trend should be evident in the plot; otherwise, a different functional form may represent a better fit. If necessary, better fits were explored by fitting a new “null Cox model” with a different functional form of the covariate.</p>
+<p>Like with outliers, the functional form of a variable would be changed only in a very extreme case, where the deviation from a linear relationship was severe or the use of a nonlinear relationship was obvious. The use of linearity between a covariate and hazard rate does not necessarily make the model wrong if it is not the true relationship, but rather indicates that a better fit may be available. However, estimating the true functional form could be a time-consuming challenge if the relationship is especially complicated, and such an endeavor is likely unnecessary for this particular analysis. In addition, linear relationships will be more easily interpretable, which is a primary goal of this model.</p>
+</div>
+</div>
+</div>
+<div id="model-fitting" class="section level2">
+<h2><span class="header-section-number">0.4</span> 4 MODEL FITTING</h2>
+<p>The model fitting results are detailed individually for each mode-specific model.</p>
+<div id="personal-vehicle" class="section level3">
+<h3><span class="header-section-number">0.4.1</span> 4.1 PERSONAL VEHICLE</h3>
+<p>The model including all candidate covariates produced a statistically valid fit, so no backward selection was completed. Parking cost, toll cost, household size, and purpose were all significant to hazard rate (the purpose “home” was used as the reference level for fitting the purpose covariate). The model coefficients are provided in Table 5, while the hazard ratios are provided in Table 6.</p>
+<pre><code>## [1] &quot;insert table 5&quot;</code></pre>
+<p>The coefficients should be interpreted as follows:</p>
+<ul>
+<li><p>For a continuous covariate <span class="math inline">\(\scriptstyle X\)</span>, assuming all other covariates are held constant, $βX &lt; 0 $ indicates that hazard rate – or the risk of the trip ending – decreases as <span class="math inline">\(\scriptstyle X\)</span> increases, which means longer travel times and slower travel time decay for larger values of <span class="math inline">\(\scriptstyle X\)</span>. Conversely, $βX &gt; 0 $ indicates that hazard rate increases as <span class="math inline">\(\scriptstyle X\)</span> increases, which means shorter travel times and faster travel time decay for larger values of <span class="math inline">\(\scriptstyle X\)</span>.</p></li>
+<li><p>For a categorical covariate <span class="math inline">\(\scriptstyle Y\)</span> with levels <em>a, ref</em> (where <em>ref</em> is the reference level), assuming all other covariates are held constant, <span class="math inline">\(\scriptstyle βYa &lt; 0\)</span> indicates that hazard rate is higher in group a than in the reference group, which means longer travel times and slower travel time decay in a relative to <em>ref</em>. Conversely, <span class="math inline">\(\scriptstyle βYa &gt; 0\)</span> indicates that hazard rate is lower in group a than in the reference group), which means shorter travel times and faster travel time decay in a relative to <em>ref</em>.</p></li>
+</ul>
+<pre><code>## [1] &quot;insert table 6&quot;</code></pre>
+<p>The hazard ratios should be interpreted as follows:</p>
+<ul>
+<li><p>For a continuous covariate <span class="math inline">\(\scriptstyle X\)</span>, assuming all other covariates are held constant, the increase of <span class="math inline">\(\scriptstyle X\)</span> to <span class="math inline">\(\scriptstyle X + 1\)</span> results in a change in the hazard rate by a factor of <span class="math inline">\(\scriptstyle HR_X\)</span>.</p></li>
+<li><p>For a categorical covariate <span class="math inline">\(\scriptstyle Y\)</span> with levels a, ref (where ref is the reference level), assuming all other covariates are held constant, group <em>a</em> has a hazard rate <span class="math inline">\(\scriptstyle HR_{Y_a}\)</span> times that of group <em>ref</em>.</p></li>
+</ul>
+<p>Schoenfeld Residuals Tests on the covariates revealed time dependence in all covariates. The results of the test are shown in Table 7 (the <strong>Global</strong> row contains the results of a global test on the model, which tests if there is any time dependence in the model as a whole). A time-dependent coefficients model was explored as a result of present time dependence.</p>
+<pre><code>## [1] &quot;insert table 7&quot;</code></pre>
+<p>Exploration of scaled Schoenfeld residuals vs. time plots followed by iterative model fitting and re-checking of the proportional hazards assumption resulted in a time-dependent coefficients model with break points at 5, 10, 20, and 30 minutes. This model featured no time dependence, and thus this model was used going forward. The model coefficients are provided in Table 8, while the hazard ratios are provided in Table 9. Interpretation of the coefficients and the hazard ratios stay the same, with the exception that the interpretation is only valid in the specified time interval.</p>
+<pre><code>## [1] &quot;insert table 8&quot;</code></pre>
+<pre><code>## [1] &quot;insert table 9&quot;</code></pre>
+<p>The plot of deviance residuals for the updated, time-dependent model is shown in Figure 1. Though a few potential outliers are observed in the “trip ended earlier than expected” category (large positive deviance residuals), they are small in number, and individual exploration revealed no grounds on which to exclude any points as outliers.</p>
+<pre><code>## [1] &quot;insert figure 1&quot;</code></pre>
+<p>Plots of null Cox model Martingale residuals against parking cost, toll cost, household size, origin and destination TAZ parking, and origin and destination TAZ terminal time revealed no drastic deviations from linearity, so no functional forms were changed in the time-dependent model. However, exact linearity did not appear to be achieved for any of these covariates, indicating better functional forms likely exist for the inclusion of these covariates in the model. For this analysis, linearity was deemed “close enough” in the context of time and processing limitations.</p>
+<p>Having estimated and validated a Cox proportional hazards model for personal vehicle travel time decay, the estimated survival curve was compared to the sample curve for the “most common set of conditions”. For personal vehicle travel, the most common set of conditions was:</p>
+<ul>
+<li>Parking cost = $0</li>
+<li>Toll cost = $0</li>
+<li>Household size = 4</li>
+<li>Purpose = Non-work</li>
+<li>Origin TAZ parking = $0</li>
+<li>Destination TAZ parking = $0</li>
+<li>Origin TAZ terminal time = 1 minute</li>
+<li>Destination TAZ terminal time = 1 minute</li>
+</ul>
+<p>A graphical comparison of a modeled travel time decay curve to the sample travel time decay curve for these attributes is shown in Figure 2. In addition, a plot of difference in model and the sample trip survival probabilities for these attributes is provided in Figure 3.</p>
+<pre><code>## [1] &quot;insert figure 2&quot;</code></pre>
+<pre><code>## [1] &quot;insert figure 3&quot;</code></pre>
+<p>As evidenced in Figures 2 and 3, the model predicted a slower travel time decay than is reflected in the sample, overpredicting survival probability at nearly every point. However, that the maximum absolute error at any time point is just over 3% indicated that the model reflects the sample well.</p>
+</div>
+<div id="non-motorized" class="section level3">
+<h3><span class="header-section-number">0.4.2</span> 4.2 NON-MOTORIZED</h3>
+<p>The model including all candidate covariates showed household size was an insignificant contributor to hazard. When backward selection was used to exclude household size, a statistically valid fit was achieved. The final initial model included only purpose (again, the purpose “home” was used as the reference level for fitting the purpose covariate). The model coefficients are provided in Table 10, while the hazard ratios are provided in Table 11.</p>
+<pre><code>## [1] &quot;insert table 10&quot;</code></pre>
+<pre><code>## [1] &quot;insert table 11&quot;</code></pre>
+<p>Schoenfeld Residuals Tests on the covariates revealed time dependence in the non-work purpose, but not for the work purpose. The results of the test are shown in Table 12. A time-dependent coefficients model was explored as a result of present time dependence</p>
+<pre><code>## [1] &quot;insert table 12&quot;</code></pre>
+<p>Exploration of scaled Schoenfeld residuals vs. time plots followed by iterative model fitting and re-checking of the proportional hazards assumption resulted in a time-dependent coefficients model with a single break point at 5 minutes. This model featured no time dependence, and thus this model was used going forward. The model coefficients are provided in Table 13, while the hazard ratios are provided in Table 14.</p>
+<pre><code>## [1] &quot;insert table 13&quot;</code></pre>
+<pre><code>## [1] &quot;insert table 14&quot;</code></pre>
+<p>The plot of deviance residuals for the updated, time-dependent model is shown in Figure 4. Though a few potential outliers are observed in the “trip ended later than expected” category (very negative deviance residuals), they are small in number, and individual exploration revealed no grounds on which to exclude any points as outliers.</p>
+<pre><code>## [1] &quot;insert figure 4&quot;</code></pre>
+<p>Plots of null Cox model Martingale residuals against destination TAZ parking and destination TAZ terminal time revealed no drastic deviations from linearity, so no functional forms were changed in the time-dependent model. However, like with the personal vehicle model, exact linearity did not appear to be achieved for any of these covariates, indicating better functional forms likely exist for the inclusion of these covariates in the model. For this analysis, linearity was deemed “close enough” in the context of time and processing limitations.</p>
+<p>Having estimated and validated a Cox proportional hazards model for non-motorized travel time decay, the estimated survival curve was compared to the sample curve for the “most common set of conditions”. For non-motorized travel, the most common set of conditions was:</p>
+<p>• Destination TAZ parking = $0 • Destination TAZ terminal time = 0 minutes • Purpose = Non-work</p>
+<p>A graphical comparison of a modeled travel time decay curve to the sample travel time decay curve for these attributes is shown in Figure 5. In addition, a plot of difference in model and the sample trip survival probabilities for these attributes is provided in Figure 6.</p>
+<pre><code>## [1] &quot;insert figure 5&quot;</code></pre>
+<pre><code>## [1] &quot;insert figure 6&quot;</code></pre>
+<p>As evidenced in Figures 5 and 6, the model predicted a quicker travel time decay than is reflected in the sample, underpredicting survival probability at most points. However, that the maximum absolute error at any time point is just over 2% indicated that the model reflects the sample well.</p>
+</div>
+<div id="transit" class="section level3">
+<h3><span class="header-section-number">0.4.3</span> 4.3 Transit</h3>
+<p>No Text Delete or Clear the heading.</p>
+</div>
+</div>
+<div id="operationalizing-the-model" class="section level2">
+<h2><span class="header-section-number">0.5</span> 5 OPERATIONALIZING THE MODEL</h2>
+<p>Ultimately, it is hoped that this model would be used to answer the following question: how would a change in policy impact trip making? Answering this question relies on comparing the estimated probability density of survival times under varying conitions, and adjusting for natural de-valuing of longer distance trips.</p>
+<div id="deriving-a-decay-factor" class="section level3">
+<h3><span class="header-section-number">0.5.1</span> 5.1 DERIVING A DECAY FACTOR</h3>
+<p>Consider two cases: a null case <span class="math inline">\(\scriptstyle C_0\)</span> representing the existing conditions, and an alternative case <span class="math inline">\(\scriptstyle C_A\)</span> representing some sort of change in the travel system (e.g. an increase in toll cost). Define a decay factor <span class="math inline">\(\scriptstyle D_{t,C_0,C_A}\)</span> Dt,C0,CA as the value of a trip of duration <em>t</em> based on:</p>
+<ol style="list-style-type: decimal">
+<li>the duration of the trip, <em>t</em></li>
+<li>the change in conditions from <span class="math inline">\(\scriptstyle C_0\)</span> to <span class="math inline">\(\scriptstyle C_A\)</span>.</li>
+</ol>
+<div id="trip-duration-component" class="section level4">
+<h4><span class="header-section-number">0.5.1.1</span> 5.1.1 TRIP DURATION COMPONENT</h4>
+<p>For the trip duration component, we need to tackle the question <em>what proportion of people are willing to travel t minutes?</em> To answer this, consider the population of people traveling more than <em>t</em> minutes under the existing conditions <span class="math inline">\(\scriptstyle C_0\)</span>. Recall that the survival function <span class="math inline">\(\scriptstyle S(t) = P(T &gt; t)\)</span>, so this population is <span class="math inline">\(\scriptstyle (100·S_{C_0} (t))\)</span>% of all people. The trip duration for people in this set include <span class="math inline">\(\scriptstyle t+ 1, t+ 2, ..., t_{max}\)</span> (because time is discrete in this analysis). Under equal circumstances, we assume that a person whose trip falls in this set would choose to travel the minimum time of the set if given the choice. In other words, all people traveling longer than t would choose to travel <em>t</em> + 1 if they could. By this logic, <span class="math inline">\(\scriptstyle S_{C_0} (t)\)</span> is a measure of “willingness to travel t + 1 minutes”: <span class="math inline">\(\scriptstyle (100·S_{C_0} (t))\)</span>% would travel t + 1 minutes if they could. It follows that <span class="math inline">\(\scriptstyle S_{C_0} (t-1))\)</span> gives the proportion of people willing to travel <em>t</em> minutes, which answers the initial question.</p>
+</div>
+<div id="change-in-condition-component" class="section level4">
+<h4><span class="header-section-number">0.5.1.2</span> 5.1.2 CHANGE IN CONDITION COMPONENT</h4>
+<p>For the change in conditions component, we need to tackle the question <em>how does the likelihood of taking a t minute trip change between</em> <span class="math inline">\(\scriptstyle C_0\)</span> <em>and</em> <span class="math inline">\(\scriptstyle C_A\)</span> <em>?</em> To answer this, we can rely on the formulation of survival curves. Consider the following mathematical equivalencies:</p>
+<p><span class="math display">\[ array \]</span></p>
+<p><span class="math inline">\(\scriptstyle f(t) = P(T = t)\)</span> is the value of interest here, because it defines the likelihood of taking an exactly t minute trip. To understand how <em>f(t)</em> can be calculated from survival probabilities, consider the following:</p>
+<p><span class="math display">\[ array 2\]</span></p>
+<p>It then follows that: <span class="math display">\[ array 3 \]</span></p>
+<p>So, the likelihood of taking an exactly t minute trip <span class="math inline">\(\scriptstyle f(t) = S(t − 1) − S(t)\)</span>. For our cases <span class="math inline">\(\scriptstyle C_0\)</span> and <span class="math inline">\(\scriptstyle C_A\)</span>, two unique survival functions <span class="math inline">\(\scriptstyle S_{C_0}(t)\)</span> and <span class="math inline">\(\scriptstyle S_{C_A}(t)\)</span> will be estimated, resulting in unique estimates <span class="math inline">\(\scriptstyle f_{{C_0}}(t)\)</span> and <span class="math inline">\(\scriptstyle f_{{C_A}}(t)\)</span> for the probability of taking a <em>t</em> minute trip in <span class="math inline">\(\scriptstyle C_0\)</span> and <span class="math inline">\(\scriptstyle C_A\)</span> respectively. With these estimates, expected change can be expressed through a density ratio: $ $ represents the factor by which the amount of t minute trips should change with a switch from <span class="math inline">\(\scriptstyle C_0\)</span> and <span class="math inline">\(\scriptstyle C_A\)</span>, which answers the initial question.</p>
+</div>
+<div id="calculating-decay" class="section level4">
+<h4><span class="header-section-number">0.5.1.3</span> 5.1.3 CALCULATING DECAY</h4>
+<p>Let <span class="math inline">\(\scriptstyle S_{C_0}(t-1)\)</span> be the proportion of people who would be willing to travel <em>t</em> minutes. Furthermore, let the density ratio $ $ be the factor of expected change associated with trips of t minutes. Then we can calculate a decay factor of the following form:</p>
+<p><span class="math display">\[ D_t,C_0,C_A=S_{C_0}(t-1) \bullet \frac{f_{C_A}(t)}{f_{{C_0}(t)}}\]</span></p>
+<p><span class="math inline">\(\scriptstyle D_t,C_0,C_A=S_{C_0}(t-1)\)</span> can be interpreted as the proportion of people who would be expected to travel <em>t</em> minutes if given the opportunity in <span class="math inline">\(\scriptstyle C_A\)</span>, assuming the willingness to travel reflected by behavior in <span class="math inline">\(\scriptstyle C_0\)</span>.</p>
+</div>
+</div>
+<div id="a-walkthrough-example" class="section level3">
+<h3><span class="header-section-number">0.5.2</span> 5.2 A WALKTHROUGH EXAMPLE</h3>
+<p>To exemplify this operationalization, imagine that we want to quantify the value of a 15 minute vehicle trip in the context of increasing tolls. The null case <span class="math inline">\(\scriptstyle C_0\)</span> will assume no tolls. It will be compared to three alternative cases <span class="math inline">\(\scriptstyle C_{A_i},=1,2,3\)</span> , where <em>i</em> represents a $1, $2, or $3 toll, respectively. All other model variables will be held constant. Table 15 details the covariates in each case.</p>
+<pre><code>## [1] &quot;insert table 15&quot;</code></pre>
+<p>The first step involves calculating the proportion of people willing to travel 15 minutes, or <span class="math inline">\(\scriptstyle S_{C_0}(14)\)</span>. Using the personal vehicle model, we predict a survival curve using the conditions in <span class="math inline">\(\scriptstyle C_0\)</span>, and extract the survival probability at <em>t</em> = 14. We find that <span class="math inline">\(\scriptstyle S_{C_0}(14)\)</span>. A visualization is provided in Figure <strong>XXX</strong>.</p>
+<pre><code>## [1] &quot;insert figure xxx&quot;</code></pre>
+<p>Next, the probabilities that a trip lasts 15 minutes must be calculated in each alternative case, and then compared to the same probability in the null case. Using the personal vehicle model, we predict survivalcurves for <span class="math inline">\(\scriptstyle C_{A_1}\)</span>, <span class="math inline">\(\scriptstyle C_{A_2}\)</span>, and <span class="math inline">\(\scriptstyle C_{A_3}\)</span>, and calculate <span class="math inline">\(\scriptstyle f_{CA}(15)\)</span> according to the survival probabilities at <em>t</em> = 14, 15.</p>
+<p>We refer back to the null case survival curve to calculate <span class="math inline">\(\scriptstyle f_{C_0}(15)\)</span> in the same manner. Finally, we take the ratio of each fCAi(15) <span class="math inline">\(\scriptstyle f_{C_{A_i}}(15)\)</span> to <span class="math inline">\(\scriptstyle f_{C_{0_i}}(15)\)</span>. The results are provided in Table <strong>XXX</strong>. For context, the null and alternative case probability density functions on t ∈ [10, 20] are shown in Figure <strong>XXX2</strong>.</p>
+<pre><code>## [1] &quot;insert table xxx&quot;</code></pre>
+<pre><code>## [1] &quot;insert figure xxx2&quot;</code></pre>
+<p>Final, the decay factor <span class="math inline">\(\scriptstyle D_{15,{C_0,C_{A_i}}}=S_{C_0}(14) \bullet \frac{f_{C_A}(15)}{f_{{C_0}(15)}}\)</span> is calculated fro all three <span class="math inline">\(\scriptstyle C_{A_i}\)</span>. The results are provided in Table <strong>XXX2</strong>.</p>
+<pre><code>## [1] &quot;insert table xxx2&quot;</code></pre>
+<p>So, it is learned that, without even considering toll increases, 15 minute trips are de-valued (relative to a less-than-1 minute trip) by a factor of about 0.65 based on time alone. The impact of the toll increase on a 15 minute trip is negligible at $1 (estimated 0.97 times the 15 minute trips), but is notable at $2 and $3 (estimated 0.68 and 0.46 times the 15 minute trips, respectively). It can be concluded that, for the about 65% of travelers willing to take a 15 minute trip, a $1 toll does not drastically alter accessibility, but that a $2 or more toll does.</p>
+</div>
+</div>
+<div id="conclusion" class="section level2">
+<h2><span class="header-section-number">0.6</span> 6 CONCLUSION</h2>
+<p>A time-dependent Cox proportional hazards model offers an improvement over classical travel time decay modeling methods by allowing for the inclusion of covariate information and quantifying effect sizes associated with these covariates. Furthermore, the use of time-dependent coefficients in these Cox models allows for an interval understanding of covariate effects, which is particularly useful in travel time since trips are often thought of in 5 or 10 minute intervals. The Cox models fit in this analysis indicate that, depending on the mode of choice, trip purpose, trip cost, and household size may all be significant contributors to trip hazard rate and, consequently, trip survival time. These covariates represent a suite of information that should be readily available for use of these modeling in a predictive or simulative context.</p>
+<p>Future models should seek to explore additional relevant covariate information (such as terminal time) and/or potential interactions between covariates. They also may seek the following modeling improvements, which were not addressed in this analysis due to processing and time constraints.</p>
+<ol style="list-style-type: decimal">
+<li><em>Use of a smoothed function for time-dependent coefficients, as opposed to a step function:</em> Rather than estimating coefficients in discrete time intervals, coefficients could be estimated using a smoothed function of time. For example, in the case of monotonically decreasing effect size with time, a linear function could be valid. This could improve accuracy in estimating effect sizes</li>
+<li><em>Estimation of proper functional form for continuous covariates:</em> Rather than assuming a basic linear form for continuous covariates, more representative functional forms could be estimated using smoothing techniques, for example. This would improve understanding of the relationship between the covariates and hazard, as well as likely improve predictive accuracy.</li>
+</ol>
+</div>
+
+
+
+</div>
+</div>
+
+</div>
+
+<script>
+
+// add bootstrap table styles to pandoc tables
+function bootstrapStylePandocTables() {
+  $('tr.header').parent('thead').parent('table').addClass('table table-condensed');
+}
+$(document).ready(function () {
+  bootstrapStylePandocTables();
+});
+
+
+</script>
+
+<!-- tabsets -->
+
+<script>
+$(document).ready(function () {
+  window.buildTabsets("TOC");
+});
+
+$(document).ready(function () {
+  $('.tabset-dropdown > .nav-tabs > li').click(function () {
+    $(this).parent().toggleClass('nav-tabs-open')
+  });
+});
+</script>
+
+<!-- code folding -->
+
+<script>
+$(document).ready(function ()  {
+
+    // move toc-ignore selectors from section div to header
+    $('div.section.toc-ignore')
+        .removeClass('toc-ignore')
+        .children('h1,h2,h3,h4,h5').addClass('toc-ignore');
+
+    // establish options
+    var options = {
+      selectors: "h1,h2",
+      theme: "bootstrap3",
+      context: '.toc-content',
+      hashGenerator: function (text) {
+        return text.replace(/[.\\/?&!#<>]/g, '').replace(/\s/g, '_');
+      },
+      ignoreSelector: ".toc-ignore",
+      scrollTo: 0
+    };
+    options.showAndHide = true;
+    options.smoothScroll = true;
+
+    // tocify
+    var toc = $("#TOC").tocify(options).data("toc-tocify");
+});
+</script>
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>
