@@ -59,7 +59,7 @@ from wsa import tg
 #  specified configuration
 root = r"K:\Projects\MAPC\FinalData"
 os.chdir(root)
-lu_config = "Base"
+lu_config = "FEIR"
 
 #%% ASSUMPTIONS/GLOBALS
 # The travel purposes to analyze
@@ -240,7 +240,7 @@ trips_array.TAZ.levels = ["TAZ", "INWINDOW", "INFOCUS"]
 # Save to disk
 trips_array = trips_array.copy(hdf_store=out_file, node_path=node, name=name,
                                overwrite=True)
-print(lba.listH5Nodes(out_file, "/", True, True))
+
 # Export summaries
 trips_csv = r"lu\{}\trip_gen_summary.csv".format(lu_config)
 tg_out = tg_sum_melted.merge(taz_df[["TAZ", "INWINDOW", "INFOCUS"]],

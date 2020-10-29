@@ -16,22 +16,21 @@ knitr::opts_chunk$set(echo = FALSE, warning=FALSE, message=FALSE,
                       fig.pos = 'H', fig.cap=T)
 ```
 
-```{r}
-library(flextable)
-library(dplyr)
-library(officer)
-# knitr::opts_chunk$set(echo = FALSE)
-```
-
 ```{css}
 caption {
- color:black;
+ color: rgb(63, 78, 86);
  line-height: 1.5em;
  font-size: 16px;
+ font-weight: bold;
+}
+
+p.caption {
+ color: rgb(63, 78, 86);
+ line-height: 1.5em;
+ font-size: 16px;
+ font-weight: bold;
 }
 ```
-
-
 
 ```{r}
 library(tidyverse)
@@ -40,7 +39,6 @@ library(kableExtra)
 ```
 
 # INTRODUCTION
-
 
 Many methods exist to estimate decay in value for trips with varying characteristics. Depending on the method, the characteristics considered can be expansive, including travel time, financial cost of the trip, purpose of the trip, and travel conditions, among others. One of the simplest forms of travel time decay modeling is a *single-cost* model, which assumes one characteristic to be the sole determinant of trip value. Most often, this single cost is taken to be trip duration. In this case, the modeled relationship is intuitive: longer trips have less value. This method is useful in that it is highly interpretable and mathematically noncomplex, providing an approachable and practical way to explore travel time decay.
 
@@ -72,37 +70,20 @@ First, using destination coordinates provided in the trip records, each record w
 
 Modes of interest included non-motorized (NM), single-occupancy vehicle (SOV), high-occupancy vehicle (HOV), walk-access transit (WAT), and drive-access transit (DAT). For the NM, SOV, and HOV modes, trip records were used “as-is”: each record represented one trip. These three modes were defined according to the criteria in Table 1. For mode definitions, see Appendix Table A
 
-```{r, out.width='80%'}
-Table_1 <- read.csv("NE_Table1.csv")
+```{r Table 1}
+df = data.frame("Trip"=c("NM","SOV","HOV"),
+                "Classification"=c("Mode = 1 or 2, with any number of travellers",
+                                   "Mode = 3, 4, 11, 12, or 97, with one traveller",
+                                   "Mode = 3, 4, 11, 12, or 97, with two or more travellers;
+                                   Mode = 8, 9, or 10"))
 
-colnames(Table_1) <- c("Trip", "Classification")
-
-flextable(Table_1, col_keys = c("Trip", "Classification")) %>%
-  bold(part = "header") %>%
-  set_caption(caption = "Table 1: Definitions for NM, SOV, and HOV trips") %>%
-  align(align = "left", part = "all") %>%
-  autofit()
-
-# df = data.frame("Trip"=c("NM","SOV","HOV"),
-#                 "Classification"=c("Mode = 1 or 2, with any number of travellers",
-#                                    "Mode = 3, 4, 11, 12, or 97, with one traveller",
-#                                    "Mode = 3, 4, 11, 12, or 97, with two or more travellers;
-#                                    Mode = 8, 9, or 10"))
-# 
-# kable(df,
-#       booktabs = T,
-#       col.names = c("Trip", "Classification"),
-#       row.names = F,
-#       align = rep('l',times=2),
-#       caption = "Definitions for NM, SOV, and HOV trips") %>%
-#   kable_styling(latex_options = "HOLD_position",
-#                 full_width = T) %>%
-#   row_spec(0, bold=T) %>%
-#   column_spec(1, width="0.5in") %>%
-#   column_spec(2, width="4.5in")
+kable(df,
+      col.names = c("Trip", "Classification"),
+      row.names = F,
+      caption = "Table 1: Definitions for NM, SOV, and HOV trips") %>%
+  kable_styling(bootstrap_options = c("striped", "hover")) %>%
+  row_spec(0, bold=T)
 ```
-
-<br />
 
 By contrast, trip records for WAT and DAT were chained together to create transit trips. Generally, a transit trip was defined as movement from location $A$ to location $B$, where all links between $A$ and $B$ were either on transit or, if not on transit, had a purpose of switching transportation for a subsequent transit link.
 
@@ -134,124 +115,69 @@ However, the following would be considered two transit trips: one WAT trip from 
 
 After this chaining, these two modes were defined according to the criteria in Table 2.
 
-```{r, out.width='80%'}
-Table_2 <- read.csv("NE_Table2.csv")
+```{r Table 2}
+df = data.frame("Trip"=c("WAT","DAT"),
+                "Classification"=c("All links have Mode = 1, 2, 5, 6, or 7",
+                                   "At least one link has Mode = 3, 4, 8, 9, 10, 11, 12, or 97"))
 
-colnames(Table_2) <- c("Trip", "Classification")
-
-flextable(Table_2, col_keys = c("Trip", "Classification")) %>%
-  bold(part = "header") %>%
-  set_caption(caption = "Table 2: Definitions for WAT and DAT trips") %>%
-  align(align = "left", part = "all") %>%
-  autofit()
-
-# df = data.frame("Trip"=c("WAT","DAT"),
-#                 "Classification"=c("All links have Mode = 1, 2, 5, 6, or 7",
-#                                    "At least one link has Mode = 3, 4, 8, 9, 10, 11, 12, or 97"))
-# 
-# kable(df,
-#       booktabs = T,
-#       col.names = c("Trip", "Classification"),
-#       row.names = F,
-#       align = rep('l',times=2),
-#       caption = "Definitions for WAT and DAT trips") %>%
-#   kable_styling(latex_options = "HOLD_position",
-#                 full_width = T) %>%
-#   row_spec(0, bold=T) %>%
-#   column_spec(1, width="0.5in") %>%
-#   column_spec(2, width="4in")
+kable(df,
+      col.names = c("Trip", "Classification"),
+      row.names = F,
+      caption = "Table 2: Definitions for WAT and DAT trips") %>%
+  kable_styling(bootstrap_options = c("striped", "hover")) %>%
+  row_spec(0, bold=T)
 ```
-
-<br />
 
 ## DEFINING TRIPS BY PURPOSE
 
 After appropriate chaining, trip purposes were defined according to the criteria in Table 3. Purposes of interest included home-based work (HBW), home-based non-work (HBNW), and non-home based (NHB). For NM, SOV, and HOV trips, the destination purpose was the purpose for the record, and the origin purpose was the purpose for the chronologically previous record. For WAT and DAT trips, the destination purpose was the purpose for the last link, and the origin purpose was the purpose for the record chronologically previous to the first link.
 
-```{r, out.width='80%'}
-Table_3 <- read.csv("NE_Table3.csv")
+```{r Table 3}
+df = data.frame("Trip purpose"=c("HBW","HBNW","NHB"),
+                "Origin purpose"=c("1, 2", "1, 2", "Not 1 or 2"),
+                "Destination purpose"=c("3, 4, or 12", "Not 3, 4, or 12", "Not 1 or 2"))
 
-colnames(Table_3) <- c("Trip purpose", "Origin purpose", "Destination purpose")
-
-flextable(Table_3, col_keys = c("Trip purpose", "Origin purpose", "Destination purpose")) %>%
-  bold(part = "header") %>%
-  set_caption(caption = "Table 3: Definitions for HBW, HBNW, and NHB trips") %>%
-  align(align = "left", part = "all") %>%
-  autofit()
-
-# df = data.frame("Trip purpose"=c("HBW","HBNW","NHB"),
-#                 "Origin purpose"=c("1, 2", "1, 2", "Not 1 or 2"),
-#                 "Destination purpose"=c("3, 4, or 12", "Not 3, 4, or 12", "Not 1 or 2"))
-# 
-# kable(df,
-#       booktabs = T,
-#       col.names = c("Trip purpose", "Origin purpose", "Destination purpose"),
-#       row.names = F,
-#       align = rep('l',times=3),
-#       caption = "Definitions for HBW, HBNW, and NHB trips") %>%
-#   kable_styling(latex_options = "HOLD_position",
-#                 full_width = T) %>%
-#   row_spec(0, bold=T) %>%
-#   column_spec(1, width="1.5in") %>%
-#   column_spec(2, width="2in") %>%
-#   column_spec(3, width="2in")
+kable(df,
+      col.names = c("Trip purpose", "Origin purpose", "Destination purpose"),
+      row.names = F,
+      caption = "Table 3: Definitions for HBW, HBNW, and NHB trips") %>%
+  kable_styling(bootstrap_options = c("striped", "hover")) %>%
+  row_spec(0, bold=T) %>%
+  column_spec(1, width="1.5in") %>%
+  column_spec(2, width="2in") %>%
+  column_spec(3, width="2in")
 ```
-
-<br />
 
 ## DERIVING ORIGIN TAX, DESTINATION TAZ, AND TRIP DURATION
 
 After trips were fully defined, origin TAZs, destination TAZs, and trip durations were derived according to the criteria in Table 4. The calculation method differed based on whether the trips were single records (NM, SOV, HOV), or chained records (WAT, DAT)
 
-```{r, out.width='80%'}
-Table_4 <- read.csv("NE_Table4.csv")
+```{r Table 4}
+df = data.frame("Trip"=c("NM","SOV","HOV","WAT","DAT"),
+                "Origin TAZ"=c("Origin TAZ of record",
+                               "Origin TAZ of record",
+                               "Origin TAZ of record",
+                               "Origin TAZ of first link",
+                               "Origin TAZ of first link"),
+                "Destination TAZ"=c("Destination TAZ of record",
+                                    "Destination TAZ of record",
+                                    "Destination TAZ of record",
+                                    "Destination TAZ of last link",
+                                    "Destination TAZ of last link"),
+                "Trip durations"=c("Trip duration of record",
+                                   "Trip duration of record",
+                                   "Trip duration of record",
+                                   "Sum of trip durations for all links, plus sum of activity durations for all intermediate links",
+                                   "Sum of trip durations for all links, plus sum of activity durations for all intermediate links"))
 
-colnames(Table_4) <- c("Trip", "Origin TAZ", "Destination TAZ", "Trip Duration")
-
-flextable(Table_4, col_keys = c("Trip", "Origin TAZ", "Destination TAZ", "Trip Duration")) %>%
-  merge_v(j = c("Origin TAZ", "Destination TAZ", "Trip Duration")) %>%
-  bold(part = "header") %>%
-  set_caption(caption = "Table 4: Calculation methods for origin TAZ, destination TAZ, and trip durations by trip") %>%
-  align(align = "left", part = "all") %>%
-  hline(border = fp_border(color = "black")) %>%
-  hline_bottom(border = fp_border(color = "black", width = 2)) %>%
-  fix_border_issues() %>%
-  autofit()
-
-# df = data.frame("Trip"=c("NM","SOV","HOV","WAT","DAT"),
-#                 "Origin TAZ"=c("Origin TAZ of record",
-#                                "Origin TAZ of record",
-#                                "Origin TAZ of record",
-#                                "Origin TAZ of first link",
-#                                "Origin TAZ of first link"),
-#                 "Destination TAZ"=c("Destination TAZ of record",
-#                                     "Destination TAZ of record",
-#                                     "Destination TAZ of record",
-#                                     "Destination TAZ of last link",
-#                                     "Destination TAZ of last link"),
-#                 "Trip durations"=c("Trip duration of record",
-#                                    "Trip duration of record",
-#                                    "Trip duration of record",
-#                                    "Sum of trip durations for all links, plus sum of activity durations for all intermediate links",
-#                                    "Sum of trip durations for all links, plus sum of activity durations for all intermediate links"))
-# 
-# kable(df,
-#       booktabs = T,
-#       col.names = c("Trip", "Origin TAZ", "Destination TAZ", "Trip durations"),
-#       row.names = F,
-#       align = rep('l',times=4),
-#       caption = "Calculation methods for origin TAZ, destination TAZ, and trip durations by trip") %>%
-#   kable_styling(latex_options = "HOLD_position",
-#                 full_width = T) %>%
-#   row_spec(0, bold=T) %>%
-#   column_spec(1, width="0.5in") %>%
-#   column_spec(2, width="1in") %>%
-#   column_spec(3, width="1.25in") %>%
-#   column_spec(4, width="3in") %>%
-#   collapse_rows(2:4, valign="middle")
+kable(df,
+      col.names = c("Trip", "Origin TAZ", "Destination TAZ", "Trip durations"),
+      row.names = F,
+      caption = "Table 4: Calculation methods for origin TAZ, destination TAZ, and trip durations by trip") %>%
+  kable_styling(bootstrap_options = c("striped", "hover")) %>%
+  row_spec(0, bold=T) %>%
+  collapse_rows(2:4, valign="middle")
 ```
-
-<br />
 
 ## JOINING TO SKIM DATA FOR GENERALIZED COST
 
@@ -314,8 +240,8 @@ Regardless of the values of the regression parameters, an logistic decay functio
 
 Modeling was completed for time for all mode-purpose pairs, and for generalized cost when available (all WAT and DAT models). To fit the models, the sample response at time (or cost) $t$ was calculated as $\scriptstyle d_t = \frac{|trips \, of \,duration/cost > t|}{|total \, trips|}$ – in other words, the proportion of trips going longer or costing more than $t$. Functional form for the model – exponential or logistic decay – was determined at the discretion of the analyst by plotting $t$ against $\hat{d_t}$ and observing the shape of the data. The plots for trip duration models are shown in Figure 1. The plots for generalized cost models are shown in Figure 2.
 
-```{r, out.width='80%', fig.cap="Data form for trip duration models", fig.pos='H', out.extra = '', eval=FALSE}
-loc="C:/Users/rpg_f.FL3/OneDrive - Renaissance Planning Group/MAPC/Task4/Naive_Accessibility_Models/Naive_Modeling_Results/"
+```{r Figure 1, fig.cap="Figure 1: Data form for trip duration models", fig.align = "center"}
+loc="./data/Naive_Modeling_Results/"
 
 walk = readRDS(paste0(loc,"Walk_NoSkim.rds"))
 sov = readRDS(paste0(loc,"SOV_JoinedSkim.rds"))
@@ -367,8 +293,9 @@ ggplot(data = forplot) +
                      name="Proportion of longer trips") +
   facet_grid(mode ~ purpose)
 ```
+<br />
 
-```{r, , out.width='80%', fig.cap="Data form for generalized cost models", fig.pos='H', out.extra = '', eval=FALSE}
+```{r Figure 2, fig.cap="Data form for generalized cost models", fig.align="center"}
 costs_gc = costs %>% filter(!is.na(Generalized_Cost)) %>% filter(Generalized_Cost != 9999999)
 
 forplot = lapply(unique(costs_gc$Mode), function(m){
@@ -408,198 +335,186 @@ Because of some unusually high-valued trip times and generalized costs, all mode
 
 The model results are provided in Table 5, and resulting equations are provided in Table 6. The high $R^2$ and low $AIC$ values (for exponential and logistic decay, respectively) indicate that, over the constrained modeling sets, the fits perform quite well. Though using these models to predict very long or costly trips would be extrapolation because of the constraints on the modeling sets, these need for these types of predictions is minimal given the time and generalized cost for most trips.
 
-```{r, out.width='80%'}
-Table_5 <- read.csv("NE_Table5.csv")
+```{r Table 5}
+# For the ones with no skim: Walk and HOV
+# -----------------------------------------------------------------------------
 
-colnames(Table_5) <- c("Trip", "Measure", "Purpose", "β0", "β1", "R2", "AIC")
+noskim = list(walk, hov)
 
-flextable(Table_5, col_keys = c("Trip", "Measure", "Purpose", "β0", "β1", "R2", "AIC")) %>%
-  bold(part = "header") %>%
-  italic(j = c("β0", "β1", "R2", "AIC"), part = "header") %>%
-  set_caption(caption = "Table 5: Exponential and logistic modeling results", style = ".modal-header") %>%
-  align(align = "left", part = "all") %>%
-  autofit()
-# 
-# noskim = list(walk, hov)
-# 
-# noskim_models = lapply(noskim, function(x){
-#   lapply(c("HBW","HBNW","NHB"), function(y){
-#     m = x %>% filter(Purpose == y)
-#     df = data.frame(t = 0:(max(m$IVTT)-1),
-#                     y = lapply(0:(max(m$IVTT)-1), function(z){
-#                       sum(m$IVTT > z) / nrow(m)
-#                     }) %>% unlist)
-#     fit = lm(log(y) ~ t, data=df[between(df$y, 0.1, 1),])
-#     alpha = fit$coefficients[1] %>% unname
-#     beta = fit$coefficients[2] %>% unname
-#     eq = paste0("p = ", round(exp(alpha), 3), "e^(", round(beta, 3), "t)")
-#     r2 = summary(fit)$adj.r.squared
-#     data.frame(purpose = y,
-#                alpha = alpha,
-#                beta = beta,
-#                equation = eq,
-#                r.squared = r2,
-#                aic=NA)
-#   }) %>% bind_rows
-# }) %>% 
-#   bind_rows %>%
-#   add_column(model = rep(c("Walk-bike","HOV"), each=3), .before = 1) %>%
-#   add_column(measure = rep("time",6), .before = 2)
-# 
-# # For the ones with skim but no generalized cost: SOV
-# # -----------------------------------------------------------------------------
-# 
-# sov_models = lapply(c("HBW","HBNW","NHB"), function(y){
-#   m = sov %>% filter(Purpose == y)
-#   df = data.frame(t = 0:(max(m$IVTT)-1),
-#                   y = lapply(0:(max(m$IVTT)-1), function(z){
-#                     sum(m$IVTT > z) / nrow(m)
-#                   }) %>% unlist)
-#   fit = lm(log(y) ~ t, data=df[between(df$y, 0.1, 1),])
-#   alpha = fit$coefficients[1] %>% unname
-#   beta = fit$coefficients[2] %>% unname
-#   eq = paste0("p = ", round(exp(alpha), 3), "e^(", round(beta, 3), "t)")
-#   r2 = summary(fit)$adj.r.squared
-#   data.frame(purpose = y,
-#              alpha = alpha,
-#              beta = beta,
-#              equation = eq,
-#              r.squared = r2,
-#              aic=NA)
-# }) %>% 
-#   bind_rows %>%
-#   add_column(model = rep("SOV",3), .before = 1) %>%
-#   add_column(measure = rep("time",3), .before = 2)
-# 
-# # For the ones with skim and generalized cost, needing no edits: WAT
-# # -----------------------------------------------------------------------------
-# 
-# wat_models_time = lapply(c("HBW","HBNW","NHB"), function(y){
-#   m = wat %>% filter(Purpose == y) %>% mutate(TT = IVTT+OVTT)
-#   df = data.frame(t = 0:(max(m$TT)-1),
-#                   y = lapply(0:(max(m$TT)-1), function(z){
-#                     sum(m$TT > z) / nrow(m)
-#                   }) %>% unlist)
-#   fit = glm(y ~ t, data=df[between(df$y, 0.1, 1),], family="binomial")
-#   alpha = fit$coefficients[1] %>% unname
-#   beta = fit$coefficients[2] %>% unname
-#   eq = paste0("p = 1 / 1+e^(-(", round(alpha, 3), "+", round(beta, 3), "t))")
-#   r2 = NA
-#   aic = fit$aic
-#   data.frame(purpose = y,
-#              alpha = alpha,
-#              beta = beta,
-#              equation = eq,
-#              r.squared = r2,
-#              aic = aic)
-# }) %>% 
-#   bind_rows %>%
-#   add_column(model = rep("WAT",3), .before = 1) %>%
-#   add_column(measure = rep("time",3), .before = 2)
-# 
-# wat_models_gc = lapply(c("HBW","HBNW","NHB"), function(y){
-#   m = wat %>% filter(Purpose == y) %>% filter(GeneralizedCost != 9999999)
-#   df = data.frame(t = 0:(max(m$GeneralizedCost)-1),
-#                   y = lapply(0:(max(m$GeneralizedCost)-1), function(z){
-#                     sum(m$GeneralizedCost > z) / nrow(m)
-#                   }) %>% unlist)
-#   fit = glm(y ~ t, data=df[between(df$y, 0.1, 1),], family="binomial")
-#   alpha = fit$coefficients[1] %>% unname
-#   beta = fit$coefficients[2] %>% unname
-#   eq = paste0("p = 1 / 1+e^(-(", round(alpha, 3), "+", round(beta, 3), "t))")
-#   r2 = NA
-#   aic = fit$aic
-#   data.frame(purpose = y,
-#              alpha = alpha,
-#              beta = beta,
-#              equation = eq,
-#              r.squared = r2,
-#              aic = aic)
-# }) %>% 
-#   bind_rows %>%
-#   add_column(model = rep("WAT", 3), .before = 1) %>%
-#   add_column(measure = rep("gc",3), .before = 2)
-# 
-# # For the ones with skim and generalized cost, needing edits: the 3 DATs
-# # -----------------------------------------------------------------------------
-# 
-# dat_models_time = lapply(c("HBW","HBNW","NHB"), function(y){
-#   m = dat %>% filter(Purpose == y) %>% mutate(TT = IVTT+OVTT)
-#   df = data.frame(t = 0:(max(m$TT)-1),
-#                   y = lapply(0:(max(m$TT)-1), function(z){
-#                     sum(m$TT > z) / nrow(m)
-#                   }) %>% unlist)
-#   fit = glm(y ~ t, data=df[between(df$y, 0.1, 1),], family="binomial")
-#   alpha = fit$coefficients[1] %>% unname
-#   beta = fit$coefficients[2] %>% unname
-#   eq = paste0("p = 1 / 1+e^(-(", round(alpha, 3), "+", round(beta, 3), "t))")
-#   r2 = NA
-#   aic = fit$aic
-#   data.frame(purpose = y,
-#              alpha = alpha,
-#              beta = beta,
-#              equation = eq,
-#              r.squared = r2,
-#              aic = aic)
-# }) %>% 
-#   bind_rows %>%
-#   add_column(model = rep("DAT",3), .before = 1) %>%
-#   add_column(measure = rep("time",3), .before = 2)
-# 
-# dat_models_gc = lapply(c("HBW","HBNW","NHB"), function(y){
-#   m = dat %>% filter(Purpose == y) %>% filter(GeneralizedCost != 9999999)
-#   df = data.frame(t = 0:(max(m$GeneralizedCost)-1),
-#                   y = lapply(0:(max(m$GeneralizedCost)-1), function(z){
-#                     sum(m$GeneralizedCost > z) / nrow(m)
-#                   }) %>% unlist)
-#   fit = glm(y ~ t, data=df[between(df$y, 0.1, 1),], family="binomial")
-#   alpha = fit$coefficients[1] %>% unname
-#   beta = fit$coefficients[2] %>% unname
-#   eq = paste0("p = 1 / 1+e^(-(", round(alpha, 3), "+", round(beta, 3), "t))")
-#   r2 = NA
-#   aic = fit$aic
-#   data.frame(purpose = y,
-#              alpha = alpha,
-#              beta = beta,
-#              equation = eq,
-#              r.squared = r2,
-#              aic = aic)
-# }) %>% 
-#   bind_rows %>%
-#   add_column(model = rep("DAT", 3), .before = 1) %>%
-#   add_column(measure = rep("gc",3), .before = 2)
-# 
-# # Bind em all up
-# # -----------------------------------------------------------------------------
-# 
-# naive_models = bind_rows(noskim_models, 
-#                          sov_models, 
-#                          wat_models_time, wat_models_gc, 
-#                          dat_models_time, dat_models_gc)
-# naive_models$alpha = round(naive_models$alpha, 3)
-# naive_models$beta = round(naive_models$beta, 3)
-# naive_models$r.squared = round(naive_models$r.squared, 3)
-# naive_models$aic = round(naive_models$aic, 3)
-# 
-# naive_models$model[naive_models$model == "Walk-bike"] = "NM"
-# naive_models$measure[naive_models$measure == "time"] = "Time"
-# naive_models$measure[naive_models$measure == "gc"] = "Generalized cost"
-# 
-# names(naive_models) = c("Trip", "Measure", "Purpose", "$\\bm{\\beta_0}$", "$\\bm{\\beta_1}$", "equation", "$\\bm{R^2}$", "$\\bm{AIC}$")
-# 
-# kable(naive_models %>% select(-equation),
-#       booktabs = T,
-#       linesep = c('','','\\addlinespace',
-#                   '','','\\addlinespace',
-#                   '','','\\addlinespace',
-#                   '','','','','','\\addlinespace',
-#                   '','','','','','\\addlinespace'),
-#       escape = F,
-#       row.names = F,
-#       align = rep('l',times=7),
-#       caption = "Exponential and logistic modeling results") %>%
-#   kable_styling(latex_options = "HOLD_position",
-#                 full_width = TRUE) %>%
-#   row_spec(0, bold=T) %>%
-#   column_spec(2, width="1.25in")
+noskim_models = lapply(noskim, function(x){
+  lapply(c("HBW","HBNW","NHB"), function(y){
+    m = x %>% filter(Purpose == y)
+    df = data.frame(t = 0:(max(m$IVTT)-1),
+                    y = lapply(0:(max(m$IVTT)-1), function(z){
+                      sum(m$IVTT > z) / nrow(m)
+                    }) %>% unlist)
+    fit = lm(log(y) ~ t, data=df[between(df$y, 0.1, 1),])
+    alpha = fit$coefficients[1] %>% unname
+    beta = fit$coefficients[2] %>% unname
+    eq = paste0("p = ", round(exp(alpha), 3), "e^(", round(beta, 3), "t)")
+    r2 = summary(fit)$adj.r.squared
+    data.frame(purpose = y,
+               alpha = alpha,
+               beta = beta,
+               equation = eq,
+               r.squared = r2,
+               aic=NA)
+  }) %>% bind_rows
+}) %>% 
+  bind_rows %>%
+  add_column(model = rep(c("Walk-bike","HOV"), each=3), .before = 1) %>%
+  add_column(measure = rep("time",6), .before = 2)
+
+# For the ones with skim but no generalized cost: SOV
+# -----------------------------------------------------------------------------
+
+sov_models = lapply(c("HBW","HBNW","NHB"), function(y){
+  m = sov %>% filter(Purpose == y)
+  df = data.frame(t = 0:(max(m$IVTT)-1),
+                  y = lapply(0:(max(m$IVTT)-1), function(z){
+                    sum(m$IVTT > z) / nrow(m)
+                  }) %>% unlist)
+  fit = lm(log(y) ~ t, data=df[between(df$y, 0.1, 1),])
+  alpha = fit$coefficients[1] %>% unname
+  beta = fit$coefficients[2] %>% unname
+  eq = paste0("p = ", round(exp(alpha), 3), "e^(", round(beta, 3), "t)")
+  r2 = summary(fit)$adj.r.squared
+  data.frame(purpose = y,
+             alpha = alpha,
+             beta = beta,
+             equation = eq,
+             r.squared = r2,
+             aic=NA)
+}) %>% 
+  bind_rows %>%
+  add_column(model = rep("SOV",3), .before = 1) %>%
+  add_column(measure = rep("time",3), .before = 2)
+
+# For the ones with skim and generalized cost, needing no edits: WAT
+# -----------------------------------------------------------------------------
+
+wat_models_time = lapply(c("HBW","HBNW","NHB"), function(y){
+  m = wat %>% filter(Purpose == y) %>% mutate(TT = IVTT+OVTT)
+  df = data.frame(t = 0:(max(m$TT)-1),
+                  y = lapply(0:(max(m$TT)-1), function(z){
+                    sum(m$TT > z) / nrow(m)
+                  }) %>% unlist)
+  fit = glm(y ~ t, data=df[between(df$y, 0.1, 1),], family="binomial")
+  alpha = fit$coefficients[1] %>% unname
+  beta = fit$coefficients[2] %>% unname
+  eq = paste0("p = 1 / 1+e^(-(", round(alpha, 3), "+", round(beta, 3), "t))")
+  r2 = NA
+  aic = fit$aic
+  data.frame(purpose = y,
+             alpha = alpha,
+             beta = beta,
+             equation = eq,
+             r.squared = r2,
+             aic = aic)
+}) %>% 
+  bind_rows %>%
+  add_column(model = rep("WAT",3), .before = 1) %>%
+  add_column(measure = rep("time",3), .before = 2)
+
+wat_models_gc = lapply(c("HBW","HBNW","NHB"), function(y){
+  m = wat %>% filter(Purpose == y) %>% filter(GeneralizedCost != 9999999)
+  df = data.frame(t = 0:(max(m$GeneralizedCost)-1),
+                  y = lapply(0:(max(m$GeneralizedCost)-1), function(z){
+                    sum(m$GeneralizedCost > z) / nrow(m)
+                  }) %>% unlist)
+  fit = glm(y ~ t, data=df[between(df$y, 0.1, 1),], family="binomial")
+  alpha = fit$coefficients[1] %>% unname
+  beta = fit$coefficients[2] %>% unname
+  eq = paste0("p = 1 / 1+e^(-(", round(alpha, 3), "+", round(beta, 3), "t))")
+  r2 = NA
+  aic = fit$aic
+  data.frame(purpose = y,
+             alpha = alpha,
+             beta = beta,
+             equation = eq,
+             r.squared = r2,
+             aic = aic)
+}) %>% 
+  bind_rows %>%
+  add_column(model = rep("WAT", 3), .before = 1) %>%
+  add_column(measure = rep("gc",3), .before = 2)
+
+# For the ones with skim and generalized cost, needing edits: the 3 DATs
+# -----------------------------------------------------------------------------
+
+dat_models_time = lapply(c("HBW","HBNW","NHB"), function(y){
+  m = dat %>% filter(Purpose == y) %>% mutate(TT = IVTT+OVTT)
+  df = data.frame(t = 0:(max(m$TT)-1),
+                  y = lapply(0:(max(m$TT)-1), function(z){
+                    sum(m$TT > z) / nrow(m)
+                  }) %>% unlist)
+  fit = glm(y ~ t, data=df[between(df$y, 0.1, 1),], family="binomial")
+  alpha = fit$coefficients[1] %>% unname
+  beta = fit$coefficients[2] %>% unname
+  eq = paste0("p = 1 / 1+e^(-(", round(alpha, 3), "+", round(beta, 3), "t))")
+  r2 = NA
+  aic = fit$aic
+  data.frame(purpose = y,
+             alpha = alpha,
+             beta = beta,
+             equation = eq,
+             r.squared = r2,
+             aic = aic)
+}) %>% 
+  bind_rows %>%
+  add_column(model = rep("DAT",3), .before = 1) %>%
+  add_column(measure = rep("time",3), .before = 2)
+
+dat_models_gc = lapply(c("HBW","HBNW","NHB"), function(y){
+  m = dat %>% filter(Purpose == y) %>% filter(GeneralizedCost != 9999999)
+  df = data.frame(t = 0:(max(m$GeneralizedCost)-1),
+                  y = lapply(0:(max(m$GeneralizedCost)-1), function(z){
+                    sum(m$GeneralizedCost > z) / nrow(m)
+                  }) %>% unlist)
+  fit = glm(y ~ t, data=df[between(df$y, 0.1, 1),], family="binomial")
+  alpha = fit$coefficients[1] %>% unname
+  beta = fit$coefficients[2] %>% unname
+  eq = paste0("p = 1 / 1+e^(-(", round(alpha, 3), "+", round(beta, 3), "t))")
+  r2 = NA
+  aic = fit$aic
+  data.frame(purpose = y,
+             alpha = alpha,
+             beta = beta,
+             equation = eq,
+             r.squared = r2,
+             aic = aic)
+}) %>% 
+  bind_rows %>%
+  add_column(model = rep("DAT", 3), .before = 1) %>%
+  add_column(measure = rep("gc",3), .before = 2)
+
+# Bind em all up
+# -----------------------------------------------------------------------------
+
+naive_models = bind_rows(noskim_models, 
+                         sov_models, 
+                         wat_models_time, wat_models_gc, 
+                         dat_models_time, dat_models_gc)
+naive_models$alpha = round(naive_models$alpha, 3)
+naive_models$beta = round(naive_models$beta, 3)
+naive_models$r.squared = round(naive_models$r.squared, 3)
+naive_models$aic = round(naive_models$aic, 3)
+
+naive_models$model[naive_models$model == "Walk-bike"] = "NM"
+naive_models$measure[naive_models$measure == "time"] = "Time"
+naive_models$measure[naive_models$measure == "gc"] = "Generalized cost"
+
+names(naive_models) = c("Trip", "Measure", "Purpose", "${\\beta_0}$", "${\\beta_1}$", "equation", "${R^2}$", "${AIC}$")
+
+kable(naive_models %>% select(-equation),
+      linesep = c('','','\\addlinespace',
+                  '','','\\addlinespace',
+                  '','','\\addlinespace',
+                  '','','','','','\\addlinespace',
+                  '','','','','','\\addlinespace'),
+      escape = F,
+      row.names = F,
+      caption = "Table 5: Exponential and logistic modeling results") %>%
+  kable_styling(bootstrap_options = c("striped", "hover")) %>%
+  row_spec(0, bold=T)
 ```

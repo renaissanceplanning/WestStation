@@ -1,6 +1,0 @@
-﻿Trip,Origin TAZ,Destination TAZ,Trip durations
-NM,Origin TAZ of record,Destination TAZ of record,Trip duration of record
-SOV,Origin TAZ of record,Destination TAZ of record,Trip duration of record
-HOV,Origin TAZ of record,Destination TAZ of record,Trip duration of record
-WAT,Origin TAZ of first link,Destination TAZ of first link,"Sum of trip durations for all links, plus sum"
-DAT,Origin TAZ of first link,Destination TAZ of first link,"Sum of trip durations for all links, plus sum"

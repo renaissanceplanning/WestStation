@@ -54,7 +54,7 @@ import yaml
 #  to the specified configuration
 root = r"K:\Projects\MAPC\FinalData"
 os.chdir(root)
-lu_config = "LRTP"
+lu_config = "FEIR"
 
 # Setup logging
 logger = logging.getLogger("EMMA")

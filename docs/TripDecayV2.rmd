@@ -22,29 +22,57 @@ library(kableExtra)
 library(survminer)
 library(magrittr)
 library(survival)
+library(bookdown)
+knitr::opts_chunk$set(echo = FALSE, warning=FALSE, message=FALSE, 
+                      fig.pos = 'H', fig.cap=T)
 
-knitr::opts_chunk$set(echo = FALSE)
+#### read in data
+total <- readRDS("./data/TripRecords.rds")
+
+# # person = read_xlsx(paste0(base, "MAPC_DB_xlsx/PER.xlsx"))
+# place = read_xlsx(paste0(base, "MAPC_DB_xlsx/PLACE.xlsx"))
+# # vehicle = read_xlsx(paste0(base, "MAPC_DB_xlsx/VEH.xlsx"))
+# household = read_xlsx(paste0(base, "MAPC_DB_xlsx/HH.xlsx"))
+# 
+# total = left_join(place, household, by="SAMPN")
+
+# Mode classifications
+# ------------------------------------------------------------------------------
+non_motorized    <- c(1,2)       #walk, bike
+personal_vehicle <- c(3,4,11,12) #auto/van/truck/motorcycle driver & passenger
+transit          <- c(5,6,7)     #bus, train/transit rail, ferry/boat
+paratransit      <- 8            #dial-a-ride/paratransit
+taxi             <- 9            #taxi
+school_bus       <- 10           #school bus
+other            <- 97           #other
 ```
 
-```{css, echo=FALSE}
+```{css}
 caption {
-  color:black;
-  line-height: 1.5em;
-  font-size: 16px;
+ color: rgb(63, 78, 86);
+ line-height: 1.5em;
+ font-size: 16px;
+ font-weight: bold;
+}
+
+p.caption {
+ color: rgb(63, 78, 86);
+ line-height: 1.5em;
+ font-size: 16px;
+ font-weight: bold;
 }
 ```
-
 <br />
 
 # INTRODUCTION
 
-Historically, travel time decay curves have been estimated via exponential regression on time. First, for each time *t* in a set of travel times ${\scriptstyle t = 1, 2, ..., t_{max}}$, number of trips lasting at least *t* minutes would be calculated. Then, assuming the functional form y = Aebt, a regression would be fit with *t* (time) as the sole explanatory variable and *y* (the number of trips lasting at least *t* minutes) as the response.
+Historically, travel time decay curves have been estimated via exponential regression on time. First, for each time *t* in a set of travel times ${\scriptstyle t = 1, 2, ..., t_{max}}$, number of trips lasting at least *t* minutes would be calculated. Then, assuming the functional form y = $Ae^{bt}$, a regression would be fit with *t* (time) as the sole explanatory variable and *y* (the number of trips lasting at least *t* minutes) as the response.
 
 While this method does elucidate the underlying decay curve, it is a naive approach in that it assumes travel time decay relies only on time. By considering time as the only covariate, this type of model ignores the impact other variables could have on travel time decay. For example, increased age could be associated with shorter tripmaking for walking trips, and thus a steeper travel time decay. Thus, a more informative travel time decay model may seek to include the effects of both time and other relevant covariates. This would not only produce a more realistic travel time decay curve, but allow for a quantification of the relationship between included covariates and travel time decay.
 
 This paper suggests the use of a survival analysis approach to modeling travel time decay. Survival analysis encompasses a set of statistical methods interested in modeling the time to an “event” using a set of predictor variables. It is most often seen in clinical trials, where a researcher may be interested in how long patients survive after being given a particular treatment. It can be extended to travel time decay by considering the ending of a trip as the “event” of interest. Table 1 provides the travel time decay analogs of a more common survival analysis example.
 
-```{r, out.width='80%'}
+```{r}
 Table <- 
   data.frame("Common survival analysis"= c("Disease patients at a hospital",
                                            "Death",
@@ -59,19 +87,14 @@ Table <-
 rownames(Table) <-  c("Observational unit", "Event", 
                         "Predictor variables", 'Meaning of "survival"')
 
-flextable((Table %>% tibble::rownames_to_column(" ")), 
-          col_keys = c(" ", 
-                       "Common.survival.analysis", 
-                       "Analogs.in.trip.decay")) %>%
-  empty_blanks() %>%
-  bold(part = "header") %>%
-  bold(j    = 1) %>%
-  set_header_labels(Common.survival.analysis = "Common Survival Analysis", 
-                    Analogs.in.trip.decay    = "Analogs in Trip Decay") %>%
-  set_caption(caption = "Table 1: Definitions for NM, SOV, and HOV trips") %>%
-  align(align = "left", part = "all") %>%
-  autofit()
+kable(Table,
+      col.names = c("Common survival analysis", "Analogs in trip decay"),
+      row.names = T,
+      caption = "Table 1: Travel time decay in a survival analysis context") %>%
+  kable_styling(bootstrap_options = c("striped", "hover")) %>%
+  row_spec(0, bold=T)
 ```
+<br />
 
 # DATA
 
@@ -81,7 +104,7 @@ The data includes 190,215 trip records from 37,023 persons across 15,033 househo
 
 This analysis required known values for all model variables, so some trip records were filtered out prior to model fitting based on survey responses. In addition, models were fit individually on different classes of modes, so different filtering conditions were necessary to create each model set. Table 2 details the modes used for each model, the conditions on which model variables were filtered, and the resulting number of trip records used for model fitting.
 
-```{r, out.width='80%'}
+```{r}
 Table <- 
   data.frame("Model" = rep(c("Personal vehicle",
                              "Non-motorized"), c(5,3)),
@@ -105,21 +128,17 @@ Table <-
                                     'Not "NA" (indicating either origin or destination is not in the study area)'),
              "Total Records"=prettyNum(rep(c(112262, 26137), 
                                            c(5,3)), big.mark=","))
-border_table = fp_border(color = "black", width = 2)
 
-flextable(Table, 
-          col_keys = c("Model", "Modes", "Variable", 
-                       "Filter.Condition", "Total.Records")) %>%
-  bold(part = "header") %>%
-  set_header_labels(Filter.Condition = "Filter Condition", 
-                    Total.Records    = "Total Records") %>%
-  set_caption(caption = "Table 2: Trip record filtering protocol for each mode-specific model") %>%
-  align(align = "left", part = "all") %>%
-  merge_v(j = ~ Model + Modes + Total.Records) %>%
-  border_inner_h(part = "body", border = border_table) %>%
-  fix_border_issues() %>%
-  autofit()
+kable(Table,
+      col.names = c("Model", "Modes", "Variable", "Filter condition", "Total records"),
+      row.names = F,
+      caption = "Table 2: Trip record filtering protocol for each mode-specific model") %>%
+  kable_styling(bootstrap_options = c("striped", "hover")) %>%
+  column_spec(2, width = "1.3in") %>%
+  row_spec(0, bold=T) %>%
+  collapse_rows(columns = c(1,2,5), valign = "middle")
 ```
+<br />
 
 # MODELING METHODS
 
@@ -153,27 +172,25 @@ Covariates to be considered for each mode-specific model were selected from the 
 Table 3 details the candidate covariates considered for each mode-specific model.
 
 ```{r}
-Table <-  data.frame("Model" = rep(c("Personal vehicle",
-                                     "Non-motorized"), c(5,4)),
-                     "Covariates" = c("Parking cost",
-                                      "Toll cost",
-                                      "Household size", 
-                                      "Trip purpose (home, work, non-work)",
-                                      "Terminal time (by origin and destination TAZ)",
-                                      "Parking cost (by origin and destination TAZ)",
-                                      "Household size", 
-                                      "Trip purpose (home, work, non-work)",
-                                      "Terminal time (by origin and destination TAZ)"))
+Table <- data.frame("Model" = rep(c("Personal vehicle",
+                                    "Non-motorized"), c(5,4)),
+                    "Covariates" = c("Parking cost",
+                                     "Toll cost",
+                                     "Household size", 
+                                     "Trip purpose (home, work, non-work)",
+                                     "Terminal time (by origin and destination TAZ)",
+                                     "Parking cost (by origin and destination TAZ)",
+                                     "Household size", 
+                                     "Trip purpose (home, work, non-work)",
+                                     "Terminal time (by origin and destination TAZ)"))
 
-flextable(Table, 
-          col_keys = c("Model", "Covariates")) %>%
-  bold(part = "header") %>%
-  set_caption(caption = "Table 3: Candidate covariates considered for each mode-specific model") %>%
-  align(align = "left", part = "all") %>%
-  merge_v(j = ~ Model) %>%
-  border_inner_h(part = "body", border = border_table) %>%
-  fix_border_issues() %>%
-  autofit()
+kable(Table,
+      col.names = c("Model", "Covariates"),
+      row.names = F,
+      caption = "Table 3: Candidate covariates considered for each mode-specific model") %>%
+  kable_styling(bootstrap_options = c("striped", "hover")) %>%
+  row_spec(0, bold=T) %>%
+  collapse_rows(columns = c(1), valign = "middle")
 ```
 
 In all models, trip purpose was collapsed from 24 categories provided in the MTS data to three broad “purpose groups”: home, work, and non-work. Table 4 details how purposes were collapsed. “Loop trips” were classified according to their secondary purpose (which were also coded according to Table 4), or filtered out if no secondary purpose was provided.
@@ -204,19 +221,13 @@ Table = data.frame("Purpose Group" = rep(c("Home","Work","Non-work"), c(2,3,17))
                                                  "Indoor recreation/entertainment",
                                                  "Visit friends/relatives"))
 
-flextable(Table, col_keys = c("Purpose.Group", "MTS.Purpose.Code",
-                              "MTS.Purpose.Definition")) %>%
-  bold(part = "header") %>%
-  set_caption(caption = "Table 4: Methodology for collapsing purpose to home, work, and non-work groups") %>%
-  set_header_labels(Purpose.Group          = "Purpose Group", 
-                    MTS.Purpose.Code       = "MTS Purpose Code",
-                    MTS.Purpose.Definition = "MTS Purpose Definition") %>%
-  align(align = "left", part = "all") %>%
-  merge_v(j = ~ Purpose.Group) %>%
-  border_inner_h(part = "body", border = border_table) %>%
-  fix_border_issues() %>%
-  autofit()
-  
+kable(Table,
+      col.names = c("Model", "MAPC survey code", "MAPC purpose definition"),
+      row.names = F,
+      caption = "Table 4: Methodology for collapsing purpose to home, work, and non-work groups") %>%
+  kable_styling(bootstrap_options = c("striped", "hover")) %>%
+  row_spec(0, bold=T) %>%
+  collapse_rows(columns = c(1), valign = "middle")
 ```
 
 ## INITIAL MODELS
@@ -262,18 +273,7 @@ The model fitting results are detailed individually for each mode-specific model
 The model including all candidate covariates produced a statistically valid fit, so no backward selection was completed. Parking cost, toll cost, household size, and purpose were all significant to hazard rate (the purpose “home” was used as the reference level for fitting the purpose covariate). The model coefficients are provided in Table 5, while the hazard ratios are provided in Table 6.
 
 ```{r}
-total = readRDS("./data/TripRecords.rds")
-
-non_motorized = c(1,2)          #walk, bike
-personal_vehicle = c(3,4,11,12) #auto/van/truck/motorcycle driver & passenger
-transit = c(5,6,7)              #bus, train/transit rail, ferry/boat
-
-paratransit = 8                 #dial-a-ride/paratransit
-taxi = 9                        #taxi
-school_bus = 10                 #school bus
-other = 97                      #other
-
-mod = total %>%
+mod <- total %>%
   filter(MODE %in% personal_vehicle) %>%
   filter(!is.na(TRPDUR)) %>%
   mutate(STATUS=1) %>%
@@ -307,7 +307,7 @@ mod = total %>%
   mutate(purpose = factor(purpose, levels=c("home","work","nonwork"))) %>%
   select(-c(sp, parkunit))
 
-pv = mod %>% select(-c(MODE, WTP, WTA, BTP, BTA, ParkStart, ParkEnd))
+pv <- mod %>% select(-c(MODE, WTP, WTA, BTP, BTA, ParkStart, ParkEnd))
 
 # Model selection: vehicle
 # ------------------------------------------------------------------------------
@@ -316,8 +316,8 @@ pv = mod %>% select(-c(MODE, WTP, WTA, BTP, BTA, ParkStart, ParkEnd))
 # of "other" or "don't know/refused" categories. i.e. if they're not
 # significant, we don't worry about it
 
-fit=coxph(Surv(TIME, STATUS) ~ ., data=pv)
-s=summary(fit)
+fit <- coxph(Surv(TIME, STATUS) ~ ., data=pv)
+s   <- summary(fit)
 
 s$coefficients %>%
   data.frame %>%
@@ -333,10 +333,12 @@ s$coefficients %>%
                            "Origin TAZ terminal time",
                            "Destination TAZ terminal time"),
              .before=1) %>%
-  flextable() %>%
-  set_caption("Table 5: Coefficients for initial personal vehicle model") %>%
-  autofit()
-
+  kable(linesep = c(rep('',10), '\\addlinespace'),
+        row.names = F,
+        escape=F,
+        caption = "Table 5: Coefficients for initial personal vehicle model") %>%
+  kable_styling(bootstrap_options = c("striped", "hover")) %>%
+  row_spec(0, bold=T)
 ```
 
 The coefficients should be interpreted as follows:
@@ -360,10 +362,11 @@ s$conf.int %>%
                            "Origin TAZ terminal time",
                            "Destination TAZ terminal time"),
              .before=1) %>%
-  flextable() %>%
-  set_caption("Table 6: Hazard ratios (HR) for initial personal vehicle model") %>%
-  autofit()
-  
+   kable(linesep = c(rep('',10), '\\addlinespace'),
+         row.names = F,
+         caption = "Table 6: Hazard ratios (HR) for initial personal vehicle model") %>%
+  kable_styling(bootstrap_options = c("striped", "hover")) %>%
+  row_spec(0, bold=T)
 ```
 
 The hazard ratios should be interpreted as follows:
@@ -375,39 +378,48 @@ The hazard ratios should be interpreted as follows:
 Schoenfeld Residuals Tests on the covariates revealed time dependence in all covariates. The results of the test are shown in Table 7 (the **Global** row contains the results of a global test on the model, which tests if there is any time dependence in the model as a whole). A time-dependent coefficients model was explored as a result of present time dependence.
 
 ```{r}
-test <- cox.zph(fit)
-test$table %>%
+test <-  cox.zph(fit)
+test %$%
+  table %>%
   data.frame %>%
-  mutate(chisq = round(chisq, 4),
+  mutate(rho = round(rho, 4) %>% as.character,
+         chisq = round(chisq, 4),
          p = case_when(p < 0.0001 ~ "< 0.0001",
-                       T ~ round(p) %>% as.character())) %>%
-  setNames(c("X2", "df", "p")) %>%
+                       T ~ round(p) %>% as.character)) %>%
+  replace_na(list(rho="")) %>%
+  setNames(c("${\\rho}$", "${\\chi^2}$", "p")) %>%
   add_column("Covariate"=c("Parking cost", "Toll cost", "Household size", 
-                           "Purpose",
+                           "Purpose: work", "Purpose: non-work",
                            "Origin TAZ terminal time",
                            "Destination TAZ terminal time",
-                           "Global"), .before=1) %>%
-  flextable(col_keys = c("Covariate", "X2", "p")) %>%
-  set_caption("Table 7: Results of Schoenfeld Residuals Tests for initial personal vehicle model") %>%
-  autofit()
+                           "Global"),
+             .before=1) %>%
+  kable(linesep = c(rep('',6), '\\addlinespace'),
+        row.names = F,
+        escape = F,
+        caption = "Table 7: Results of Schoenfeld Residuals Tests for initial personal vehicle model") %>%
+  kable_styling(bootstrap_options = c("striped", "hover"),
+                latex_options = "HOLD_position") %>%
+  row_spec(0, bold=T) %>%
+  row_spec(8, bold=T) 
 ```
 
 Exploration of scaled Schoenfeld residuals vs. time plots followed by iterative model fitting and re-checking of the proportional hazards assumption resulted in a time-dependent coefficients model with break points at 5, 10, 20, and 30 minutes. This model featured no time dependence, and thus this model was used going forward. The model coefficients are provided in Table 8, while the hazard ratios are provided in Table 9. Interpretation of the coefficients and the hazard ratios stay the same, with the exception that the interpretation is only valid in the specified time interval.
 
 ```{r}
-pv2 = survSplit(Surv(TIME, STATUS) ~ .,
+pv2 <- survSplit(Surv(TIME, STATUS) ~ .,
                 data=pv,
                 cut=c(5,10,20,30),
                 episode="tgroup",
                 id="id")
-fitcut = coxph(Surv(tstart, TIME, STATUS) ~ parkcost:strata(tgroup) +
+fitcut <- coxph(Surv(tstart, TIME, STATUS) ~ parkcost:strata(tgroup) +
                  tollcost:strata(tgroup) +
                  hhsize:strata(tgroup) +
                  purpose:strata(tgroup) +
                  VTP:strata(tgroup) +
                  VTA:strata(tgroup),
                data=pv2)
-s=summary(fitcut)
+s <- summary(fitcut)
 
 s$coefficients %>%
   data.frame %>%
@@ -426,10 +438,15 @@ s$coefficients %>%
   add_column("Interval"=rep(c("0-5 minutes", "5-10 minutes", "10-20 minutes", 
                                "20-30 minutes", "> 30 minutes"), times=7),
              .before=2) %>%
-  flextable() %>%
-  set_caption("Table 8: Coefficients for time-dependent personal vehicle model") %>%
-  autofit()
+  kable(row.names = F,
+        escape = F,
+        align = c('l', 'l', rep('r',4)),
+        caption = "Table 8: Coefficients for time-dependent personal vehicle model") %>%
+  kable_styling(bootstrap_options = c("striped", "hover"),
+                latex_options = "HOLD_position") %>%
+  row_spec(0, bold=T)
 ```
+<br />
 
 ```{r}
 s$conf.int %>%
@@ -449,14 +466,17 @@ s$conf.int %>%
   add_column("Interval"=rep(c("0-5 minutes", "5-10 minutes", "10-20 minutes", 
                                "20-30 minutes", "> 30 minutes"), times=7),
              .before=2) %>%
-  flextable() %>%
-  set_caption("Table 9: Hazard ratios (HR) for time-dependent personal vehicle model") %>%
-  autofit()
+ kable(booktabs = T,
+        row.names = F,
+        align = c('l', 'l', rep('r',3)),
+        caption = "Table 9: Hazard ratios (HR) for time-dependent personal vehicle model") %>%
+  kable_styling(bootstrap_options = c("striped", "hover")) %>%
+  row_spec(0, bold=T)
 ```
 
 The plot of deviance residuals for the updated, time-dependent model is shown in Figure 1. Though a few potential outliers are observed in the “trip ended earlier than expected” category (large positive deviance residuals), they are small in number, and individual exploration revealed no grounds on which to exclude any points as outliers.
 
-```{r, "Time-dependent personal vehicle model deviance residuals", fig.pos='H', out.extra = ''}
+```{r, fig.cap = "Figure 1: Time-dependent personal vehicle model deviance residuals", fig.align="center"}
 # Influential observations / outliers
 # ------------------------------------------------------------------------------
 
@@ -485,6 +505,7 @@ ggplot(data = data.frame(y = devres, x = 1:length(devres))) +
 
 # We should be fine on outliers given this information
 ```
+<br />
 
 Plots of null Cox model Martingale residuals against parking cost, toll cost, household size, origin and destination TAZ parking, and origin and destination TAZ terminal time revealed no drastic deviations from linearity, so no functional forms were changed in the time-dependent model. However, exact linearity did not appear to be achieved for any of these covariates, indicating better functional forms likely exist for the inclusion of these covariates in the model. For this analysis, linearity was deemed “close enough” in the context of time and processing limitations.
 
@@ -500,7 +521,7 @@ Having estimated and validated a Cox proportional hazards model for personal veh
 * Destination TAZ terminal time = 1 minute
 
 A graphical comparison of a modeled travel time decay curve to the sample travel time decay curve for these attributes is shown in Figure 2. In addition, a plot of difference in model and the sample trip survival probabilities for these attributes is provided in Figure 3.
-```{r, eval=FALSE, echo=TRUE}
+```{r}
 y = apply(pv, 1, function(x){
   paste(x[3:8], collapse=" ")
 })
@@ -552,24 +573,22 @@ together = rbind(predicted, actual) %>%
   mutate(Curve = rep(c("Model", "Sample"), each=nrow(predicted)))
 ```
 
-
-```{r, fig.cap="Difference in exampel model and sample survival probabilities for personal vehicle travel", fig.pos='H', out.extra = '', eval=FALSE, echo=TRUE}
-together %>%
-  spread(Curve, y) %>%
-  mutate(diff = Model - Sample) %>%
-  ggplot() +
-  geom_line(aes(x=x, y=diff), color="#3E4D54") +
+```{r, fig.cap="Figure 2: Difference in exampel model and sample survival probabilities for personal vehicle travel", fig.align="center"}
+ggplot(together) +
+  geom_step(aes(x=x, y=y, color=Curve)) +
   geom_vline(xintercept=0) +
   geom_hline(yintercept=0) +
+  scale_color_manual(values=c("#F29C20", "#3E4D54")) +
   scale_x_continuous(limits=c(0,120),
                      breaks=seq(0,120,10)) +
-  scale_y_continuous(labels=scales::percent_format(0.1),
-                     breaks=seq(-0.01,0.035,0.005)) +
+  scale_y_continuous(labels=scales::percent_format(1),
+                     breaks=seq(0,1,0.1)) +
   labs(x = "Travel time (minutes)",
-       y = "Difference (model - sample)")
+       y = "Survival probability")
 ```
+<br />
 
-```{r, fig.cap="Difference in exampel model and sample survival probabilities for personal vehicle travel", fig.pos='H', out.extra = '', eval=FALSE, echo=TRUE}
+```{r, fig.cap="Figure 3: Difference in exampel model and sample survival probabilities for personal vehicle travel", fig.align="center"}
 together %>%
   spread(Curve, y) %>%
   mutate(diff = Model - Sample) %>%
@@ -612,7 +631,7 @@ The model including all candidate covariates showed household size was an insign
 # but I think it makes sense for our application and 
 # will make model fitting more interpretable
 
-mod = total %>%
+mod <- total %>%
   filter(MODE %in% non_motorized) %>%
   filter(!is.na(TRPDUR)) %>%
   mutate(STATUS=1) %>%
@@ -635,7 +654,7 @@ mod = total %>%
   mutate(TTP = case_when(MODE == 1 ~ WTP, MODE == 2 ~ BTP),
          TTA = case_when(MODE == 1 ~ WTA, MODE == 2 ~ BTA))
 
-nm = mod %>% select(-c(MODE, WTP, WTA, BTP, BTA))
+nm <- mod %>% select(-c(MODE, WTP, WTA, BTP, BTA))
 
 # Model selection: non-motorized
 # ------------------------------------------------------------------------------
@@ -644,23 +663,22 @@ nm = mod %>% select(-c(MODE, WTP, WTA, BTP, BTA))
 # of "other" or "don't know/refused" categories. i.e. if they're not
 # significant, we don't worry about it
 
-fit=coxph(Surv(TIME, STATUS) ~ ., data=nm)
+fit <- coxph(Surv(TIME, STATUS) ~ ., data=nm)
 # Production terminal time doesn't matter, take it out
 
-nm = nm %>% select(-TTP)
-fit=coxph(Surv(TIME, STATUS) ~ ., data=nm)
+nm  <- nm %>% select(-TTP)
+fit <- coxph(Surv(TIME, STATUS) ~ ., data=nm)
 # Origin parking cost doesn't matter, take it out
 
-nm = nm %>% select(-ParkStart)
-fit=coxph(Surv(TIME, STATUS) ~ ., data=nm)
+nm  <- nm %>% select(-ParkStart)
+fit <- coxph(Surv(TIME, STATUS) ~ ., data=nm)
 # Household size doesn't matter, take it out
 
-nm = nm %>% select(-hhsize)
-fit = coxph(Surv(TIME, STATUS) ~ ParkEnd + TTA + purpose, data=nm)
-s = summary(fit)
+nm  <- nm %>% select(-hhsize)
+fit <- coxph(Surv(TIME, STATUS) ~ ParkEnd + TTA + purpose, data=nm)
+s   <- summary(fit)
 # Good to go with purpose, end parking, attration terminal time
 ```
-
 
 ```{r}
 s$coefficients %>%
@@ -677,9 +695,11 @@ s$coefficients %>%
                            "Purpose: work", 
                            "Purpose: non-work"),
              .before=1) %>%
-  flextable() %>%
-  set_caption("Table 10: Coefficients for initial non-motorized model") %>%
-  autofit()
+  kable(row.names = F,
+        escape = F,
+        caption = "Table 10: Coefficients for initial non-motorized model") %>%
+  kable_styling(bootstrap_options = c("striped", "hover")) %>%
+  row_spec(0, bold=T)
 ```
 
 ```{r}
@@ -697,31 +717,40 @@ s$conf.int %>%
                            "Purpose: work", 
                            "Purpose: non-work"),
              .before=1) %>%
-  flextable() %>%
-  set_caption("Table 11: Hazard ratios (HR) for initial non-motorized model") %>%
-  autofit()
+  kable(row.names = F,
+        caption = "Table 11: Hazard ratios (HR) for initial non-motorized model") %>%
+  kable_styling(bootstrap_options = c("striped", "hover")) %>%
+  row_spec(0, bold=T)
 ```
 
 Schoenfeld Residuals Tests on the covariates revealed time dependence in the non-work purpose, but not for the work purpose. The results of the test are shown in Table 12. A time-dependent coefficients model was explored as a result of present time dependence
 
 ```{r}
-test = cox.zph(fit)
+test <- cox.zph(fit)
 test %$%
   table %>%
   data.frame %>%
-  mutate(chisq = round(chisq, 4),
+  mutate(rho = round(rho, 4) %>% as.character,
+         chisq = round(chisq, 4),
          p = case_when(p < 0.0001 ~ "< 0.0001",
                        T ~ round(p, 4) %>% as.character)) %>%
   replace_na(list(rho="")) %>%
-  setNames(c("X2","df", "p")) %>%
+  setNames(c("${\\rho}$", "${\\chi^2}$", "p")) %>%
   add_column("Covariate"=c("Destination TAZ parking",
                            "Destination TAZ terminal time",
-                           "Purpose",
+                           "Purpose: work", 
+                           "Purpose: non-work",
                            "Global"),
              .before=1) %>%
-  flextable(col_keys = c("Covariate", "X2","p")) %>%
-  set_caption("Table 12: Results of Schoenfeld Residuals Tests for initial non-motorized model") %>%
-  autofit()
+  kable(booktabs = T,
+        linesep = c(rep('',3), '\\addlinespace'),
+        row.names = F,
+        escape = F,
+        align = c('l', rep('r',3)),
+        caption = "Table 12: Results of Schoenfeld Residuals Tests for initial non-motorized model") %>%
+  kable_styling(bootstrap_options = c("striped", "hover")) %>%
+  row_spec(0, bold=T) %>%
+  row_spec(5, bold=T)
 ```
 
 Exploration of scaled Schoenfeld residuals vs. time plots followed by iterative model fitting and re-checking of the proportional hazards assumption resulted in a time-dependent coefficients model with a single break point at 5 minutes. This model featured no time dependence, and thus this model was used going forward. The model coefficients are provided in Table 13, while the hazard ratios are provided in Table 14.
@@ -730,16 +759,16 @@ Exploration of scaled Schoenfeld residuals vs. time plots followed by iterative 
 # ------------------------------------------------------------------------------
 
 # Fit
-nm2 = survSplit(Surv(TIME, STATUS) ~ .,
-                data=nm,
-                cut=c(5),
-                episode="tgroup",
-                id="id")
-fitcut = coxph(Surv(tstart, TIME, STATUS) ~ ParkEnd:strata(tgroup) +
+nm2 <- survSplit(Surv(TIME, STATUS) ~ .,
+                 data=nm,
+                 cut=c(5),
+                 episode="tgroup",
+                 id="id")
+fitcut <- coxph(Surv(tstart, TIME, STATUS) ~ ParkEnd:strata(tgroup) +
                  TTA:strata(tgroup) +
                  purpose:strata(tgroup),
                data=nm2)
-s=summary(fitcut)
+s <- summary(fitcut)
 ```
 
 ```{r}
@@ -760,12 +789,14 @@ s$coefficients %>%
              .before=1) %>%
   add_column("Interval"=rep(c("0-5 minutes", "> 5 minutes"), times=4),
              .before=2) %>%
-  flextable() %>%
-  set_caption("Table 13: Coefficients for time-dependent non-motorized model") %>%
-  autofit()
+  kable(linesep = c('', '\\addlinespace'),
+        row.names = F,
+        caption = "Table 13: Coefficients for time-dependent non-motorized model") %>%
+  kable_styling(bootstrap_options = c("striped", "hover")) %>%
+  row_spec(0, bold=T)
 ```
 
-```{r, eval=FALSE, echo=TRUE}
+```{r}
 s$conf.int %>%
   data.frame %>%
   filter(!is.na(exp.coef.)) %>%
@@ -783,15 +814,17 @@ s$conf.int %>%
              .before=1) %>%
   add_column("Interval"=rep(c("0-5 minutes", "> 5 minutes"), times=4),
              .before=2) %>%
-  flextable() %>%
-  set_caption("Table 14: Coefficients for time-dependent non-motorized model") %>%
-  autofit()
-#print("insert table 14")
+  kable(linesep = c('', '\\addlinespace'),
+        row.names = F,
+        align = c('l', 'l', rep('r',3)),
+        caption = "Table 14: Hazard ratios (HR) for time-dependent non-motorized model") %>%
+  kable_styling(bootstrap_options = c("striped", "hover")) %>%
+  row_spec(0, bold=T)
 ```
 
 The plot of deviance residuals for the updated, time-dependent model is shown in Figure 4. Though a few potential outliers are observed in the “trip ended later than expected” category (very negative deviance residuals), they are small in number, and individual exploration revealed no grounds on which to exclude any points as outliers.
 
-```{r,  fig.cap="Time dependent non-motorized model deviance residuals", fig.pos='H', out.extra = ''}
+```{r,  fig.cap="Figure 4: Time dependent non-motorized model deviance residuals", fig.align="center"}
 devres = residuals(fitcut, type="deviance")
 ggplot(data = data.frame(y = devres, x = 1:length(devres))) +
   geom_point(aes(x = x, y = y)) +
@@ -804,6 +837,7 @@ ggplot(data = data.frame(y = devres, x = 1:length(devres))) +
                      limits=c(-4,3),
                      breaks=seq(-4,3,1))
 ```
+<br />
 
 Plots of null Cox model Martingale residuals against destination TAZ parking and destination TAZ terminal time revealed no drastic deviations from linearity, so no functional forms were changed in the time-dependent model. However, like with the personal vehicle model, exact linearity did not appear to be achieved for any of these covariates, indicating better functional forms likely exist for the inclusion of these covariates in the model. For this analysis, linearity was deemed “close enough” in the context of time and processing limitations.
 
@@ -814,13 +848,13 @@ Having estimated and validated a Cox proportional hazards model for non-motorize
 • Purpose = Non-work
 
 A graphical comparison of a modeled travel time decay curve to the sample travel time decay curve for these attributes is shown in Figure 5. In addition, a plot of difference in model and the sample trip survival probabilities for these attributes is provided in Figure 6.
-```{r, eval=FALSE, echo=TRUE}
-purp = "nonwork"
-park = 0
-TTA = 0
+```{r}
+purp <-  "nonwork"
+park <-  0
+TTA  <-  0
 
 # Predict according to our curve (out to 2 hours)
-nd = data.frame(tstart=rep(c(0,5), times=1),
+nd <- data.frame(tstart=rep(c(0,5), times=1),
                 TIME=rep(c(5,310), times=1),
                 STATUS=rep(0, times=2),
                 tgroup=rep(1:2, times=1),
@@ -828,22 +862,22 @@ nd = data.frame(tstart=rep(c(0,5), times=1),
                 ParkEnd=rep(c(park), each=2),
                 TTA=rep(c(TTA), each=2),
                 curve=rep(c("Model"), each=2))
-sfit = survfit(fitcut, newdata=nd, id=curve, data=nm2)
-predicted = data.frame(x=c(0,sfit$time), y=c(1,sfit$surv))
+sfit <- survfit(fitcut, newdata=nd, id=curve, data=nm2)
+predicted <- data.frame(x=c(0,sfit$time), y=c(1,sfit$surv))
 
 # Filter survey data down to entries matching model parameters
 # Then calculate survival
-nmfilt = nm %>% filter(purpose %in% purp & 
+nmfilt <- nm %>% filter(purpose %in% purp & 
                          ParkEnd %in% park & 
                          TTA %in% TTA)
-actual = lapply(0:max(nmfilt$TIME), function(x){
+actual <- lapply(0:max(nmfilt$TIME), function(x){
   data.frame(x=x, y=sum(nmfilt$TIME > x))
 }) %>% bind_rows %>%
   mutate(y = y/nrow(nmfilt)) %>%
   filter(x <= max(predicted$x))
 ```
 
-```{r, fig.cap="Example comparison of model and sample travel time decay curves for non-motorized travel", fig.pos='H', out.extra = '', eval=FALSE, echo=TRUE}
+```{r, fig.cap="Figure 5: Example comparison of model and sample travel time decay curves for non-motorized travel", fig.align="center"}
 #print("insert figure 5")
 ggplot() +
   geom_step(data=predicted, aes(x=x, y=y, color="Model")) +
@@ -859,8 +893,9 @@ ggplot() +
   labs(x = "Travel time (minutes)",
        y = "Survival probability")
 ```
+<br />
 
-```{r, eval=FALSE, echo =TRUE}
+```{r, fig.cap="Figure 6: Difference in example model and sample survival probabilities for non-motorized travel", fig.align="center"}
 #print("insert figure 6")
 pred_full = rep(NA, length(actual$x))
 for(i in 0:171){
@@ -891,10 +926,6 @@ together %>%
 ```
 
 As evidenced in Figures 5 and 6, the model predicted a quicker travel time decay than is reflected in the sample, underpredicting survival probability at most points. However, that the maximum absolute error at any time point is just over 2% indicated that the model reflects the sample well.
-
-## TRANSIT
-
-No Text Delete or Clear the heading.
 
 # OPERATIONALIZING THE MODEL
 
@@ -973,6 +1004,16 @@ $\scriptstyle D_t,C_0,C_A=S_{C_0}(t-1)$ can be interpreted as the proportion of 
 
 ## A WALKTHROUGH EXAMPLE
 
+```{r}
+fitcut = coxph(Surv(tstart, TIME, STATUS) ~ parkcost:strata(tgroup) +
+                 tollcost:strata(tgroup) +
+                 hhsize:strata(tgroup) +
+                 purpose:strata(tgroup) +
+                 VTP:strata(tgroup) +
+                 VTA:strata(tgroup),
+               data=pv2)
+```
+
 To exemplify this operationalization, imagine that we want to quantify the value of a 15 minute vehicle trip in the context of increasing tolls. The null case $\scriptstyle C_0$ will assume no tolls. It will be compared to three alternative cases $\scriptstyle C_{A_i},=1,2,3$ , where *i* represents a $1, $2, or $3 toll, respectively. All other model variables will be held constant. Table 15 details the covariates in each case.
 
 ```{r}
@@ -995,14 +1036,21 @@ cases = decay_cases(c("$0", "$0", "1", "Work", "0", "0"),
                     c("$0", "$2", "1", "Work", "0", "0"),
                     c("$0", "$3", "1", "Work", "0", "0"))
 
-flextable(cases)%>%
-  set_caption("Table 15: Coefficients for C0 and CAi, i = 1, 2, 3") %>%
-  autofit()
+kable(cases,
+      booktabs = T,
+      row.names = F,
+      col.names = c("Case", "Parking cost", "Toll cost", "Household size", "Purpose",
+                    "Orig. TAZ term. time", "Dest. TAZ term. time"),
+      escape = F,
+      align = c("l", rep("r", 8)),
+      caption = "Table 15: Covariates for $C_0$ and $C_{A_i}, i=1,2,3$") %>%
+  kable_styling(bootstrap_options = c("striped", "hover")) %>%
+  row_spec(0, bold=T)
 ```
 
-The first step involves calculating the proportion of people willing to travel 15 minutes, or $\scriptstyle S_{C_0}(14)$. Using the personal vehicle model, we predict a survival curve using the conditions in $\scriptstyle C_0$, and extract the survival probability at *t* = 14. We find that $\scriptstyle S_{C_0}(14)$. A visualization is provided in Figure **XXX**.
+The first step involves calculating the proportion of people willing to travel 15 minutes, or $\scriptstyle S_{C_0}(14)$. Using the personal vehicle model, we predict a survival curve using the conditions in $\scriptstyle C_0$, and extract the survival probability at *t* = 14. We find that $\scriptstyle S_{C_0}(14)$. A visualization is provided in Figure 7.
 
-```{r, eval = FALSE, echo = TRUE}
+```{r}
 n = nrow(cases)
 cases$Park = 0
 cases$Toll = 0:3
@@ -1048,7 +1096,7 @@ df = suppressWarnings(
 df = bind_rows(df, data.frame(time=0,surv=1,curve=unique(cases$Case),cdf=0,pdf=0))
 ```
 
-```{r, fig.cap="$S_{C_0}(t)$, with $S_{C_0}(14)$ highlighted", fig.pos='H', out.extra = '', eval=FALSE, echo=TRUE}
+```{r, fig.cap="Figure 7: $S_{C_0}(t)$, with $S_{C_0}(14)$ highlighted", fig.align="center"}
 s14 = df$surv[df$curve == cases$Case[1] & df$time == 14]
 
 ggplot() +
@@ -1079,26 +1127,24 @@ ggplot() +
 
 Next, the probabilities that a trip lasts 15 minutes must be calculated in each alternative case, and then compared to the same probability in the null case. Using the personal vehicle model, we predict survivalcurves for $\scriptstyle C_{A_1}$, $\scriptstyle C_{A_2}$, and $\scriptstyle C_{A_3}$, and calculate $\scriptstyle f_{CA}(15)$ according to the survival probabilities at *t* = 14, 15.
 
-We refer back to the null case survival curve to calculate $\scriptstyle f_{C_0}(15)$ in the same manner. Finally, we take the ratio of each fCAi(15) $\scriptstyle f_{C_{A_i}}(15)$ to $\scriptstyle f_{C_{0_i}}(15)$. The results are provided in Table **XXX**. For context, the null and alternative case probability density functions on t ∈ [10, 20] are shown in Figure **XXX2**.
+We refer back to the null case survival curve to calculate $\scriptstyle f_{C_0}(15)$ in the same manner. Finally, we take the ratio of each fCAi(15) $\scriptstyle f_{C_{A_i}}(15)$ to $\scriptstyle f_{C_{0_i}}(15)$. The results are provided in Table 16. For context, the null and alternative case probability density functions on t ∈ [10, 20] are shown in Figure **XXX2**.
 
-```{r, echo = TRUE, eval=FALSE}
+```{r}
 totprob = df %>% 
   filter(time == 15) %>%
   mutate(d = pdf / pdf[1]) %>%
   select(curve, pdf, d)
 
 kable(totprob %>% mutate(pdf = round(pdf, 3), d = round(d, 3)),
-      booktabs = T,
       row.names = F,
-      col.names = c("Case", "Density", "Density ratio (to $\\bm{C_0}$)"),
+      col.names = c("Case", "Density", "Density ratio (to ${C_0}$)"),
       escape = F,
-      caption = "$f_{C_0}(t)$, $f_{C_{A_i}}(t)$, and $\\frac{f_{C_{A_i}}(15)}{f_{C_0}(15)}$ for 15 minute vehicle trips") %>%
- # column_spec(1:ncol(df), width = "5cm") %>%
+      caption = "Table 16: $f_{C_0}(t)$, $f_{C_{A_i}}(t)$, and $\\frac{f_{C_{A_i}}(15)}{f_{C_0}(15)}$ for 15 minute vehicle trips") %>%
   kable_styling(latex_options = "HOLD_position") %>%
   row_spec(0, bold=T)
 ```
 
-```{r, fig.cap="$f_{C_0}(t)$ and $f_{C_{A_i}}(t), i=1,2,3$", fig.pos='H', out.extra = '', echo=TRUE, eval=FALSE}
+```{r, fig.cap="Figure 8: $f_{C_0}(t)$ and $f_{C_{A_i}}(t), i=1,2,3$", fig.align="center"}
 maxden = max(df$pdf[between(df$time, 10, 20)])
 
 ggplot(data = df) +
@@ -1114,11 +1160,11 @@ ggplot(data = df) +
                      limits = c(0, ceiling(maxden/0.01)*0.01))
 ```
 
-Final, the decay factor $\scriptstyle D_{15,{C_0,C_{A_i}}}=S_{C_0}(14) \bullet \frac{f_{C_A}(15)}{f_{{C_0}(15)}}$ is calculated fro all three $\scriptstyle C_{A_i}$. The results are provided in Table **XXX2**.
+Final, the decay factor $\scriptstyle D_{15,{C_0,C_{A_i}}}=S_{C_0}(14) \bullet \frac{f_{C_A}(15)}{f_{{C_0}(15)}}$ is calculated fro all three $\scriptstyle C_{A_i}$. The results are provided in Table 17.
 
-```{r,  eval=FALSE, echo=TRUE}
+```{r}
 finaldf = totprob %>% 
-  mutate(s = df %>% filter(curve == "$C_{0}$" & time == 14) %$% surv) %>%
+  mutate(s = df %>% filter(curve == "C0" & time == 14) %$% surv) %>%
   mutate(f = d * s) %>%
   select(-pdf) %>%
   slice(-1) %>%
@@ -1129,9 +1175,9 @@ kable(finaldf %>% mutate(d = round(d, 3), s = round(s, 3), f = round(f, 3)),
       row.names = F,
       col.names = c("Case", "Willingness to travel", "Density ratio", "Decay factor"),
       escape = F,
-      caption = "Calculation of $D_{15,C_0,C_{A_i}}$") %>% 
+      caption = "Table 17: Calculation of $D_{15,C_0,C_{A_i}}$") %>% 
  # column_spec(1:ncol(df), width = "5cm") %>%
-  kable_styling(latex_options = "HOLD_position") %>%
+  kable_styling(bootstrap_options = c("striped", "hover")) %>%
   row_spec(0, bold=T)
 ```
 

@@ -45,7 +45,7 @@ from wsa import impfuncs
 #  approriate land use configuration.
 root = r"K:\Projects\MAPC\FinalData"
 os.chdir(root)
-net_config = "RailVision"
+net_config = "BRT_Scen_B"
 lu_config = "FEIR"
 
 #%% GLOBALS

@@ -21,7 +21,7 @@ import logging
 #  folder reflecting each network config.
 root = r"K:\Projects\MAPC\FinalData"
 os.chdir(root)
-net_config = "RailVision"
+net_config = "BRT_Scen_B"
 os.chdir(r"input\skims\{}".format(net_config))
 
 # Logger setup
@@ -36,11 +36,11 @@ logger.addHandler(handler)
 #%% FILE IO
 # Dict of files by mode {mode_name: [in_file, out_file]}
 files_by_mode = {
-    "WAT": ["AM_WAT_Skim_RailVision_Alt_6.csv", "WAT_AM.csv"],
-    "DAT - BT": ["AM_DAT_BT_Skim_RailVision_Alt_6.csv", "DAT_BT_AM.csv"],
-    "DAT - CR": ["AM_DAT_CR_Skim_RailVision_Alt_6.csv", "DAT_CR_AM.csv"],
-    "DAT - LB": ["AM_DAT_LB_Skim_RailVision_Alt_6.csv", "DAT_LB_AM.csv"],
-    "DAT - RT": ["AM_DAT_RT_Skim_RailVision_Alt_6.csv", "DAT_RT_AM.csv"]
+    "WAT": ["AM_WAT_Skim_Scen_B_BRT.csv", "WAT_AM.csv"],
+    "DAT - BT": ["AM_DAT_BT_Skim_Scen_B_BRT.csv", "DAT_BT_AM.csv"],
+    "DAT - CR": ["AM_DAT_CR_Skim_Scen_B_BRT.csv", "DAT_CR_AM.csv"],
+    "DAT - LB": ["AM_DAT_LB_Skim_Scen_B_BRT.csv", "DAT_LB_AM.csv"],
+    "DAT - RT": ["AM_DAT_RT_Skim_Scen_B_BRT.csv", "DAT_RT_AM.csv"]
 }
 
 # %% RENAMING
@@ -58,7 +58,7 @@ rename = {
 criteria = [
     ("GenCost", "__lt__", 99999),
     ("GenCost", "__ne__", 0)
-    ]
+]
 
 # %% CLEAN SKIMS
 logger.info(files_by_mode)
