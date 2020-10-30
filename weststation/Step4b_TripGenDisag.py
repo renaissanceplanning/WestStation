@@ -14,13 +14,17 @@ estimates. This is accomplished in 5 major steps:
           small starting propensity, and this grows based on block activities.
           This is to alleviate potential discontinuities between block-level
           and TAZ-level activity estimates.
+          
            - Production propensity is informed by HH types
+           
            - Attraction propensity is informed by job types and enrollments
+           
         
     2. Summarize total block trip-making propensity by purpose
         - Summarize the activity-based propensities to yield the total
           trip-making propensity for the block.The resultsing score is the
           total trip gen propensity (either for P's or A's) by purpose.
+          
         - Summarize the block-level totals to TAZs. This will be used to
           determine each block's share of total trip-making propensity.
           

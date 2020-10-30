@@ -2,7 +2,28 @@
 title: "TRAVEL BEHAVIOR AND ACCESSIBILITY"
 output: html_document
 ---
+```{r, echo=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning=FALSE, message=FALSE, 
+                      fig.pos = 'H', fig.cap=T)
+```
 
 A more in depth summary of how accessibility is affected by travel behaviors and other factors.
 
 Will include a interactive network diagram illustrating these interactions
+
+```{r Setup}
+library(tidyverse)
+library(sf)
+library(tmap)
+tmap_mode("view")
+```
+
+```{r Map 1}
+zones <- read_sf("./data/mapping/MAPC_Zones_simp.shp")
+data  <- read_csv("./data/access_to_jobs_auto_HBO.csv")
+
+zones <- left_join(zones,data)
+
+tm_shape(zones) + tm_polygons(col = "Total Emp-Purpose-HBO")
+```
+

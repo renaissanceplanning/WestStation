@@ -251,10 +251,23 @@ def _disagFromPropensityArray(taz_trips, block_trips, prop_array, act_dims,
             Purpose=p, 
             **axis_crit
             )
+        ###
+        check = block_trips.take(Purpose=p)
+        check = check.sum([block_id, "End"])
+        check = check.dissolve(block_id, taz_id, np.sum)
+        n = np.where(
+            np.logical_and(
+                check.data >= 0.999,
+                check.data <= 1.001
+                )
+            )
+        print(f"Found {len(n[0])} TAZs with valid propensity sums")
+        ###
     if logger is not None:
         logger.info("\nProportioned block propensities "
                     "(should sum to n_tazs * n_purposes): "
                     f"{block_trips.take(Purpose=purposes).data[:].sum()}")
+        logger.info("\nNumber of blocks where ")
     #STEP 5 - ESTIMATE DETAILED TRIPS BY BLOCK AND ACTIVITY
     # Multiply TAZ-level trip estimates by block-level, activity-specific
     #  propensities
@@ -265,6 +278,8 @@ def _disagFromPropensityArray(taz_trips, block_trips, prop_array, act_dims,
     window_zones = prop_array[block_axis].labels.get_level_values(
         block_taz_id).unique()
     purp_alloc=dict(zip(purposes, [0 for _ in purposes]))
+    _trip_tot_ = 0
+    _trip_tot2_ = 0
     for wz in window_zones:
         axis_crit[taz_axis] = {taz_id: wz}
         # Get trip total for each zone for each purpose
@@ -272,7 +287,13 @@ def _disagFromPropensityArray(taz_trips, block_trips, prop_array, act_dims,
         # Multiply trips by purpose across relevant block features
         for p in purposes:
             # Trips
+            ###
+            trips_check = taz_trips.take(Purpose=p, End=end, **{taz_axis: {taz_id: wz}}).sum("Purpose").data[0]
+            _trip_tot2_ += trips_check
+            ####
+            ####
             trips = taz_trips_by_purp.take(Purpose=p).data[0]
+            _trip_tot_ += trips
             # Apply
             block_crit = {"Purpose": p, "End": end, 
                           block_axis: {block_taz_id: wz}}
@@ -286,7 +307,7 @@ def _disagFromPropensityArray(taz_trips, block_trips, prop_array, act_dims,
         Purpose=purposes, **axis_crit
     )
     print(f"Allocated trips for {len(window_zones)} TAZs.")
-    print(f"Amounts allocated:\n{yaml.dump(purp_alloc)}")
+    print(f"Amounts allocated:\n{yaml.dump(purp_alloc)} (expected {_trip_tot_}, {_trip_tot2_})")
     if logger is not None:
         logger.info(f"\nAllocated trips for {len(window_zones)} TAZs.")
         logger.info(f"\nAmounts allocated:\n{yaml.dump(purp_alloc)}")
@@ -359,23 +380,29 @@ def disaggregateTrips_hb(taz_trips, block_trips, act_array, act_dims,
     # Apply trip propensities by activity dimensions to each block.
     #  This is done by broadcasting the propensity values to match the
     #  dimensions of `act_array` and updating the data through multiplication
+    # Activity propensities for home-based tripsvary by purpose, so we iterate 
+    #  over purposes, using a purpose-specific copy of the activity data to 
+    #  guide disaggregation.
     print('...step 1: calculate activty-based trip propensities')
-    for dim in act_dims:
-        for purpose in purposes:
+    
+    for purpose in purposes:
+        print(f'... ...{purpose}\n-----------------')
+        _act_array_ = act_array.copy()
+        for dim in act_dims:    
             prop_dict = propensities[purpose][dim]
             prop_rates = []
             for label in act_array[dim].labels:
                 prop_rates.append(prop_dict[label])
-            act_array.data *= lba.broadcast1dByAxis(
-                act_array, dim, prop_rates).data
-    # Bump each propensity value up by the `BASE_PROP` constant
-    act_array.data += base_prop
-    axis_crit = dict([(x.name, list(x.labels)) for x in act_array.axes
-                    if x.name in act_dims])
-    _disagFromPropensityArray(taz_trips, block_trips, act_array, act_dims,
-                              purposes, end, block_axis, block_id,
-                              block_taz_id, taz_axis, taz_id, logger,
-                              **axis_crit)
+            _act_array_.data *= lba.broadcast1dByAxis(
+                _act_array_, dim, prop_rates).data
+        # Bump each propensity value up by the `BASE_PROP` constant
+        _act_array_.data += base_prop
+        axis_crit = dict([(x.name, list(x.labels)) for x in _act_array_.axes
+                        if x.name in act_dims])
+        _disagFromPropensityArray(taz_trips, block_trips, _act_array_, 
+                                  act_dims, [purpose], end, block_axis, 
+                                  block_id, block_taz_id, taz_axis, taz_id,
+                                  logger, **axis_crit)
 
 def disaggregateTrips_nh(taz_trips, block_trips, nh_df, lbl_col, act_col,
                          purposes, end, propensities, base_prop, wb_df,
@@ -499,6 +526,7 @@ def disaggregateTrips_nh(taz_trips, block_trips, nh_df, lbl_col, act_col,
     axis_crit = dict([(x.name, act_crit) for x in block_trips.axes
                       if x.name in act_dims])
     for purpose in purposes:
+        print(f'... ...{purpose}\n-----------------')
         prop_array = nh_array.take(Purpose=purpose, squeeze=False)
         _disagFromPropensityArray(taz_trips, block_trips, prop_array, [],
                                   [purpose], end, block_axis, block_id,
