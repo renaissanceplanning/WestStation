@@ -475,7 +475,7 @@ p.caption {
 <div id="defining-trips-by-mode" class="section level2">
 <h2><span class="header-section-number">3.2</span> DEFINING TRIPS BY MODE</h2>
 <p>Modes of interest included non-motorized (NM), single-occupancy vehicle (SOV), high-occupancy vehicle (HOV), walk-access transit (WAT), and drive-access transit (DAT). For the NM, SOV, and HOV modes, trip records were used “as-is”: each record represented one trip. These three modes were defined according to the criteria in Table 1. For mode definitions, see Appendix Table A</p>
-<table class="table table-striped table-hover" style="margin-left: auto; margin-right: auto;">
+<table class="table table-striped table-hover table-responsive table-bordered" style="margin-left: auto; margin-right: auto;">
 <caption>
 Table 1: Definitions for NM, SOV, and HOV trips
 </caption>
@@ -535,7 +535,7 @@ Mode = 3, 4, 11, 12, or 97, with two or more travellers; Mode = 8, 9, or 10
 <li><p>They walk from <span class="math inline">\(T2\)</span> to their place of work.</p></li>
 </ol>
 <p>After this chaining, these two modes were defined according to the criteria in Table 2.</p>
-<table class="table table-striped table-hover" style="margin-left: auto; margin-right: auto;">
+<table class="table table-striped table-hover table-responsive table-bordered" style="margin-left: auto; margin-right: auto;">
 <caption>
 Table 2: Definitions for WAT and DAT trips
 </caption>
@@ -572,7 +572,7 @@ At least one link has Mode = 3, 4, 8, 9, 10, 11, 12, or 97
 <div id="defining-trips-by-purpose" class="section level2">
 <h2><span class="header-section-number">3.3</span> DEFINING TRIPS BY PURPOSE</h2>
 <p>After appropriate chaining, trip purposes were defined according to the criteria in Table 3. Purposes of interest included home-based work (HBW), home-based non-work (HBNW), and non-home based (NHB). For NM, SOV, and HOV trips, the destination purpose was the purpose for the record, and the origin purpose was the purpose for the chronologically previous record. For WAT and DAT trips, the destination purpose was the purpose for the last link, and the origin purpose was the purpose for the record chronologically previous to the first link.</p>
-<table class="table table-striped table-hover" style="margin-left: auto; margin-right: auto;">
+<table class="table table-striped table-hover table-responsive table-bordered" style="margin-left: auto; margin-right: auto;">
 <caption>
 Table 3: Definitions for HBW, HBNW, and NHB trips
 </caption>
@@ -591,35 +591,35 @@ Destination purpose
 </thead>
 <tbody>
 <tr>
-<td style="text-align:left;width: 1.5in; ">
+<td style="text-align:left;">
 HBW
 </td>
-<td style="text-align:left;width: 2in; ">
+<td style="text-align:left;">
 1, 2
 </td>
-<td style="text-align:left;width: 2in; ">
+<td style="text-align:left;">
 3, 4, or 12
 </td>
 </tr>
 <tr>
-<td style="text-align:left;width: 1.5in; ">
+<td style="text-align:left;">
 HBNW
 </td>
-<td style="text-align:left;width: 2in; ">
+<td style="text-align:left;">
 1, 2
 </td>
-<td style="text-align:left;width: 2in; ">
+<td style="text-align:left;">
 Not 3, 4, or 12
 </td>
 </tr>
 <tr>
-<td style="text-align:left;width: 1.5in; ">
+<td style="text-align:left;">
 NHB
 </td>
-<td style="text-align:left;width: 2in; ">
+<td style="text-align:left;">
 Not 1 or 2
 </td>
-<td style="text-align:left;width: 2in; ">
+<td style="text-align:left;">
 Not 1 or 2
 </td>
 </tr>
@@ -629,7 +629,7 @@ Not 1 or 2
 <div id="deriving-origin-tax-destination-taz-and-trip-duration" class="section level2">
 <h2><span class="header-section-number">3.4</span> DERIVING ORIGIN TAX, DESTINATION TAZ, AND TRIP DURATION</h2>
 <p>After trips were fully defined, origin TAZs, destination TAZs, and trip durations were derived according to the criteria in Table 4. The calculation method differed based on whether the trips were single records (NM, SOV, HOV), or chained records (WAT, DAT)</p>
-<table class="table table-striped table-hover" style="margin-left: auto; margin-right: auto;">
+<table class="table table-striped table-hover table-responsive table-bordered" style="margin-left: auto; margin-right: auto;">
 <caption>
 Table 4: Calculation methods for origin TAZ, destination TAZ, and trip durations by trip
 </caption>
@@ -744,9 +744,9 @@ Figure 1: Data form for trip duration models
 </div>
 <p><br /></p>
 <div class="figure" style="text-align: center">
-<img src="NaiveEstimatorsV1_files/figure-html/Figure%202-1.png" alt="Data form for generalized cost models" width="672" />
+<img src="NaiveEstimatorsV1_files/figure-html/Figure%202-1.png" alt="Figure 2: Data form for generalized cost models" width="672" />
 <p class="caption">
-Data form for generalized cost models
+Figure 2: Data form for generalized cost models
 </p>
 </div>
 <p>For the trip duration models, exponential decay was selected for all purposes for NM, SOV, and HOV modes; logistic decay was selected for all purposes for WAT and DAT modes. For the generalized cost models, logistic decay was selected for all models.</p>
@@ -756,7 +756,7 @@ Data form for generalized cost models
 <div id="results" class="section level1">
 <h1><span class="header-section-number">5</span> RESULTS</h1>
 <p>The model results are provided in Table 5, and resulting equations are provided in Table 6. The high <span class="math inline">\(R^2\)</span> and low <span class="math inline">\(AIC\)</span> values (for exponential and logistic decay, respectively) indicate that, over the constrained modeling sets, the fits perform quite well. Though using these models to predict very long or costly trips would be extrapolation because of the constraints on the modeling sets, these need for these types of predictions is minimal given the time and generalized cost for most trips.</p>
-<table class="table table-striped table-hover" style="margin-left: auto; margin-right: auto;">
+<table class="table table-striped table-hover table-responsive table-bordered" style="margin-left: auto; margin-right: auto;">
 <caption>
 Table 5: Exponential and logistic modeling results
 </caption>

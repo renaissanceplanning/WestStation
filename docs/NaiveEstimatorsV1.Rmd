@@ -81,7 +81,8 @@ kable(df,
       col.names = c("Trip", "Classification"),
       row.names = F,
       caption = "Table 1: Definitions for NM, SOV, and HOV trips") %>%
-  kable_styling(bootstrap_options = c("striped", "hover")) %>%
+  kable_styling(bootstrap_options = c("striped", "hover",
+                                      "responsive", "bordered")) %>%
   row_spec(0, bold=T)
 ```
 
@@ -124,7 +125,8 @@ kable(df,
       col.names = c("Trip", "Classification"),
       row.names = F,
       caption = "Table 2: Definitions for WAT and DAT trips") %>%
-  kable_styling(bootstrap_options = c("striped", "hover")) %>%
+    kable_styling(bootstrap_options = c("striped", "hover",
+                                      "responsive", "bordered")) %>%
   row_spec(0, bold=T)
 ```
 
@@ -141,11 +143,9 @@ kable(df,
       col.names = c("Trip purpose", "Origin purpose", "Destination purpose"),
       row.names = F,
       caption = "Table 3: Definitions for HBW, HBNW, and NHB trips") %>%
-  kable_styling(bootstrap_options = c("striped", "hover")) %>%
-  row_spec(0, bold=T) %>%
-  column_spec(1, width="1.5in") %>%
-  column_spec(2, width="2in") %>%
-  column_spec(3, width="2in")
+    kable_styling(bootstrap_options = c("striped", "hover",
+                                      "responsive", "bordered")) %>%
+  row_spec(0, bold=T) 
 ```
 
 ## DERIVING ORIGIN TAX, DESTINATION TAZ, AND TRIP DURATION
@@ -174,9 +174,10 @@ kable(df,
       col.names = c("Trip", "Origin TAZ", "Destination TAZ", "Trip durations"),
       row.names = F,
       caption = "Table 4: Calculation methods for origin TAZ, destination TAZ, and trip durations by trip") %>%
-  kable_styling(bootstrap_options = c("striped", "hover")) %>%
   row_spec(0, bold=T) %>%
-  collapse_rows(2:4, valign="middle")
+  collapse_rows(2:4, valign="middle") %>%
+  kable_styling(bootstrap_options = c("striped", "hover",
+                                      "responsive", "bordered")) 
 ```
 
 ## JOINING TO SKIM DATA FOR GENERALIZED COST
@@ -295,7 +296,7 @@ ggplot(data = forplot) +
 ```
 <br />
 
-```{r Figure 2, fig.cap="Data form for generalized cost models", fig.align="center"}
+```{r Figure 2, fig.cap="Figure 2: Data form for generalized cost models", fig.align="center"}
 costs_gc = costs %>% filter(!is.na(Generalized_Cost)) %>% filter(Generalized_Cost != 9999999)
 
 forplot = lapply(unique(costs_gc$Mode), function(m){
@@ -515,6 +516,7 @@ kable(naive_models %>% select(-equation),
       escape = F,
       row.names = F,
       caption = "Table 5: Exponential and logistic modeling results") %>%
-  kable_styling(bootstrap_options = c("striped", "hover")) %>%
+    kable_styling(bootstrap_options = c("striped", "hover",
+                                      "responsive", "bordered")) %>%
   row_spec(0, bold=T)
 ```

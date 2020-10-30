@@ -455,7 +455,7 @@ p.caption {
 <p>Historically, travel time decay curves have been estimated via exponential regression on time. First, for each time <em>t</em> in a set of travel times <span class="math inline">\({\scriptstyle t = 1, 2, ..., t_{max}}\)</span>, number of trips lasting at least <em>t</em> minutes would be calculated. Then, assuming the functional form y = <span class="math inline">\(Ae^{bt}\)</span>, a regression would be fit with <em>t</em> (time) as the sole explanatory variable and <em>y</em> (the number of trips lasting at least <em>t</em> minutes) as the response.</p>
 <p>While this method does elucidate the underlying decay curve, it is a naive approach in that it assumes travel time decay relies only on time. By considering time as the only covariate, this type of model ignores the impact other variables could have on travel time decay. For example, increased age could be associated with shorter tripmaking for walking trips, and thus a steeper travel time decay. Thus, a more informative travel time decay model may seek to include the effects of both time and other relevant covariates. This would not only produce a more realistic travel time decay curve, but allow for a quantification of the relationship between included covariates and travel time decay.</p>
 <p>This paper suggests the use of a survival analysis approach to modeling travel time decay. Survival analysis encompasses a set of statistical methods interested in modeling the time to an “event” using a set of predictor variables. It is most often seen in clinical trials, where a researcher may be interested in how long patients survive after being given a particular treatment. It can be extended to travel time decay by considering the ending of a trip as the “event” of interest. Table 1 provides the travel time decay analogs of a more common survival analysis example.</p>
-<table class="table table-striped table-hover" style="margin-left: auto; margin-right: auto;">
+<table class="table table-striped table-hover table-responsive table-bordered" style="margin-left: auto; margin-right: auto;">
 <caption>
 Table 1: Travel time decay in a survival analysis context
 </caption>
@@ -525,7 +525,7 @@ How long the trip lasts
 <p>The data comes from the Massachusetts Travel Survey (MTS), conducted by the Massachusetts Department of Transportation and published in June 2012. It was provided by the Metropolitan Area Planning Council (MAPC), which serves Boston, MA and its metropolitan region.</p>
 <p>The data includes 190,215 trip records from 37,023 persons across 15,033 households in Massachusetts. The trip dataset includes attributes such as duration, mode, purpose, cost, destination, etc. The person dataset includes attributes such as age, education, employment status, etc. The household dataset includes size, number of workers, number of vehicles, income, location, etc.</p>
 <p>This analysis required known values for all model variables, so some trip records were filtered out prior to model fitting based on survey responses. In addition, models were fit individually on different classes of modes, so different filtering conditions were necessary to create each model set. Table 2 details the modes used for each model, the conditions on which model variables were filtered, and the resulting number of trip records used for model fitting.</p>
-<table class="table table-striped table-hover" style="margin-left: auto; margin-right: auto;">
+<table class="table table-striped table-hover table-responsive table-bordered" style="margin-left: auto; margin-right: auto;">
 <caption>
 Table 2: Trip record filtering protocol for each mode-specific model
 </caption>
@@ -657,7 +657,7 @@ Not “NA” (indicating either origin or destination is not in the study area)
 <h2><span class="header-section-number">3.2</span> SELECTION OF COVARIATES</h2>
 <p>Covariates to be considered for each mode-specific model were selected from the set of available attributes in the trip, person, and household datasets reviewed in the Data section. Importantly, only covariates that would be (1) known for a given trip/person/household in a predictive setting or (2) easy to estimate for a given trip/person/household were selected for the model. These conditions were established for easier use of final model in practice. For example, though it is easy to see how age may be a relevant predictor of travel time decay for walking trips (older people may tend to take shorter trips, for example), it is unlikely a trip taker’s age is a readily available data point in a predictive setting. Furthermore, attempts to predict age for inclusion in a final model could be complicated and add uncertainty to travel time decay estimates.</p>
 <p>Table 3 details the candidate covariates considered for each mode-specific model.</p>
-<table class="table table-striped table-hover" style="margin-left: auto; margin-right: auto;">
+<table class="table table-striped table-hover table-responsive table-bordered" style="margin-left: auto; margin-right: auto;">
 <caption>
 Table 3: Candidate covariates considered for each mode-specific model
 </caption>
@@ -726,7 +726,7 @@ Terminal time (by origin and destination TAZ)
 </tbody>
 </table>
 <p>In all models, trip purpose was collapsed from 24 categories provided in the MTS data to three broad “purpose groups”: home, work, and non-work. Table 4 details how purposes were collapsed. “Loop trips” were classified according to their secondary purpose (which were also coded according to Table 4), or filtered out if no secondary purpose was provided.</p>
-<table class="table table-striped table-hover" style="margin-left: auto; margin-right: auto;">
+<table class="table table-striped table-hover table-responsive table-bordered" style="margin-left: auto; margin-right: auto;">
 <caption>
 Table 4: Methodology for collapsing purpose to home, work, and non-work groups
 </caption>
@@ -968,7 +968,7 @@ Visit friends/relatives
 <div id="personal-vehicle" class="section level2">
 <h2><span class="header-section-number">4.1</span> PERSONAL VEHICLE</h2>
 <p>The model including all candidate covariates produced a statistically valid fit, so no backward selection was completed. Parking cost, toll cost, household size, and purpose were all significant to hazard rate (the purpose “home” was used as the reference level for fitting the purpose covariate). The model coefficients are provided in Table 5, while the hazard ratios are provided in Table 6.</p>
-<table class="table table-striped table-hover" style="margin-left: auto; margin-right: auto;">
+<table class="table table-striped table-hover table-responsive table-bordered" style="margin-left: auto; margin-right: auto;">
 <caption>
 Table 5: Coefficients for initial personal vehicle model
 </caption>
@@ -1118,7 +1118,7 @@ Destination TAZ terminal time
 <li><p>For a continuous covariate <span class="math inline">\(\scriptstyle X\)</span>, assuming all other covariates are held constant, $βX &lt; 0 $ indicates that hazard rate – or the risk of the trip ending – decreases as <span class="math inline">\(\scriptstyle X\)</span> increases, which means longer travel times and slower travel time decay for larger values of <span class="math inline">\(\scriptstyle X\)</span>. Conversely, $βX &gt; 0 $ indicates that hazard rate increases as <span class="math inline">\(\scriptstyle X\)</span> increases, which means shorter travel times and faster travel time decay for larger values of <span class="math inline">\(\scriptstyle X\)</span>.</p></li>
 <li><p>For a categorical covariate <span class="math inline">\(\scriptstyle Y\)</span> with levels <em>a, ref</em> (where <em>ref</em> is the reference level), assuming all other covariates are held constant, <span class="math inline">\(\scriptstyle βYa &lt; 0\)</span> indicates that hazard rate is higher in group a than in the reference group, which means longer travel times and slower travel time decay in a relative to <em>ref</em>. Conversely, <span class="math inline">\(\scriptstyle βYa &gt; 0\)</span> indicates that hazard rate is lower in group a than in the reference group), which means shorter travel times and faster travel time decay in a relative to <em>ref</em>.</p></li>
 </ul>
-<table class="table table-striped table-hover" style="margin-left: auto; margin-right: auto;">
+<table class="table table-striped table-hover table-responsive table-bordered" style="margin-left: auto; margin-right: auto;">
 <caption>
 Table 6: Hazard ratios (HR) for initial personal vehicle model
 </caption>
@@ -1245,7 +1245,7 @@ Destination TAZ terminal time
 <li><p>For a categorical covariate <span class="math inline">\(\scriptstyle Y\)</span> with levels a, ref (where ref is the reference level), assuming all other covariates are held constant, group <em>a</em> has a hazard rate <span class="math inline">\(\scriptstyle HR_{Y_a}\)</span> times that of group <em>ref</em>.</p></li>
 </ul>
 <p>Schoenfeld Residuals Tests on the covariates revealed time dependence in all covariates. The results of the test are shown in Table 7 (the <strong>Global</strong> row contains the results of a global test on the model, which tests if there is any time dependence in the model as a whole). A time-dependent coefficients model was explored as a result of present time dependence.</p>
-<table class="table table-striped table-hover" style="margin-left: auto; margin-right: auto;">
+<table class="table table-striped table-hover table-responsive table-bordered" style="margin-left: auto; margin-right: auto;">
 <caption>
 Table 7: Results of Schoenfeld Residuals Tests for initial personal vehicle model
 </caption>
@@ -1380,7 +1380,7 @@ Global
 </tbody>
 </table>
 <p>Exploration of scaled Schoenfeld residuals vs. time plots followed by iterative model fitting and re-checking of the proportional hazards assumption resulted in a time-dependent coefficients model with break points at 5, 10, 20, and 30 minutes. This model featured no time dependence, and thus this model was used going forward. The model coefficients are provided in Table 8, while the hazard ratios are provided in Table 9. Interpretation of the coefficients and the hazard ratios stay the same, with the exception that the interpretation is only valid in the specified time interval.</p>
-<table class="table table-striped table-hover" style="margin-left: auto; margin-right: auto;">
+<table class="table table-striped table-hover table-responsive table-bordered" style="margin-left: auto; margin-right: auto;">
 <caption>
 Table 8: Coefficients for time-dependent personal vehicle model
 </caption>
@@ -2110,7 +2110,7 @@ Destination TAZ terminal time
 </tbody>
 </table>
 <p><br /></p>
-<table class="table table-striped table-hover" style="margin-left: auto; margin-right: auto;">
+<table class="table table-striped table-hover table-responsive table-bordered" style="margin-left: auto; margin-right: auto;">
 <caption>
 Table 9: Hazard ratios (HR) for time-dependent personal vehicle model
 </caption>
@@ -2733,7 +2733,7 @@ Destination TAZ terminal time
 </table>
 <p>The plot of deviance residuals for the updated, time-dependent model is shown in Figure 1. Though a few potential outliers are observed in the “trip ended earlier than expected” category (large positive deviance residuals), they are small in number, and individual exploration revealed no grounds on which to exclude any points as outliers.</p>
 <div class="figure" style="text-align: center">
-<img src="TripDecayV2_files/figure-html/unnamed-chunk-11-1.png" alt="Figure 1: Time-dependent personal vehicle model deviance residuals" width="672" />
+<img src="TripDecayV2_files/figure-html/Figure%201-1.png" alt="Figure 1: Time-dependent personal vehicle model deviance residuals" width="672" />
 <p class="caption">
 Figure 1: Time-dependent personal vehicle model deviance residuals
 </p>
@@ -2753,14 +2753,14 @@ Figure 1: Time-dependent personal vehicle model deviance residuals
 </ul>
 <p>A graphical comparison of a modeled travel time decay curve to the sample travel time decay curve for these attributes is shown in Figure 2. In addition, a plot of difference in model and the sample trip survival probabilities for these attributes is provided in Figure 3.</p>
 <div class="figure" style="text-align: center">
-<img src="TripDecayV2_files/figure-html/unnamed-chunk-13-1.png" alt="Figure 2: Difference in exampel model and sample survival probabilities for personal vehicle travel" width="672" />
+<img src="TripDecayV2_files/figure-html/Figure%202-1.png" alt="Figure 2: Difference in exampel model and sample survival probabilities for personal vehicle travel" width="672" />
 <p class="caption">
 Figure 2: Difference in exampel model and sample survival probabilities for personal vehicle travel
 </p>
 </div>
 <p><br /></p>
 <div class="figure" style="text-align: center">
-<img src="TripDecayV2_files/figure-html/unnamed-chunk-14-1.png" alt="Figure 3: Difference in exampel model and sample survival probabilities for personal vehicle travel" width="672" />
+<img src="TripDecayV2_files/figure-html/Figure%203-1.png" alt="Figure 3: Difference in exampel model and sample survival probabilities for personal vehicle travel" width="672" />
 <p class="caption">
 Figure 3: Difference in exampel model and sample survival probabilities for personal vehicle travel
 </p>
@@ -2770,7 +2770,7 @@ Figure 3: Difference in exampel model and sample survival probabilities for pers
 <div id="non-motorized" class="section level2">
 <h2><span class="header-section-number">4.2</span> NON-MOTORIZED</h2>
 <p>The model including all candidate covariates showed household size was an insignificant contributor to hazard. When backward selection was used to exclude household size, a statistically valid fit was achieved. The final initial model included only purpose (again, the purpose “home” was used as the reference level for fitting the purpose covariate). The model coefficients are provided in Table 10, while the hazard ratios are provided in Table 11.</p>
-<table class="table table-striped table-hover" style="margin-left: auto; margin-right: auto;">
+<table class="table table-striped table-hover table-responsive table-bordered" style="margin-left: auto; margin-right: auto;">
 <caption>
 Table 10: Coefficients for initial non-motorized model
 </caption>
@@ -2864,7 +2864,7 @@ Purpose: non-work
 </tr>
 </tbody>
 </table>
-<table class="table table-striped table-hover" style="margin-left: auto; margin-right: auto;">
+<table class="table table-striped table-hover table-responsive table-bordered" style="margin-left: auto; margin-right: auto;">
 <caption>
 Table 11: Hazard ratios (HR) for initial non-motorized model
 </caption>
@@ -2944,7 +2944,7 @@ Purpose: non-work
 </tbody>
 </table>
 <p>Schoenfeld Residuals Tests on the covariates revealed time dependence in the non-work purpose, but not for the work purpose. The results of the test are shown in Table 12. A time-dependent coefficients model was explored as a result of present time dependence</p>
-<table class="table table-striped table-hover" style="margin-left: auto; margin-right: auto;">
+<table class="table table-striped table-hover table-responsive table-bordered" style="margin-left: auto; margin-right: auto;">
 <caption>
 Table 12: Results of Schoenfeld Residuals Tests for initial non-motorized model
 </caption>
@@ -3037,7 +3037,7 @@ Global
 </tbody>
 </table>
 <p>Exploration of scaled Schoenfeld residuals vs. time plots followed by iterative model fitting and re-checking of the proportional hazards assumption resulted in a time-dependent coefficients model with a single break point at 5 minutes. This model featured no time dependence, and thus this model was used going forward. The model coefficients are provided in Table 13, while the hazard ratios are provided in Table 14.</p>
-<table class="table table-striped table-hover" style="margin-left: auto; margin-right: auto;">
+<table class="table table-striped table-hover table-responsive table-bordered" style="margin-left: auto; margin-right: auto;">
 <caption>
 Table 13: Coefficients for time-dependent non-motorized model
 </caption>
@@ -3226,7 +3226,7 @@ Purpose: non-work
 </tr>
 </tbody>
 </table>
-<table class="table table-striped table-hover" style="margin-left: auto; margin-right: auto;">
+<table class="table table-striped table-hover table-responsive table-bordered" style="margin-left: auto; margin-right: auto;">
 <caption>
 Table 14: Hazard ratios (HR) for time-dependent non-motorized model
 </caption>
@@ -3390,7 +3390,7 @@ Purpose: non-work
 </table>
 <p>The plot of deviance residuals for the updated, time-dependent model is shown in Figure 4. Though a few potential outliers are observed in the “trip ended later than expected” category (very negative deviance residuals), they are small in number, and individual exploration revealed no grounds on which to exclude any points as outliers.</p>
 <div class="figure" style="text-align: center">
-<img src="TripDecayV2_files/figure-html/unnamed-chunk-22-1.png" alt="Figure 4: Time dependent non-motorized model deviance residuals" width="672" />
+<img src="TripDecayV2_files/figure-html/Figure%204-1.png" alt="Figure 4: Time dependent non-motorized model deviance residuals" width="672" />
 <p class="caption">
 Figure 4: Time dependent non-motorized model deviance residuals
 </p>
@@ -3401,14 +3401,14 @@ Figure 4: Time dependent non-motorized model deviance residuals
 <p>• Destination TAZ parking = $0 • Destination TAZ terminal time = 0 minutes • Purpose = Non-work</p>
 <p>A graphical comparison of a modeled travel time decay curve to the sample travel time decay curve for these attributes is shown in Figure 5. In addition, a plot of difference in model and the sample trip survival probabilities for these attributes is provided in Figure 6.</p>
 <div class="figure" style="text-align: center">
-<img src="TripDecayV2_files/figure-html/unnamed-chunk-24-1.png" alt="Figure 5: Example comparison of model and sample travel time decay curves for non-motorized travel" width="672" />
+<img src="TripDecayV2_files/figure-html/Figure%205-1.png" alt="Figure 5: Example comparison of model and sample travel time decay curves for non-motorized travel" width="672" />
 <p class="caption">
 Figure 5: Example comparison of model and sample travel time decay curves for non-motorized travel
 </p>
 </div>
 <p><br /></p>
 <div class="figure" style="text-align: center">
-<img src="TripDecayV2_files/figure-html/unnamed-chunk-25-1.png" alt="Figure 6: Difference in example model and sample survival probabilities for non-motorized travel" width="672" />
+<img src="TripDecayV2_files/figure-html/Figure%206-1.png" alt="Figure 6: Difference in example model and sample survival probabilities for non-motorized travel" width="672" />
 <p class="caption">
 Figure 6: Difference in example model and sample survival probabilities for non-motorized travel
 </p>
@@ -3484,7 +3484,7 @@ f(t) &amp;= F(t) - F(t-1) \\
 <div id="a-walkthrough-example" class="section level2">
 <h2><span class="header-section-number">5.2</span> A WALKTHROUGH EXAMPLE</h2>
 <p>To exemplify this operationalization, imagine that we want to quantify the value of a 15 minute vehicle trip in the context of increasing tolls. The null case <span class="math inline">\(\scriptstyle C_0\)</span> will assume no tolls. It will be compared to three alternative cases <span class="math inline">\(\scriptstyle C_{A_i},=1,2,3\)</span> , where <em>i</em> represents a $1, $2, or $3 toll, respectively. All other model variables will be held constant. Table 15 details the covariates in each case.</p>
-<table class="table table-striped table-hover" style="margin-left: auto; margin-right: auto;">
+<table class="table table-striped table-hover table-responsive table-bordered" style="margin-left: auto; margin-right: auto;">
 <caption>
 Table 15: Covariates for <span class="math inline">\(C_0\)</span> and <span class="math inline">\(C_{A_i}, i=1,2,3\)</span>
 </caption>
@@ -3610,14 +3610,14 @@ Work
 </table>
 <p>The first step involves calculating the proportion of people willing to travel 15 minutes, or <span class="math inline">\(\scriptstyle S_{C_0}(14)\)</span>. Using the personal vehicle model, we predict a survival curve using the conditions in <span class="math inline">\(\scriptstyle C_0\)</span>, and extract the survival probability at <em>t</em> = 14. We find that <span class="math inline">\(\scriptstyle S_{C_0}(14)\)</span>. A visualization is provided in Figure 7.</p>
 <div class="figure" style="text-align: center">
-<img src="TripDecayV2_files/figure-html/unnamed-chunk-29-1.png" alt="Figure 7: $S_{C_0}(t)$, with $S_{C_0}(14)$ highlighted" width="672" />
+<img src="TripDecayV2_files/figure-html/Figure%207-1.png" alt="Figure 7: $S_{C_0}(t)$, with $S_{C_0}(14)$ highlighted" width="672" />
 <p class="caption">
 Figure 7: <span class="math inline">\(S_{C_0}(t)\)</span>, with <span class="math inline">\(S_{C_0}(14)\)</span> highlighted
 </p>
 </div>
 <p>Next, the probabilities that a trip lasts 15 minutes must be calculated in each alternative case, and then compared to the same probability in the null case. Using the personal vehicle model, we predict survivalcurves for <span class="math inline">\(\scriptstyle C_{A_1}\)</span>, <span class="math inline">\(\scriptstyle C_{A_2}\)</span>, and <span class="math inline">\(\scriptstyle C_{A_3}\)</span>, and calculate <span class="math inline">\(\scriptstyle f_{CA}(15)\)</span> according to the survival probabilities at <em>t</em> = 14, 15.</p>
 <p>We refer back to the null case survival curve to calculate <span class="math inline">\(\scriptstyle f_{C_0}(15)\)</span> in the same manner. Finally, we take the ratio of each fCAi(15) <span class="math inline">\(\scriptstyle f_{C_{A_i}}(15)\)</span> to <span class="math inline">\(\scriptstyle f_{C_{0_i}}(15)\)</span>. The results are provided in Table 16. For context, the null and alternative case probability density functions on t ∈ [10, 20] are shown in Figure <strong>XXX2</strong>.</p>
-<table class="table" style="margin-left: auto; margin-right: auto;">
+<table class="table table-striped table-hover table-responsive table-bordered" style="margin-left: auto; margin-right: auto;">
 <caption>
 Table 16: <span class="math inline">\(f_{C_0}(t)\)</span>, <span class="math inline">\(f_{C_{A_i}}(t)\)</span>, and <span class="math inline">\(\frac{f_{C_{A_i}}(15)}{f_{C_0}(15)}\)</span> for 15 minute vehicle trips
 </caption>
@@ -3682,13 +3682,13 @@ CA3
 </tbody>
 </table>
 <div class="figure" style="text-align: center">
-<img src="TripDecayV2_files/figure-html/unnamed-chunk-31-1.png" alt="Figure 8: $f_{C_0}(t)$ and $f_{C_{A_i}}(t), i=1,2,3$" width="672" />
+<img src="TripDecayV2_files/figure-html/Figure%208-1.png" alt="Figure 8: $f_{C_0}(t)$ and $f_{C_{A_i}}(t), i=1,2,3$" width="672" />
 <p class="caption">
 Figure 8: <span class="math inline">\(f_{C_0}(t)\)</span> and <span class="math inline">\(f_{C_{A_i}}(t), i=1,2,3\)</span>
 </p>
 </div>
 <p>Final, the decay factor <span class="math inline">\(\scriptstyle D_{15,{C_0,C_{A_i}}}=S_{C_0}(14) \bullet \frac{f_{C_A}(15)}{f_{{C_0}(15)}}\)</span> is calculated fro all three <span class="math inline">\(\scriptstyle C_{A_i}\)</span>. The results are provided in Table 17.</p>
-<table class="table table-striped table-hover" style="margin-left: auto; margin-right: auto;">
+<table class="table table-striped table-hover table-responsive table-bordered" style="margin-left: auto; margin-right: auto;">
 <caption>
 Table 17: Calculation of <span class="math inline">\(D_{15,C_0,C_{A_i}}\)</span>
 </caption>
