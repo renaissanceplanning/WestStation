@@ -73,6 +73,7 @@ logger.addHandler(handler)
 PURPOSES = ["HBW", "HBO", "HBSch", "NHB"]
 HB_PURPS = [p for p in PURPOSES if p!= "NHB"]
 LEVELS=["block_id", "TAZ", "INFOCUS", "INWINDOW"]
+ENDS = ["P", "A"]
 
 # Generalized trip-making propensity assumptions are used to guide the
 #  trip gen disaggregation process. Trip totals are governed by the regional
@@ -84,19 +85,49 @@ BASE_PROP = 0.0001
 # HH Size: as household size increases, trip-making increases (there are 4
 #          size classes -  1 person, 2 persons, 3 persons, 4+ persons)
 HHSIZE_PROP = [10, 20, 30, 35]
+HHSIZE_PROP = {
+    "HHSize1": 10,
+    "HHSize2": 20,
+    "HHSize3": 30,
+    "HHSize4p": 35
+    }
 
 # Income: as income increases, trip-making increases (there are 4 income 
 #         classes - less than $35k, $35-75K, $75-125K, $125K+)
 INCOME_PROP = [10, 20, 30, 40]
+INCOME_PROP = {
+    "Income1": 10,
+    "Income2": 20,
+    "Income3": 30,
+    "Income4": 40
+    }
 
 # Workers: as the number of workers increases, trip-making increases (there
 #          are 4 worker classes - no workers, 1 worker, 2 workers, 3+ workers)
 WORKER_PROP = [5, 10, 20, 30]
+WORKER_PROP ={
+    "worker0": 5,
+    "worker1": 10,
+    "worker2": 20,
+    "worker3p": 30
+    }
 
 # Vehicle Ownership: as the number of vehicles increases, trip-making 
 #                    goes up slightly (there are 4 vehicle ownership classes - 
 #                    no vehicles, 1 vehicle, 2 vehicles, 3+ vehicles)
 VEHICLE_PROP = [10, 15, 20, 20]
+VEHICLE_PROP = {
+    "Veh0": 10,
+    "Veh1": 20,
+    "Veh2": 30,
+    "Veh3p": 40
+    }
+HH_PROP = {
+    "HHSize": HHSIZE_PROP,
+    "Income": INCOME_PROP,
+    "Workers": WORKER_PROP,
+    "VehOwn": VEHICLE_PROP
+    }
 
 # Each activity's purpose-specific propensity is stored in a dictionary.
 #  Propensity values are stored in nested dictionaries:
@@ -121,11 +152,18 @@ _hh_props_ = [dict(zip(HH_LABELS[0], HHSIZE_PROP)),
               dict(zip(HH_LABELS[2], VEHICLE_PROP)),
               dict(zip(HH_LABELS[3], WORKER_PROP))
 ]
+_hh_props_nhb_ = [dict(zip(HH_LABELS[0], [1 for _ in HH_LABELS[0]])),
+                  dict(zip(HH_LABELS[1], [1 for _ in HH_LABELS[1]])),
+                  dict(zip(HH_LABELS[2], [1 for _ in HH_LABELS[2]])),
+                  dict(zip(HH_LABELS[3], [1 for _ in HH_LABELS[3]]))
+]                
 _hh_props_mid_ = dict(zip(HH_DIMS, _hh_props_))
+_hh_props_nhb_mid_ = dict(zip(HH_DIMS, _hh_props_nhb_))
 HH_PROP = {
     "HBW": _hh_props_mid_,
     "HBO": _hh_props_mid_,
-    "HBSch": _hh_props_mid_
+    "HBSch": _hh_props_mid_,
+    "NHB": _hh_props_nhb_mid_
 }
 
 # Non-home
@@ -221,22 +259,44 @@ block_imp = taz_tg.cast(hh_array.block_id, copy_data=False, drop="TAZ")
 # Fill the impression to initialize all values to zero on-disk
 block_tg = block_imp.fill(0.0, hdf_store, node_path, name, overwrite=True)
 
+
+#%% MAKE PROPENSITY ARRAY
+# Make an impression of the taz_tg array, dropping the taz dimension.
+#  This leaves activity axes (HHSize, Income, VehOwn, Workers), Purpose,
+#  and End. A basic propensity matrix for these dimensions is assembled based
+#  on the relative weights for each label in each dimension. Non-home
+#  propensities vary by activity type, but non-home trip generators are
+#  accounted for only by the label "-" in each activity axis. Thus, in this
+#  basic propensity matrix, the non-home label is always filled with 1.0.
+#  Home-based labels are populated with propensity estimates through
+#  cross-multiplication of propensities across all potential HH types.
+basic_prop_array = taz_tg.impress(drop="TAZ", fill_with=1.0)
+prods_prop = tg.calcPropensity_HB(basic_prop_array, HH_PROP, end_axis="End",
+                                  prod_label="P")
+basic_prop_array.put(prods_prop.data, End="P")
+
+# Extend the basic propensity array into the `block_id` dimension (i.e.,
+#  repeat the basic propensities for every block)
+block_prop_array = basic_prop_array.cast(block_tg.block_id)
+
+
 #%% PRODUCTION-END DISAG
-print("DISAGGREGATE HB PRODUCTIONS")
-tg.disaggregateTrips_hb(taz_trips=taz_tg,
-                        block_trips=block_tg,
-                        act_array=hh_array, 
-                        act_dims=HH_DIMS,
-                        purposes=HB_PURPS,
-                        end="P",
-                        propensities=HH_PROP,
-                        base_prop=BASE_PROP,
-                        block_axis="block_id",
-                        block_id="block_id",
-                        block_taz_id="TAZ",
-                        taz_axis="TAZ",
-                        taz_id="TAZ",
-                        logger=logger)
+print("DISAGGREGATE HB TRIPS")
+for end in ENDS:
+    tg.disaggregateTrips_hb(taz_trips=taz_tg,
+                            block_trips=block_tg,
+                            act_array=hh_array, 
+                            act_dims=HH_DIMS,
+                            purposes=PURPOSES,
+                            end=end,
+                            propensities=HH_PROP,
+                            base_prop=BASE_PROP,
+                            block_axis="block_id",
+                            block_id="block_id",
+                            block_taz_id="TAZ",
+                            taz_axis="TAZ",
+                            taz_id="TAZ",
+                            logger=logger)
 
 # Log block-level trip generation estimates (home-based)
 block_sum = block_tg.sum(["Purpose", "End"])
@@ -244,55 +304,56 @@ logger.info(f"\nTrips in window (block scale):\n{block_sum}\n{block_sum.axes}")
 
 
 # %% ATTRACTION-END: 
-print("DISAGGREGATE ATTRACTIONS")
-tg.disaggregateTrips_nh(taz_trips=taz_tg,
-                        block_trips=block_tg,
-                        nh_df=nh_df,
-                        lbl_col=ATTR_DIM,
-                        act_col=ATTR_VALS,
-                        purposes=PURPOSES,
-                        end="A",
-                        propensities=ATTR_PROP,
-                        base_prop=BASE_PROP,
-                        wb_df=wb_df,
-                        block_axis="block_id",
-                        block_id="block_id",
-                        block_taz_id="TAZ",
-                        taz_axis="TAZ",
-                        taz_id="TAZ",
-                        wb_block_id="block_id",
-                        act_crit="-",
-                        levels=LEVELS,
-                        act_dims=HH_DIMS,
-                        logger=logger)
+print("DISAGGREGATE NON-HOME BASED TRIPS")
+for end in ENDS:
+    tg.disaggregateTrips_nh(taz_trips=taz_tg,
+                            block_trips=block_tg,
+                            nh_df=nh_df,
+                            lbl_col=ATTR_DIM,
+                            act_col=ATTR_VALS,
+                            purposes=PURPOSES,
+                            end="A",
+                            propensities=ATTR_PROP,
+                            base_prop=BASE_PROP,
+                            wb_df=wb_df,
+                            block_axis="block_id",
+                            block_id="block_id",
+                            block_taz_id="TAZ",
+                            taz_axis="TAZ",
+                            taz_id="TAZ",
+                            wb_block_id="block_id",
+                            act_crit="-",
+                            levels=LEVELS,
+                            act_dims=HH_DIMS,
+                            logger=logger)
 
 # Log block-level trip generation estimates (with attractions)
 block_sum = block_tg.sum(["Purpose", "End"])
 logger.info(f"\nTrips in window (block scale):\n{block_sum}\n{block_sum.axes}")
 
 # %% NHB PRODUCTIONS:
-print("DISAGGREGATE NHB PRODUCTIONS")
-tg.disaggregateTrips_nh(taz_trips=taz_tg,
-                        block_trips=block_tg,
-                        nh_df=nh_df,
-                        lbl_col=ATTR_DIM,
-                        act_col=ATTR_VALS,
-                        purposes=["NHB"],
-                        end="P",
-                        propensities=ATTR_PROP,
-                        base_prop=BASE_PROP,
-                        wb_df=wb_df,
-                        block_axis="block_id",
-                        block_id="block_id",
-                        block_taz_id="TAZ",
-                        taz_axis="TAZ",
-                        taz_id="TAZ",
-                        wb_block_id="block_id",
-                        act_crit="-",
-                        levels=LEVELS,
-                        act_dims=HH_DIMS,
-                        logger=logger)
+# print("DISAGGREGATE NHB PRODUCTIONS")
+# tg.disaggregateTrips_nh(taz_trips=taz_tg,
+#                         block_trips=block_tg,
+#                         nh_df=nh_df,
+#                         lbl_col=ATTR_DIM,
+#                         act_col=ATTR_VALS,
+#                         purposes=PURPOSES,
+#                         end="P",
+#                         propensities=ATTR_PROP,
+#                         base_prop=BASE_PROP,
+#                         wb_df=wb_df,
+#                         block_axis="block_id",
+#                         block_id="block_id",
+#                         block_taz_id="TAZ",
+#                         taz_axis="TAZ",
+#                         taz_id="TAZ",
+#                         wb_block_id="block_id",
+#                         act_crit="-",
+#                         levels=LEVELS,
+#                         act_dims=HH_DIMS,
+#                         logger=logger)
 
-# Log block-level trip generation estimates (with NHB prods)
-block_sum = block_tg.sum(["Purpose", "End"])
-logger.info(f"\nTrips in window (block scale):\n{block_sum}\n{block_sum.axes}")
+# # Log block-level trip generation estimates (with NHB prods)
+# block_sum = block_tg.sum(["Purpose", "End"])
+# logger.info(f"\nTrips in window (block scale):\n{block_sum}\n{block_sum.axes}")

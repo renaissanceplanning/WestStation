@@ -1,6 +1,7 @@
 ---
 title: "TRAVEL BEHAVIOR AND ACCESSIBILITY"
 output: html_document
+runtime: shiny
 ---
 ```{r, echo=FALSE}
 knitr::opts_chunk$set(echo = FALSE, warning=FALSE, message=FALSE, 
@@ -15,15 +16,71 @@ Will include a interactive network diagram illustrating these interactions
 library(tidyverse)
 library(sf)
 library(tmap)
+library(shiny)
+library(rpgcolorsr)
 tmap_mode("view")
 ```
+```{r, eval = FALSE}
+tm_shape(zones) + tm_polygons(col = input$variable)
+```
 
-```{r Map 1}
+```{r Map 1, eval = TRUE}
 zones <- read_sf("./data/mapping/MAPC_Zones_simp.shp")
 data  <- read_csv("./data/access_to_jobs_auto_HBO.csv")
 
 zones <- left_join(zones,data)
 
-tm_shape(zones) + tm_polygons(col = "Total Emp-Purpose-HBO")
-```
+tot_emp_pal  <- rpg_color_pal("rpg_orange_ramp")(5)
+retail_pal   <- rpg_color_pal("chartreuse_ramp")(5)
+service_pal  <- rpg_color_pal("rpg_blue_ramp")(5)
+basic_pal    <- rpg_color_pal("red_ramp")(5)
+tot_enr_pal  <- rpg_color_pal("sea_green_ramp")(5)
 
+
+shinyApp(
+
+  ui = fluidPage(
+    titlePanel("Access to Jobs"),
+     tmapOutput("map1"),
+     selectInput("variable", h4("Variable:"),
+                 choices = list("Total Employment",
+                                "Retail",
+                                "Service",
+                                "Basic",
+                                "TotEnroll")),
+    
+              helpText("Select the variable visualized in the map, 
+                       updates occur in real time")
+    ),
+
+
+  server = function(input, output) {
+    observe({
+    output$map1 <-  renderTmap({
+       var <- switch(input$variable,
+                     "Total Employment" = "Total Emp-Purpose-HBO",
+                     "Retail"           = "Retail-Purpose-HBO",
+                     "Service"          = "Service-Purpose-HBO",
+                     "Basic"            = "Basic-Purpose-HBO",
+                     "TotEnroll"        = "TotEnroll-Purpose-HBO") 
+       
+       pal <- switch(input$variable,
+                     "Total Employment" = tot_emp_pal,
+                     "Retail"           = retail_pal, 
+                     "Service"          = service_pal,
+                     "Basic"            = basic_pal,  
+                     "TotEnroll"        = tot_enr_pal,)
+       
+       tm_shape(zones) + tm_polygons(col = var, 
+                                     palette = pal,
+                                     n = 5,
+                                     style = "pretty",
+                                     lwd = 0.1,
+                                     title = input$variable)
+    })
+    }) 
+  },
+
+  options = list(height = 750)
+)
+```
