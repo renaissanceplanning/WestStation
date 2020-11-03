@@ -165,13 +165,13 @@ def dfToLabeledArray_tg(tg_df, ref_array, dims, act_col,
     # Convert block-level activity details into a labeled array for the
     # window area.
     act_array = lba.dfToLabeledArray(tg_df.sort_values(by=block_id),
-                                dim_cols, act_col, fill_value=0.0)
-    
+                                     dim_cols, act_col, fill_value=0.0)
+    act_array[block_id].labels.name = block_id
     # Update axes
     #  - levels
     level_df = tg_df.groupby(levels).size().reset_index()[levels]
     act_array[block_id].addLevel(
-        level_df, left_on="index", right_on=block_id)
+        level_df, left_on=block_id, right_on=block_id)
     #  - alignment
     for align_axis in align_axes:
         lba.alignAxisLabels(act_array, align_axis.name, align_axis,
@@ -182,13 +182,15 @@ def dfToLabeledArray_tg(tg_df, ref_array, dims, act_col,
 def calcPropensity_HB(prop_array, hh_propensity_dict, end_axis="End",
                       prod_label="P"):
     """
-    Calculate hypothetical home-based trip-making potential based on a 
-    hh propensity dictionary. The input `prop_array` is updated in-place.
-    
+    A function to calculate trip-making propensities for home-based trip
+    generators. Home-based trip-making propensity is estimated based on 
+    household types in each block and their respective generalized trip-making
+    propensity factors. 
+       
     Parameters
     ------------
     prop_array: LbArray
-        A simple array, assumed to be initialized to 1.0 and having axes 
+        A labeled array, assumed to be initialized to 1.0 and having axes 
         with labels corresponding to those named in `hh_propensity_dict`.
     hh_propensity_dict: Dict
         A nested dictionary whose keys correspond to axis names in
@@ -204,291 +206,45 @@ def calcPropensity_HB(prop_array, hh_propensity_dict, end_axis="End",
     prods: LbArray
         An estimate of productions propensity for different household types.
     
+    See Also
+    --------
+    calcPropensity_NH
+    normalizePropensity
+    applyTAZTrips
     """    
     # estimate home-based production propensity based on hh_propensity_dict 
     prods = prop_array.take(**{end_axis: prod_label})
     for hh_dim in hh_propensity_dict:        
         dim_dict = hh_propensity_dict[hh_dim]
         axis = prop_array.getAxisByName(hh_dim)
-        #crit = [label for label in axis.labels.to_list()]
         weights = [dim_dict.get(label, 1.0) for label in axis.labels.to_list()]
         # broadcast and multiply
         prods.data *= lba.broadcast1dByAxis(prods, axis.name, weights).data
     return prods
     
-    prop_array.put(prods.data, End="P")
-        
-        
     
-
-
-
-def _disagFromPropensityArray(taz_trips, block_trips, prop_array, act_dims,
-                              purposes, end, block_axis, block_id,
-                              block_taz_id, taz_axis, taz_id, logger,
-                              **axis_crit):
-    for p in purposes:
-        if np.any(prop_array.data[:] == 0):
-            print(f"FOUND BLOCKS WITH NO PROPENSITY (purpose: {p})")
-            if logger is not None:
-                logger.info(f"FOUND BLOCKS WITH NO PROPENSITY (purpose: {p})")
-    axis_crit["End"] = end
-    block_crit = axis_crit.copy()
-    # STEP 2 - TOTAL BLOCK TRIP PROPENSITY
-    # Summarize each block's total trip propensity using the .sum method.
-    print(axis_crit)
-    print(block_crit)
-    print('...step 2: sum total block propensity')
-    block_prop = prop_array.sum(block_axis)
-    
-    # Dissolve the block-level sums based on TAZ ID to get each zone's total
-    #  propensity
-    if prop_array.ndim == 1:
-        taz_prop_df = prop_array.to_frame.reset_index()
-        taz_prop_df = taz_prop_df.reset_index()
-        levels = prop_array[block_axis].levels
-        taz_prop_df[levels] = pd.DataFrame(
-            taz_prop_df[block_axis].tolist(), index=taz_prop_df.index)
-        taz_prop_sum = taz_prop_df.groupby(block_taz_id).sum().reset_index()
-        taz_prop = lba.dfToLabeledArray(
-            taz_prop_sum, ["TAZ"], ["prop"], fill_value=0)
-    else:
-        taz_prop = prop_array.dissolve(
-            block_axis, block_taz_id, np.sum).sum(block_axis)
-    
-    # STEP 3 - NORMALIZE ACTIVITY-BASED PROPENSITIES
-    # For each block, normalize its activity-based propensities as shares of
-    #  its total propensity
-    print('...step 3: normalize propensities across block activities')
-    prop_array.data /= lba.broadcast1dByAxis(prop_array, block_id,
-                                       block_prop.data).data
-    
-    # Push these shares to the output container, casting into the specified
-    #  purposes. Output array values are modified in-place downstream to
-    #  reflect actual trips rather than just normalized propensity.
-    for p in purposes:
-        block_trips.put(prop_array.data, Purpose=p, **axis_crit)
-    if logger is not None:
-        logger.info("\nNormalized block propensities "
-                    "(should sum to n_block * n_purposes): "
-                    f"{block_trips.take(Purpose=purposes).data[:].sum()}")
-    # STEP 4 - BLOCK SHARE OF TAZ TRIP PROPENSITY
-    # Calculate each block's share of its TAZ's trips
-    #  For each block with a propensity sum...
-    #   - get the sum
-    #   - grab the block data associated with the TAZ
-    #   - and modify the data by dividing the block propensities
-    #      by the TAZ total
-    print('...step 4: calculate block share of TAZ trips (by activity)')
-    for taz in taz_prop[block_axis].labels:
-        total_prop = taz_prop.take(**{block_axis:taz}).data[0]
-        crit = {block_axis: {block_taz_id: taz}}
-        block_prop.put(
-            block_prop.take(**crit).data/total_prop,
-            **crit)
-    # Multiply the block share of propensity by the activity-based normalized
-    #  propensities. In this way, each block's activity-specific cell contains
-    #  a number defining it's share of total TAZ productions.
-    for p in purposes:
-        purp_chunk = block_trips.take(Purpose=p, **axis_crit)
-        block_trips.put(
-            purp_chunk.data *
-            lba.broadcast1dByAxis(
-                purp_chunk, block_axis, block_prop.data).data,
-            Purpose=p, 
-            **axis_crit
-            )
-        ###
-        check = block_trips.take(Purpose=p)
-        check = check.sum([block_id, "End"])
-        check = check.dissolve(block_id, taz_id, np.sum)
-        n = np.where(
-            np.logical_and(
-                check.data >= 0.999,
-                check.data <= 1.001
-                )
-            )
-        print(f"Found {len(n[0])} TAZs with valid propensity sums")
-        ###
-    if logger is not None:
-        logger.info("\nProportioned block propensities "
-                    "(should sum to n_tazs * n_purposes): "
-                    f"{block_trips.take(Purpose=purposes).data[:].sum()}")
-        logger.info("\nNumber of blocks where ")
-    #STEP 5 - ESTIMATE DETAILED TRIPS BY BLOCK AND ACTIVITY
-    # Multiply TAZ-level trip estimates by block-level, activity-specific
-    #  propensities
-    print('...step 5: apply taz trip totals at block level')
-    # Make an in-memory array for faster processing
-    _block_trips_ = block_trips.copy()
-
-    window_zones = prop_array[block_axis].labels.get_level_values(
-        block_taz_id).unique()
-    purp_alloc=dict(zip(purposes, [0 for _ in purposes]))
-    _trip_tot_ = 0
-    _trip_tot2_ = 0
-    for wz in window_zones:
-        axis_crit[taz_axis] = {taz_id: wz}
-        # Get trip total for each zone for each purpose
-        #taz_trips_by_purp = taz_trips.take(**axis_crit).sum(["Purpose"])
-        # Multiply trips by purpose across relevant block features
-        for p in purposes:
-            # Trips
-            ###
-            #trips_check = taz_trips.take(Purpose=p, End=end, **{taz_axis: {taz_id: wz}}).sum("Purpose").data[0]
-            trips_check = taz_trips.take(Purpose=p, **axis_crit).sum("Purpose").data[0]
-            _trip_tot2_ += trips_check
-            ####
-            ####
-            #trips = taz_trips_by_purp.take(Purpose=p).data[0]
-            trips = taz_trips.take(Purpose=p, squeeze=True, **axis_crit).data[0]
-            _trip_tot_ += trips
-            # Apply
-            #block_crit = {"Purpose": p, "End": end, 
-            #              block_axis: {block_taz_id: wz}}
-            block_crit["Purpose"] = p
-            block_crit[block_axis] = {block_taz_id: wz}
-            _block_trips_.put(
-                _block_trips_.take(**block_crit).data * trips,
-                **block_crit)
-            purp_alloc[p] += float(trips)
-    del axis_crit[taz_axis]
-    block_trips.put(
-        _block_trips_.take(Purpose=purposes, squeeze=True, **axis_crit).data,
-        Purpose=purposes, **axis_crit
-    )
-    print(f"Allocated trips for {len(window_zones)} TAZs.")
-    print(f"Amounts allocated:\n{yaml.dump(purp_alloc)} (expected {_trip_tot_}, {_trip_tot2_})")
-    if logger is not None:
-        logger.info(f"\nAllocated trips for {len(window_zones)} TAZs.")
-        logger.info(f"\nAmounts allocated:\n{yaml.dump(purp_alloc)}")
-
-
-def disaggregateTrips_hb(taz_trips, block_trips, act_array, act_dims,
-                         purposes, end, propensities, base_prop,
-                         block_axis="block_id", block_id="block_id",
-                         block_taz_id="TAZ", taz_axis="TAZ", taz_id="TAZ",
-                         logger=None):
+def calcPropensity_NH(nh_df, lbl_col, act_col, purposes, propensities,
+                      base_prop, wb_df, block_id="block_id",
+                      wb_block_id="block_id",
+                      levels=["block_id", "TAZ", "INFOCUS", "INWINDOW"],
+                      logger=None):
     """
-    A function to disaggregate TAZ-level home-based trip estimates to block
-    level based on activities in each block and trip-making propensity
-    factors defined by activity dimension.
+    A function to calculate raw block-level trip-making propensities for
+    non-home trip generators, by purpose. Non-home trip-making propensity
+    is estimated based on various non-home activities in each block and their
+    respective generalized trip-making propensity factors.
 
     Parameters
     -----------
-    taz_trips: LbArray
-        A labeled array of trips by TAZ. Expected axes include 'Purpose',
-        'End', and one or more activity dimensions.
-    block_trips: LbArray
-        A labeled array that will contain trips by block (expected to be
-        passed to the function with initial values of 0.0). Expected axes
-        match those in `taz_trips`
-    act_array: LbArray
-        A labeled array of activities by block. Expected axes include
-        activity dimensions that match those in `taz_trips`. WARNING!
-        This array is modified in-place during processing.
-    act_dims: [String,...]
-        The name of the activity dimensions used in each labeled array.
-    purposes: [String,...]
-        The purposes for which trip disaggregation is conducted.
-    end: String
-        The trip end ('P' or 'A') for which trip disaggregation is conducted.
-    propensities: {String: {String: {String: [numeric,...]}}}
-        A nested dictionary of trip-making propensities. At the outer level,
-        keys are trip purposes; at the middle level, keys are axis names;
-        at the inner level, keys are axis labels and values are propensity
-        weights.
-    base_prop: numeric
-        A baseline trip-making propensity. This is a small value that ensures
-        all blocks have a nominal trip-making potential. Blocks with 
-        activities will have significantly higher propensities based on the
-        number of activities and the `propensities` dictionary.
-    block_axis: String, default="block_id"
-        The name of the axis in `block_trips` and `act_array` that identifies
-        block features.
-    block_id: String, default="block_id"
-        The level in `block_axis` that uniquely identifies each block.
-    block_taz_id: String
-        The level in `block_axis` that identifies the TAZ each block is
-        nested in.
-    taz_axis: String, default="TAZ"
-        The axis in `taz_trips` that identifies TAZ features.
-    taz_id: String, default="TAZ"
-        The level in `taz_axis` that uniquely identifies each TAZ.
-    logger: Logger, default=None
-        An initialized logger object may be provided to log processing steps.
-    
-    Returns
-    --------
-    None 
-        `block_trips` is modified in place.
-    
-    See Also
-    --------
-    disaggregateTrips_nh
-    """
-    # STEP 1 - ACTIVITY-BASED TRIP PROPENSITY
-    # Apply trip propensities by activity dimensions to each block.
-    #  This is done by broadcasting the propensity values to match the
-    #  dimensions of `act_array` and updating the data through multiplication
-    # Activity propensities for home-based tripsvary by purpose, so we iterate 
-    #  over purposes, using a purpose-specific copy of the activity data to 
-    #  guide disaggregation.
-    print('...step 1: calculate activty-based trip propensities')
-    
-    for purpose in purposes:
-        print(f'... ...{purpose} ({end})\n-----------------')
-        _act_array_ = act_array.copy()
-        for dim in act_dims:    
-            prop_dict = propensities[purpose][dim]
-            prop_rates = []
-            for label in act_array[dim].labels:
-                prop_rates.append(prop_dict[label])
-            _act_array_.data *= lba.broadcast1dByAxis(
-                _act_array_, dim, prop_rates).data
-        # Bump each propensity value up by the `BASE_PROP` constant
-        _act_array_.data += base_prop
-        axis_crit = dict([(x.name, list(x.labels)) for x in _act_array_.axes
-                        if x.name in act_dims])
-        _disagFromPropensityArray(taz_trips, block_trips, _act_array_, 
-                                  act_dims, [purpose], end, block_axis, 
-                                  block_id, block_taz_id, taz_axis, taz_id,
-                                  logger, **axis_crit)
-
-def disaggregateTrips_nh(taz_trips, block_trips, nh_df, lbl_col, act_col,
-                         purposes, end, propensities, base_prop, wb_df,
-                         block_axis="block_id", block_id="block_id",
-                         block_taz_id="TAZ", taz_axis="TAZ", taz_id="TAZ",
-                         wb_block_id="block_id", act_crit="-",
-                         levels=["block_id", "TAZ", "INFOCUS", "INWINDOW"],
-                         act_dims=["HHSize", "Income", "VehOwn", "Workers"],
-                         logger=None):
-    """
-    A function to disaggregate TAZ-level non-home trip estimates to block
-    level based on activities in each block and trip-making propensity
-    factors defined by activity label.
-
-    Parameters
-    -----------
-    taz_trips: LbArray
-        A labeled array of trips by TAZ. Expected axes include 'Purpose',
-        'End', and one or more activity dimensions.
-    block_trips: LbArray
-        A labeled array that will contain trips by block (expected to be
-        passed to the function with initial values of 0.0). Expected axes
-        match those in `taz_trips`
+   
     nh_df: pd.DataFrame
         A data frame of non-home activities by block.
     lbl_col: String
         The column in `nh_df` that identifies each block's activity by type.
     act_col: String
         The column in `nh_df` that stores the number of each activity.
-    act_dims: [String,...]
-        The name of the activity dimensions used in each labeled array.
     purposes: [String,...]
-        The purposes for which trip disaggregation is conducted.
-    end: String
-        The trip end ('P' or 'A') for which trip disaggregation is conducted.
+        The purposes for which trip propensities are estimated.
     propensities: {String: {String: {String: [numeric,...]}}}
         A nested dictionary of trip-making propensities. At the outer level,
         keys are trip purposes; at the middle level, keys are axis names;
@@ -499,41 +255,32 @@ def disaggregateTrips_nh(taz_trips, block_trips, nh_df, lbl_col, act_col,
         all blocks have a nominal trip-making potential. Blocks with 
         activities will have significantly higher propensities based on the
         number of activities and the `propensities` dictionary.
-    block_axis: String, default="block_id"
-        The name of the axis in `block_trips` and `act_array` that identifies
-        block features.
     block_id: String, default="block_id"
-        The level in `block_axis` that uniquely identifies each block.
-    block_taz_id: String
-        The level in `block_axis` that identifies the TAZ each block is
-        nested in.
-    taz_axis: String, default="TAZ"
-        The axis in `taz_trips` that identifies TAZ features.
-    taz_id: String, default="TAZ"
-        The level in `taz_axis` that uniquely identifies each TAZ.
-    logger: Logger, default=None
-        An initialized logger object may be provided to log processing steps.
+        The column in `nh_df` that uniquely identifies each block.
+    wb_df: pd.DataFrame
+        The data frame listing the blocks in the window area with their TAZ
+        parentage.
+    wb_block_id: String, default="block_id"
+        The column in `wb_df` that uniquely identifies each block.
+    levels: [String,...], default=["block_id", "TAZ", "INFOCUS", "INWINDOW"]
+        A list of column names in `nh_df` that defined indexing levels.    
     
     Returns
     --------
-    None 
-        `block_trips` is modified in place.
+    nh_array: LbArray
+        A labeled array with an axis storing block information (with `levels`
+        recorded in a multi-index) and an axis differentiating trip 
+        propensities by purpose.
 
     See Also
     --------
-    disaggregateTrips_hb
+    calcPropensity_HB
+    normalizePropensity
+    applyTAZTrips
     """
-    # STEP 1 - ACTIVITY-BASED TRIP PROPENSITY
     # Apply trip propensities by destination activity type to each block.
     #  This is done by multiplying purpose-specific propensity rates by
     #  the activity types in non-home activity data frame.
-
-    # Since the ultimate application is to tabulate all trip attractions simply
-    #  as 'non-home' activities ('-' is the axis label for activity dimensions),
-    #  this work can be done quickly in a data frame to create block trip
-    #  propensity vectors that can be converted to a labeled array for 
-    #  subsquent steps.
-    print('...step 1: calculate activty-based trip propensities')
     props = []
     for purpose in purposes:
         prop_df = pd.DataFrame.from_dict(
@@ -573,16 +320,519 @@ def disaggregateTrips_nh(taz_trips, block_trips, nh_df, lbl_col, act_col,
         wb_df[levels], left_on="index", right_on=wb_block_id)
     nh_array[block_id].levels = levels
     
-    # Disag by purpose
-    axis_crit = dict([(x.name, act_crit) for x in block_trips.axes
-                      if x.name in act_dims])
-    for purpose in purposes:
-        print(f'... ...{purpose} ({end})\n-----------------')
-        prop_array = nh_array.take(Purpose=purpose, squeeze=False)
-        _disagFromPropensityArray(taz_trips, block_trips, prop_array, [],
-                                  [purpose], end, block_axis, block_id,
-                                  block_taz_id, taz_axis, taz_id, logger,
-                                  **axis_crit)
+    return nh_array 
+
+
+def normalizePropensity(block_prop_array, block_axis, taz_level="TAZ", 
+                        block_level="block_id", ends=["P", "A"],
+                        purposes=["HBW", "HBO", "HBSch", "NHB"]):
+    """
+    Estimate each block's share of total TAZ trip-making by activty type.   
+
+    Parameters
+    -------------
+    block_prop_array: LbArray
+        An array of total estimated trip-making propensity by block and
+        activity type. Assumed to have axes "Purpose" and "End".
+    block_axis: LbAxis
+        The axis in `block_prop_array` that identifies each block. Assumed
+        to be a MultiIndex object with one level identifying blocks and the 
+        other identifying TAZs.
+    taz_level: String, default="TAZ"
+        The name of the level in `block_axis` that identifies the TAZ each
+        block is in.
+    block_level: String, default="block_id"  
+        The name of the level in `block_axis` that uniquely identifes each
+        block.
+    ends: [String,...], default=["P", "A"]
+        The names of values in the `End` axis of `block_prop_array`.
+    purposes: [String,...], default=["HBW", "HBO", "HBSch", "NHB"]
+        The names of values in the `Purpose` axis of `block_prop_array`.
+    
+    Returns
+    -------
+    None
+        `block_prop_array` is updated inplace, such that its raw propensity
+        estimates are normalized into shares of total TAZ-level trip-making.
+    
+    See Also
+    ---------
+    calcPropensity_HB
+    calcPropensity_NH
+    applyTAZTrips
+    """
+    # Convert the input block axis to a data frame
+    block_df = block_axis.to_frame()
+    
+    # Within each purpose and for each trip end, what is each TAZ's total 
+    # propensity?
+    block_prop_sum = block_prop_array.sum([block_axis.name, "Purpose", "End"])
+    taz_prop_sum = block_prop_sum.dissolve(block_axis.name, taz_level, np.sum)
+    
+    # Convert taz sum to data frame
+    taz_prop_df = taz_prop_sum.to_frame("prop").reset_index()
+    
+    for end in ends:
+        for purpose in purposes:
+            # Get propensities for this end, purpose
+            fltr = np.logical_and(
+                taz_prop_df.Purpose == purpose, 
+                taz_prop_df.End == end)
+            purp_df = taz_prop_df[fltr]
+            # Join to blocks by TAZ ID
+            merge_df = block_df.merge(purp_df, how="left", left_on=taz_level,
+                                      right_on=block_level, 
+                                      suffixes=("", "_z"))
+            merge_df.fillna(0.0, inplace=True)
+            merge_df.set_index([block_level, taz_level], inplace=True)
+            # Broadcast for application
+            prop_array_sel = block_prop_array.take(
+                Purpose=purpose, End=end, squeeze=True)
+            prop_cast = lba.broadcast1dByAxis(
+                prop_array_sel, block_axis.name, merge_df.prop)
+            # Divide to proportion trip propensities
+            prop_array_sel.data /= prop_cast.data
+            # Write back to block_prop_array
+            block_prop_array.put(
+                prop_array_sel.data, Purpose=purpose, End=end
+                )
+
+def applyTAZTrips(taz_trips_array, taz_axis, taz_level, 
+                  block_prop_array, block_axis, block_level,
+                  ends=["P", "A"], purposes=["HBW", "HBO", "HBSch", "NHB"]):
+    """
+    Multiply normalized trip-making propensities at block level by total
+    trip estimates (by purpose) at TAZ level.
+
+    Parameters
+    ----------
+    taz_trips_array : LbArray
+        A labeled array with trip estimates by TAZ, purpose, and end
+        (production vs. attraction)
+    taz_axis : LbAxis
+        The axis in `taz_trips_array` that identifies each TAZ.
+    taz_level : String
+        The name of the level in `taz_axis` that uniquely identifies each TAZ.
+    block_prop_array : LbArray
+        A labeled array with normalized trip-making propensities by block,
+        activity, purpose, and end.
+    block_axis : LbAxis
+        The axis in `block_prop-array` that identifies each block by its TAZ
+        perentage (assumed to use the same name as `taz_level`)
+    block_level: String
+        The name of the level in `block_axis` that uniquely identifies each
+        block.
+    ends : [String,...], default=["P", "A"]
+        The values in the `End` axis of both `taz_trips_array` and
+        `block_prop_array`.
+    purposes : [String,...], default=["HBW", "HBO", "HBSch", "NHB"]
+        The values in the `Purpose` axis of both `taz_trips_array` and
+        `block_prop_array`.
+
+    Returns
+    -------
+    None
+        `block_prop_array` is modified in place such that its normalized
+        shares of TAZ-level trip-making are multiplied by total trips in each
+        corresponding TAZ to yield total trips at the block level, by activity
+        
+    See Also
+    ---------
+    calcPropensity_HB
+    calcPropensity_NH
+    normalizePropensity
+    """
+    block_df = block_axis.to_frame()
+    trips_df = taz_trips_array.to_frame("trips").reset_index()
+    trips_df[taz_axis.levels] = pd.DataFrame(
+        trips_df[taz_level].to_list(), index=trips_df.index)
+    
+    for end in ends:
+        for purpose in purposes:
+            # Get propensities for this end, purpose
+            fltr = np.logical_and(
+                trips_df.Purpose == purpose, 
+                trips_df.End == end)
+            purp_df = trips_df[fltr]
+            # Join to blocks by TAZ ID
+            merge_df = block_df.merge(purp_df, how="left", left_on=taz_level,
+                                      right_on=taz_level, 
+                                      suffixes=("", "_z"))
+            merge_df.fillna(0.0, inplace=True)
+            merge_df.set_index([block_level, taz_level], inplace=True)
+            # Broadcast for application
+            block_trips_sel = block_prop_array.take(
+                Purpose=purpose, End=end, squeeze=True)
+            taz_trip_cast = lba.broadcast1dByAxis(
+                block_trips_sel, block_axis.name, merge_df.trips)
+            # Divide to proportion trip propensities
+            block_trips_sel.data *= taz_trip_cast.data
+            # Write back to block_prop_array
+            block_prop_array.put(
+                block_trips_sel.data, Purpose=purpose, End=end
+                )
+
+
+# def _disagFromPropensityArray(taz_trips, block_trips, prop_array, act_dims,
+#                               purposes, end, block_axis, block_id,
+#                               block_taz_id, taz_axis, taz_id, logger,
+#                               **axis_crit):
+#     for p in purposes:
+#         if np.any(prop_array.data[:] == 0):
+#             print(f"FOUND BLOCKS WITH NO PROPENSITY (purpose: {p})")
+#             if logger is not None:
+#                 logger.info(f"FOUND BLOCKS WITH NO PROPENSITY (purpose: {p})")
+#     axis_crit["End"] = end
+#     block_crit = axis_crit.copy()
+#     # STEP 2 - TOTAL BLOCK TRIP PROPENSITY
+#     # Summarize each block's total trip propensity using the .sum method.
+#     print(axis_crit)
+#     print(block_crit)
+#     print('...step 2: sum total block propensity')
+#     block_prop = prop_array.sum(block_axis)
+    
+#     # Dissolve the block-level sums based on TAZ ID to get each zone's total
+#     #  propensity
+#     if prop_array.ndim == 1:
+#         taz_prop_df = prop_array.to_frame.reset_index()
+#         taz_prop_df = taz_prop_df.reset_index()
+#         levels = prop_array[block_axis].levels
+#         taz_prop_df[levels] = pd.DataFrame(
+#             taz_prop_df[block_axis].tolist(), index=taz_prop_df.index)
+#         taz_prop_sum = taz_prop_df.groupby(block_taz_id).sum().reset_index()
+#         taz_prop = lba.dfToLabeledArray(
+#             taz_prop_sum, ["TAZ"], ["prop"], fill_value=0)
+#     else:
+#         taz_prop = prop_array.dissolve(
+#             block_axis, block_taz_id, np.sum).sum(block_axis)
+    
+#     # STEP 3 - NORMALIZE ACTIVITY-BASED PROPENSITIES
+#     # For each block, normalize its activity-based propensities as shares of
+#     #  its total propensity
+#     print('...step 3: normalize propensities across block activities')
+#     prop_array.data /= lba.broadcast1dByAxis(prop_array, block_id,
+#                                        block_prop.data).data
+    
+#     # Push these shares to the output container, casting into the specified
+#     #  purposes. Output array values are modified in-place downstream to
+#     #  reflect actual trips rather than just normalized propensity.
+#     for p in purposes:
+#         block_trips.put(prop_array.data, Purpose=p, **axis_crit)
+#     if logger is not None:
+#         logger.info("\nNormalized block propensities "
+#                     "(should sum to n_block * n_purposes): "
+#                     f"{block_trips.take(Purpose=purposes).data[:].sum()}")
+#     # STEP 4 - BLOCK SHARE OF TAZ TRIP PROPENSITY
+#     # Calculate each block's share of its TAZ's trips
+#     #  For each block with a propensity sum...
+#     #   - get the sum
+#     #   - grab the block data associated with the TAZ
+#     #   - and modify the data by dividing the block propensities
+#     #      by the TAZ total
+#     print('...step 4: calculate block share of TAZ trips (by activity)')
+#     for taz in taz_prop[block_axis].labels:
+#         total_prop = taz_prop.take(**{block_axis:taz}).data[0]
+#         crit = {block_axis: {block_taz_id: taz}}
+#         block_prop.put(
+#             block_prop.take(**crit).data/total_prop,
+#             **crit)
+#     # Multiply the block share of propensity by the activity-based normalized
+#     #  propensities. In this way, each block's activity-specific cell contains
+#     #  a number defining it's share of total TAZ productions.
+#     for p in purposes:
+#         purp_chunk = block_trips.take(Purpose=p, **axis_crit)
+#         block_trips.put(
+#             purp_chunk.data *
+#             lba.broadcast1dByAxis(
+#                 purp_chunk, block_axis, block_prop.data).data,
+#             Purpose=p, 
+#             **axis_crit
+#             )
+#         ###
+#         check = block_trips.take(Purpose=p)
+#         check = check.sum([block_id, "End"])
+#         check = check.dissolve(block_id, taz_id, np.sum)
+#         n = np.where(
+#             np.logical_and(
+#                 check.data >= 0.999,
+#                 check.data <= 1.001
+#                 )
+#             )
+#         print(f"Found {len(n[0])} TAZs with valid propensity sums")
+#         ###
+#     if logger is not None:
+#         logger.info("\nProportioned block propensities "
+#                     "(should sum to n_tazs * n_purposes): "
+#                     f"{block_trips.take(Purpose=purposes).data[:].sum()}")
+#         logger.info("\nNumber of blocks where ")
+#     #STEP 5 - ESTIMATE DETAILED TRIPS BY BLOCK AND ACTIVITY
+#     # Multiply TAZ-level trip estimates by block-level, activity-specific
+#     #  propensities
+#     print('...step 5: apply taz trip totals at block level')
+#     # Make an in-memory array for faster processing
+#     _block_trips_ = block_trips.copy()
+
+#     window_zones = prop_array[block_axis].labels.get_level_values(
+#         block_taz_id).unique()
+#     purp_alloc=dict(zip(purposes, [0 for _ in purposes]))
+#     _trip_tot_ = 0
+#     _trip_tot2_ = 0
+#     for wz in window_zones:
+#         axis_crit[taz_axis] = {taz_id: wz}
+#         # Get trip total for each zone for each purpose
+#         #taz_trips_by_purp = taz_trips.take(**axis_crit).sum(["Purpose"])
+#         # Multiply trips by purpose across relevant block features
+#         for p in purposes:
+#             # Trips
+#             ###
+#             #trips_check = taz_trips.take(Purpose=p, End=end, **{taz_axis: {taz_id: wz}}).sum("Purpose").data[0]
+#             trips_check = taz_trips.take(Purpose=p, **axis_crit).sum("Purpose").data[0]
+#             _trip_tot2_ += trips_check
+#             ####
+#             ####
+#             #trips = taz_trips_by_purp.take(Purpose=p).data[0]
+#             trips = taz_trips.take(Purpose=p, squeeze=True, **axis_crit).data[0]
+#             _trip_tot_ += trips
+#             # Apply
+#             #block_crit = {"Purpose": p, "End": end, 
+#             #              block_axis: {block_taz_id: wz}}
+#             block_crit["Purpose"] = p
+#             block_crit[block_axis] = {block_taz_id: wz}
+#             _block_trips_.put(
+#                 _block_trips_.take(**block_crit).data * trips,
+#                 **block_crit)
+#             purp_alloc[p] += float(trips)
+#     del axis_crit[taz_axis]
+#     block_trips.put(
+#         _block_trips_.take(Purpose=purposes, squeeze=True, **axis_crit).data,
+#         Purpose=purposes, **axis_crit
+#     )
+#     print(f"Allocated trips for {len(window_zones)} TAZs.")
+#     print(f"Amounts allocated:\n{yaml.dump(purp_alloc)} (expected {_trip_tot_}, {_trip_tot2_})")
+#     if logger is not None:
+#         logger.info(f"\nAllocated trips for {len(window_zones)} TAZs.")
+#         logger.info(f"\nAmounts allocated:\n{yaml.dump(purp_alloc)}")
+
+
+# def disaggregateTrips_hb(taz_trips, block_trips, act_array, act_dims,
+#                          purposes, end, propensities, base_prop,
+#                          block_axis="block_id", block_id="block_id",
+#                          block_taz_id="TAZ", taz_axis="TAZ", taz_id="TAZ",
+#                          logger=None):
+#     """
+#     A function to disaggregate TAZ-level home-based trip estimates to block
+#     level based on activities in each block and trip-making propensity
+#     factors defined by activity dimension.
+
+#     Parameters
+#     -----------
+#     taz_trips: LbArray
+#         A labeled array of trips by TAZ. Expected axes include 'Purpose',
+#         'End', and one or more activity dimensions.
+#     block_trips: LbArray
+#         A labeled array that will contain trips by block (expected to be
+#         passed to the function with initial values of 0.0). Expected axes
+#         match those in `taz_trips`
+#     act_array: LbArray
+#         A labeled array of activities by block. Expected axes include
+#         activity dimensions that match those in `taz_trips`. WARNING!
+#         This array is modified in-place during processing.
+#     act_dims: [String,...]
+#         The name of the activity dimensions used in each labeled array.
+#     purposes: [String,...]
+#         The purposes for which trip disaggregation is conducted.
+#     end: String
+#         The trip end ('P' or 'A') for which trip disaggregation is conducted.
+#     propensities: {String: {String: {String: [numeric,...]}}}
+#         A nested dictionary of trip-making propensities. At the outer level,
+#         keys are trip purposes; at the middle level, keys are axis names;
+#         at the inner level, keys are axis labels and values are propensity
+#         weights.
+#     base_prop: numeric
+#         A baseline trip-making propensity. This is a small value that ensures
+#         all blocks have a nominal trip-making potential. Blocks with 
+#         activities will have significantly higher propensities based on the
+#         number of activities and the `propensities` dictionary.
+#     block_axis: String, default="block_id"
+#         The name of the axis in `block_trips` and `act_array` that identifies
+#         block features.
+#     block_id: String, default="block_id"
+#         The level in `block_axis` that uniquely identifies each block.
+#     block_taz_id: String
+#         The level in `block_axis` that identifies the TAZ each block is
+#         nested in.
+#     taz_axis: String, default="TAZ"
+#         The axis in `taz_trips` that identifies TAZ features.
+#     taz_id: String, default="TAZ"
+#         The level in `taz_axis` that uniquely identifies each TAZ.
+#     logger: Logger, default=None
+#         An initialized logger object may be provided to log processing steps.
+    
+#     Returns
+#     --------
+#     None 
+#         `block_trips` is modified in place.
+    
+#     See Also
+#     --------
+#     disaggregateTrips_nh
+#     """
+#     # STEP 1 - ACTIVITY-BASED TRIP PROPENSITY
+#     # Apply trip propensities by activity dimensions to each block.
+#     #  This is done by broadcasting the propensity values to match the
+#     #  dimensions of `act_array` and updating the data through multiplication
+#     # Activity propensities for home-based tripsvary by purpose, so we iterate 
+#     #  over purposes, using a purpose-specific copy of the activity data to 
+#     #  guide disaggregation.
+#     print('...step 1: calculate activty-based trip propensities')
+    
+#     for purpose in purposes:
+#         print(f'... ...{purpose} ({end})\n-----------------')
+#         _act_array_ = act_array.copy()
+#         for dim in act_dims:    
+#             prop_dict = propensities[purpose][dim]
+#             prop_rates = []
+#             for label in act_array[dim].labels:
+#                 prop_rates.append(prop_dict[label])
+#             _act_array_.data *= lba.broadcast1dByAxis(
+#                 _act_array_, dim, prop_rates).data
+#         # Bump each propensity value up by the `BASE_PROP` constant
+#         _act_array_.data += base_prop
+#         axis_crit = dict([(x.name, list(x.labels)) for x in _act_array_.axes
+#                         if x.name in act_dims])
+#         _disagFromPropensityArray(taz_trips, block_trips, _act_array_, 
+#                                   act_dims, [purpose], end, block_axis, 
+#                                   block_id, block_taz_id, taz_axis, taz_id,
+#                                   logger, **axis_crit)
+
+# def disaggregateTrips_nh(taz_trips, block_trips, nh_df, lbl_col, act_col,
+#                          purposes, end, propensities, base_prop, wb_df,
+#                          block_axis="block_id", block_id="block_id",
+#                          block_taz_id="TAZ", taz_axis="TAZ", taz_id="TAZ",
+#                          wb_block_id="block_id", act_crit="-",
+#                          levels=["block_id", "TAZ", "INFOCUS", "INWINDOW"],
+#                          act_dims=["HHSize", "Income", "VehOwn", "Workers"],
+#                          logger=None):
+#     """
+#     A function to disaggregate TAZ-level non-home trip estimates to block
+#     level based on activities in each block and trip-making propensity
+#     factors defined by activity label.
+
+#     Parameters
+#     -----------
+#     taz_trips: LbArray
+#         A labeled array of trips by TAZ. Expected axes include 'Purpose',
+#         'End', and one or more activity dimensions.
+#     block_trips: LbArray
+#         A labeled array that will contain trips by block (expected to be
+#         passed to the function with initial values of 0.0). Expected axes
+#         match those in `taz_trips`
+#     nh_df: pd.DataFrame
+#         A data frame of non-home activities by block.
+#     lbl_col: String
+#         The column in `nh_df` that identifies each block's activity by type.
+#     act_col: String
+#         The column in `nh_df` that stores the number of each activity.
+#     act_dims: [String,...]
+#         The name of the activity dimensions used in each labeled array.
+#     purposes: [String,...]
+#         The purposes for which trip disaggregation is conducted.
+#     end: String
+#         The trip end ('P' or 'A') for which trip disaggregation is conducted.
+#     propensities: {String: {String: {String: [numeric,...]}}}
+#         A nested dictionary of trip-making propensities. At the outer level,
+#         keys are trip purposes; at the middle level, keys are axis names;
+#         at the inner level, keys are axis labels and values are propensity
+#         weights.
+#     base_prop: numeric
+#         A baseline trip-making propensity. This is a small value that ensures
+#         all blocks have a nominal trip-making potential. Blocks with 
+#         activities will have significantly higher propensities based on the
+#         number of activities and the `propensities` dictionary.
+#     block_axis: String, default="block_id"
+#         The name of the axis in `block_trips` and `act_array` that identifies
+#         block features.
+#     block_id: String, default="block_id"
+#         The level in `block_axis` that uniquely identifies each block.
+#     block_taz_id: String
+#         The level in `block_axis` that identifies the TAZ each block is
+#         nested in.
+#     taz_axis: String, default="TAZ"
+#         The axis in `taz_trips` that identifies TAZ features.
+#     taz_id: String, default="TAZ"
+#         The level in `taz_axis` that uniquely identifies each TAZ.
+#     logger: Logger, default=None
+#         An initialized logger object may be provided to log processing steps.
+    
+#     Returns
+#     --------
+#     None 
+#         `block_trips` is modified in place.
+
+#     See Also
+#     --------
+#     disaggregateTrips_hb
+#     """
+#     # STEP 1 - ACTIVITY-BASED TRIP PROPENSITY
+#     # Apply trip propensities by destination activity type to each block.
+#     #  This is done by multiplying purpose-specific propensity rates by
+#     #  the activity types in non-home activity data frame.
+
+#     # Since the ultimate application is to tabulate all trip attractions simply
+#     #  as 'non-home' activities ('-' is the axis label for activity dimensions),
+#     #  this work can be done quickly in a data frame to create block trip
+#     #  propensity vectors that can be converted to a labeled array for 
+#     #  subsquent steps.
+#     print('...step 1: calculate activty-based trip propensities')
+#     props = []
+#     for purpose in purposes:
+#         prop_df = pd.DataFrame.from_dict(
+#             propensities[purpose]).stack().reset_index()
+#         prop_df.columns=["Sector", "Category", "Propensity"]
+#         prop_df["Purpose"] = purpose
+#         props.append(prop_df)
+#     prop_df = pd.concat(props)
+#     prop_df = pd.pivot(prop_df, index="Sector", columns="Purpose",
+#                        values="Propensity")
+#     nh_df_prop = nh_df.merge(prop_df, how="inner", left_on=lbl_col,
+#                             right_index=True)
+#     # Multiply the activities by propensities
+#     # Ensure each block activity has the BASE_PROP propensity at a minimum
+#     for p in purposes:
+#         nh_df_prop[p] = (nh_df_prop[p] * nh_df_prop[act_col]) + base_prop
+
+#     # Melt this data frame for conversion to an LbArray
+#     melt_cols = levels + ["Purpose"]
+#     nh_melted = nh_df_prop.melt(
+#         levels, purposes, "Purpose", "Propensity").groupby(
+#             melt_cols).sum().reset_index()
+#     # Merge melted data back to all window blocks and fill NA's
+#     #  This ensures all blocks in window are present for array-building
+#     nh_melted = wb_df.merge(nh_melted, how="left", left_on=wb_block_id,
+#                             right_on=block_id, suffixes=["", "_x"])
+#     nh_melted.Purpose.fillna(purposes[0], inplace=True)
+#     nh_melted.Propensity.fillna(base_prop, inplace=True)
+
+#     # Sum total propensity by block and purpose
+#     nh_melted = nh_melted.groupby([block_id, "Purpose"]).sum().reset_index()
+#     nh_array = lba.dfToLabeledArray(nh_melted.sort_values(by=block_id),
+#                                 [block_id, "Purpose"], "Propensity",
+#                                 fill_value=base_prop)
+#     # Add levels
+#     nh_array[block_id].addLevel(
+#         wb_df[levels], left_on="index", right_on=wb_block_id)
+#     nh_array[block_id].levels = levels
+    
+#     # Disag by purpose
+#     axis_crit = dict([(x.name, act_crit) for x in block_trips.axes
+#                       if x.name in act_dims])
+#     for purpose in purposes:
+#         print(f'... ...{purpose} ({end})\n-----------------')
+#         prop_array = nh_array.take(Purpose=purpose, squeeze=False)
+#         _disagFromPropensityArray(taz_trips, block_trips, prop_array, [],
+#                                   [purpose], end, block_axis, block_id,
+#                                   block_taz_id, taz_axis, taz_id, logger,
+#                                   **axis_crit)
 
 
 def relabel(row, column, value_dict):
