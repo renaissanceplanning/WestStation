@@ -314,5 +314,14 @@ block_sum = block_prop_array.sum(["Purpose", "End"])
 logger.info(f"\nTrips in window (block scale):\n{block_sum}\n{block_sum.axes}")
 
 #%% PUSH TO OUTPUT CONTAINER
+# Write detailed ouptuts
 block_tg.data[:] = block_prop_array.data
 
+# Summarize for csv tables
+by_block_csv = r"lu\{}\trips_by_block.csv".format(lu_config)
+block_tg_sum = block_tg.sum(["block_id", "Purpose", "End"])
+block_df = block_tg_sum.to_frame("trips").reset_index()
+block_df[LEVELS] = pd.DataFrame(
+    block_df["block_id"].to_list(), index=block_df.index)
+
+block_df.to_csv(by_block_csv)
