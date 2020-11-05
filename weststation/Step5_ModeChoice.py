@@ -75,10 +75,10 @@ import logging
 root = r"K:\Projects\MAPC\FInalData"
 os.chdir(root)
 
-scen = "RV_gc_parking_tt"
+scen = "BRT_Scen_A"
 lu_config = "FEIR"
-net_config = "RV_gc_parking_tt"
-base_config = "Base_gc_parking_tt"
+net_config = "BRT_Scen_A"
+base_config = "Base"
 
 # Setup logging
 logger = logging.getLogger("EMMA")
@@ -119,6 +119,7 @@ SCALES = ["block", "TAZ"]
 #  key column, which is recorded in the global variables below.
 BLOCK_ACCESS_KEY = "block_id"
 TAZ_ACCESS_KEY = "TAZ"
+TAZ_LEVEL = "TAZ"
 
 # Models are applied in many cases based on the four household dimensions
 #  (size, income, workers, vehicles). Here we set default values corresponding
@@ -163,8 +164,8 @@ HH_DICT = {
 NONHOME_DICT = {"HHSize": "-", "Income": "-", "Workers": "-", "VehOwn": "-"}
 
 # Blocks-to-TAZ data frame. This is used to relate TAZs and blocks.
-block_list_f = r"input\Block_list_by_TAZ.csv"
-BLOCK_LIST_BCOL = "BLOCK_ID"
+block_list_f = r"input\window_blocks.csv"
+BLOCK_LIST_BCOL = "GEOID10"
 BLOCK_LIST_TCOL = "TAZ"
 BLOCKS_BY_TAZ = pd.read_csv(block_list_f, dtype={BLOCK_LIST_BCOL: str})
 
@@ -232,7 +233,7 @@ def getScaleRefs(scale):
         index_cols = [TAZ_ACCESS_KEY]
         suffix = "_TAZ"
         var_axis = mc_taz.TAZ
-        var_level = None
+        var_level = "TAZ"
         dim_name = "TAZ"
         array = mc_taz
         imped_tag = r"-Impedance-BikeTime"
@@ -268,8 +269,8 @@ walk_access = mc.loadWalkTimeToTransit(block_taz_df=BLOCKS_BY_TAZ,
                                        non_prem_scen=non_prem_scen,
                                        block_level="block_id",
                                        taz_level="TAZ",
-                                       block_id_field="BLOCK_ID",
-                                       time_field="Total_minutes",
+                                       block_id_field="BLOCKID",
+                                       time_field="Total_Minutes",
                                        df_block_col=BLOCK_LIST_BCOL,
                                        df_taz_col=BLOCK_LIST_TCOL)
 
@@ -337,7 +338,7 @@ for p in HB_PURPS:
                                            imped_tag=imped_tag)
         # Get the auto scores
         auto_scores = mc.fetchAccessScores(scen, "auto", p, "to", activity,
-                                           [TAZ_ACCESS_KEY],
+                                           [TAZ_ACCESS_KEY], match_level=TAZ_LEVEL,
                                            match_axis=mc_taz.TAZ)
         # All HHs
         bike_hh = mc.fetchAccessScores(scen, "bike", p, "from", "TotalHH",
@@ -453,11 +454,11 @@ for p in HB_PURPS:
     
         # Get the transit scores
         wat_scores = mc.fetchAccessScores(scen, "transit", p, "to", activity,
-                                          [TAZ_ACCESS_KEY],
+                                          [TAZ_ACCESS_KEY], match_level=TAZ_LEVEL,
                                           match_axis=mc_taz.TAZ)
         # Get the auto scores
         auto_scores = mc.fetchAccessScores(scen, "auto", p, "to", activity,
-                                           [TAZ_ACCESS_KEY],
+                                           [TAZ_ACCESS_KEY], match_level=TAZ_LEVEL,
                                            match_axis=mc_taz.TAZ)
         # Calcualte TAR
         if p == "HBO":
@@ -649,11 +650,11 @@ for p in HB_PURPS:
         
         # WDR
         wat_scores = mc.fetchAccessScores(scen, "transit", p, "to", activity,
-                                          [TAZ_ACCESS_KEY],
+                                          [TAZ_ACCESS_KEY], match_level=TAZ_LEVEL,
                                           match_axis=mc_taz.TAZ)
         max_scores = mc.fetchAccessScores(scen, "transit_da", p, "to",
                                           activity, [TAZ_ACCESS_KEY],
-                                          match_axis=mc_taz.TAZ)
+                                          match_axis=mc_taz.TAZ, match_level=TAZ_LEVEL)
         max_scores.replace(0.0, 1.0, inplace=True)
         wdr = wat_scores/max_scores
         wdr.clip(0, 100, inplace=True)
@@ -866,7 +867,7 @@ for p in PURPOSES:
                                            imped_tag=imped_tag)
         # Get the auto scores
         auto_scores = mc.fetchAccessScores(scen, "auto", p, "to", activity,
-                                           [TAZ_ACCESS_KEY],
+                                           [TAZ_ACCESS_KEY], match_level=TAZ_LEVEL,
                                            match_axis=mc_taz.TAZ)
         # Push auto scores to block level
         if scale == "block":
@@ -1010,26 +1011,26 @@ for p in PURPOSES:
         # Get the transit scores
         transit_scores = mc.fetchAccessScores(scen, "transit", p, "to",
                                               activity, [TAZ_ACCESS_KEY],
-                                              match_axis=mc_taz.TAZ)
+                                              match_axis=mc_taz.TAZ, match_level=TAZ_LEVEL)
         # T -- all jobs regardless of activity
         transit_jobs = mc.fetchAccessScores(scen, "transit", "HBW", "to",
                                             "Total Emp", [TAZ_ACCESS_KEY],
-                                            match_axis=mc_taz.TAZ)
+                                            match_axis=mc_taz.TAZ, match_level=TAZ_LEVEL)
         # T -- All HHs
         tran_hh = mc.fetchAccessScores(scen, "transit", p, "from", "TotalHH",
-                                      [TAZ_ACCESS_KEY], match_axis=mc_taz.TAZ)
+                                      [TAZ_ACCESS_KEY], match_axis=mc_taz.TAZ, match_level=TAZ_LEVEL)
         # T -- Low income HHs
         tran_Inc1 = mc.fetchAccessScores(scen, "transit", p, "from", "Income1",
-                                        [TAZ_ACCESS_KEY],
+                                        [TAZ_ACCESS_KEY], match_level=TAZ_LEVEL,
                                         match_axis=mc_taz.TAZ)
         # Get the auto scores
         auto_scores = mc.fetchAccessScores(scen, "auto", p, "to", activity,
-                                          [TAZ_ACCESS_KEY],
-                                          match_axis=mc_taz.TAZ)
+                                          [TAZ_ACCESS_KEY], match_level=TAZ_LEVEL,
+                                          match_axis=mc_taz.TAZ)            
         # A -- all jobs regardless of activity
         auto_jobs = mc.fetchAccessScores(scen, "auto", "HBW", "to",
                                          "Total Emp", [TAZ_ACCESS_KEY],
-                                         match_axis=mc_taz.TAZ)
+                                         match_axis=mc_taz.TAZ, match_level=TAZ_LEVEL)
         # Get the walk scores
         walk_scores = mc.fetchAccessScores(scen, "walk", p, "to", activity,
                                            index_cols, suffix=suffix,
@@ -1154,11 +1155,11 @@ for p in PURPOSES:
         
         # Get total accessible HHs
         auto_hh = mc.fetchAccessScores(scen, "auto", p, "from", "TotalHH",
-                                       [TAZ_ACCESS_KEY],
+                                       [TAZ_ACCESS_KEY], match_level=TAZ_LEVEL,
                                        match_axis=mc_taz.TAZ)
         # Get high income HHs
         auto_Inc4 = mc.fetchAccessScores(scen, "auto", p, "from", "Income4",
-                                        [TAZ_ACCESS_KEY],
+                                        [TAZ_ACCESS_KEY], match_level=TAZ_LEVEL,
                                         match_axis=mc_taz.TAZ)
         auto_Inc4.columns = ["TotalHH"]
         # Get share high income
@@ -1166,15 +1167,15 @@ for p in PURPOSES:
         # Get accessible HHs by veh ownership
         #  (zero car HHs not needed since they have no vehicles)
         auto_1veh = mc.fetchAccessScores(scen, "auto", p, "from", "Veh1",
-                                        [TAZ_ACCESS_KEY],
+                                        [TAZ_ACCESS_KEY], match_level=TAZ_LEVEL,
                                         match_axis=mc_taz.TAZ)
         auto_1veh.columns = ["TotalHH"]
         auto_2veh = mc.fetchAccessScores(scen, "auto", p, "from", "Veh2",
-                                        [TAZ_ACCESS_KEY],
+                                        [TAZ_ACCESS_KEY], match_level=TAZ_LEVEL,
                                         match_axis=mc_taz.TAZ)
         auto_2veh.columns = ["TotalHH"]
         auto_3veh = mc.fetchAccessScores(scen, "auto", p, "from", "Veh3p",
-                                        [TAZ_ACCESS_KEY],
+                                        [TAZ_ACCESS_KEY], match_level=TAZ_LEVEL,
                                         match_axis=mc_taz.TAZ)
         auto_3veh.columns = ["TotalHH"]
         
@@ -1197,7 +1198,7 @@ for p in PURPOSES:
                                            imped_tag=imped_tag_w)
         # Get the auto scores
         auto_scores = mc.fetchAccessScores(scen, "auto", p, "to", activity,
-                                          [TAZ_ACCESS_KEY], 
+                                          [TAZ_ACCESS_KEY], match_level=TAZ_LEVEL,
                                           match_axis=mc_taz.TAZ)
         
         # Push scores to block level
@@ -1295,23 +1296,23 @@ for p in PURPOSES:
         
         # Get zero vehicle HHs
         wat_0veh = mc.fetchAccessScores(scen, "transit", p, "from", "Veh0",
-                                       [TAZ_ACCESS_KEY],
+                                       [TAZ_ACCESS_KEY], match_level=TAZ_LEVEL,
                                        match_axis=mc_taz.TAZ)
         wat_0veh.columns = ["TotalHH"]
         # Get Low income HHs
         wat_Inc1 = mc.fetchAccessScores(scen, "transit", p, "from", "Income1",
-                                       [TAZ_ACCESS_KEY],
+                                       [TAZ_ACCESS_KEY], match_level=TAZ_LEVEL,
                                        match_axis=mc_taz.TAZ)
         wat_Inc1.columns = ["TotalHH"]
         wat_Inc1 = np.log(wat_Inc1 + 1)
         # Get all HHs
         wat_hh = mc.fetchAccessScores(scen, "transit", p, "from", "TotalHH",
-                                     [TAZ_ACCESS_KEY],
+                                     [TAZ_ACCESS_KEY], match_level=TAZ_LEVEL,
                                      match_axis=mc_taz.TAZ)
         # Get auto access to jobs
         auto_jobs = mc.fetchAccessScores(scen, "auto", "HBW", "to",
                                          "Total Emp", [TAZ_ACCESS_KEY],
-                                         match_axis=mc_taz.TAZ)
+                                         match_axis=mc_taz.TAZ, match_level=TAZ_LEVEL)
         auto_jobs = np.log(auto_jobs + 1)
 
         # Share zero vehicles
@@ -1542,7 +1543,7 @@ for scale in SCALES:
                                        imped_tag=imped_tag)
     
     auto_scores = mc.fetchAccessScores(scen, "auto", p, "to", activity,
-                                       [TAZ_ACCESS_KEY],
+                                       [TAZ_ACCESS_KEY], match_level=TAZ_LEVEL,
                                        match_axis=mc_taz.TAZ)
     
     # Push auto scores to block level
@@ -1641,11 +1642,11 @@ for scale in SCALES:
     
     # Get transit scores
     wat_scores = mc.fetchAccessScores(scen, "transit", p, "to", activity,
-                                      [TAZ_ACCESS_KEY],
+                                      [TAZ_ACCESS_KEY], match_level=TAZ_LEVEL,
                                       match_axis=mc_taz.TAZ)
     # Auto scores
     auto_scores = mc.fetchAccessScores(scen, "auto", p, "to", activity,
-                                      [TAZ_ACCESS_KEY],
+                                      [TAZ_ACCESS_KEY], match_level=TAZ_LEVEL,
                                       match_axis=mc_taz.TAZ)
     # Calculate TAR
     tar = wat_scores/auto_scores
@@ -1819,10 +1820,10 @@ for scale in SCALES:
     
     # Get the transit scores
     wat_scores = mc.fetchAccessScores(scen, "transit", p, "to", activity,
-                                      [TAZ_ACCESS_KEY],
+                                      [TAZ_ACCESS_KEY], match_level=TAZ_LEVEL,
                                       match_axis=mc_taz.TAZ)
     max_scores = mc.fetchAccessScores(scen, "transit_da", p, "to", activity,
-                                      [TAZ_ACCESS_KEY],
+                                      [TAZ_ACCESS_KEY], match_level=TAZ_LEVEL,
                                       match_axis=mc_taz.TAZ)
     max_scores.replace(0.0, 1.0, inplace=True)
     
@@ -1989,3 +1990,7 @@ logger.info(
     f"Final trip sums (broadcast into {len(MODES)} modal dimensions and" +
     "factored based on mode choice model results - NHB Ps TBD)")
 mc.mcInfo(logger, trips_taz_disk, trips_block_disk, mc_taz_disk, mc_block_disk)
+
+# %% REPORT
+out_csv = r"scen\{}\trips_by_mode_predist.csv".format(scen)
+#mc.reportTripsByMode(trips_taz_disk, trips_block_disk, out_csv)
