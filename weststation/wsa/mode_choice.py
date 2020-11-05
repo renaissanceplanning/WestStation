@@ -570,7 +570,7 @@ def mcInfo(logger, trips_taz_disk, trips_block_disk, mc_taz_disk,
 def reportTripsByMode(trips_taz, trips_block, out_csv, taz_level="TAZ",
                       block_axis_name="block_id", block_level="block_id",
                       sum_cols=["Purpose", "End", "Mode"],
-                      levels=["TAZ", "INWINDOW", "INFOCUS" ]):
+                      levels=["TAZ", "INWINDOW", "INFOCUS"]):
     """
     ...
 
@@ -596,16 +596,28 @@ def reportTripsByMode(trips_taz, trips_block, out_csv, taz_level="TAZ",
     _sum_cols = [block_level] + sum_cols
     block_sum = trips_block.sum(_sum_cols)
     # Dissolve blocks to TAZ level
-    block_diss = block_sum.dissolve(block_axis_name, taz_level, np.sum)
-    block_diss[block_axis_name].labels.name = taz_level
+    window_dissolve = block_sum.dissolve(block_axis_name, taz_level, np.sum)
+    window_dissolve[block_axis_name].name = taz_level
+    #window_dissolve[block_axis_name].labels.name = taz_level
     
     # Dump to data frames
     taz_df = taz_sum.to_frame("trips").reset_index()
     taz_df[levels] = pd.DataFrame(
         taz_df[taz_level].to_list(), index=taz_df.index)
-    window_df = block_diss.to_frame("trips").reset_index()
+    window_df = window_dissolve.to_frame("trips").reset_index()
     
     # Merge
-    taz_df_m = taz_df.merge(window_df, how="left", on=taz_level)
+    taz_df_m = taz_df.merge(window_df, how="left", on=[taz_level] + sum_cols, 
+                            suffixes=("_reg", "_loc"))
+    
+    # Replace regional trip estimates with local trip estimates
+    taz_df_m["trips"] = np.select(
+        [pd.isna(taz_df_m["trips_loc"])], 
+        [taz_df_m["trips_reg"]],
+        taz_df_m["trips_loc"]
+        )
+    # Dump to csv
     print("... writing output")
+    out_cols = levels + sum_cols + ["trips"]
+    taz_df_m[out_cols].to_csv(out_csv, index=False)
     

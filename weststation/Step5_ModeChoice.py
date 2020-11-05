@@ -75,9 +75,9 @@ import logging
 root = r"K:\Projects\MAPC\FInalData"
 os.chdir(root)
 
-scen = "BRT_Scen_A"
+scen = "BRT_Scen_B"
 lu_config = "FEIR"
-net_config = "BRT_Scen_A"
+net_config = "BRT_Scen_B"
 base_config = "Base"
 
 # Setup logging
@@ -1993,4 +1993,4 @@ mc.mcInfo(logger, trips_taz_disk, trips_block_disk, mc_taz_disk, mc_block_disk)
 
 # %% REPORT
 out_csv = r"scen\{}\trips_by_mode_predist.csv".format(scen)
-#mc.reportTripsByMode(trips_taz_disk, trips_block_disk, out_csv)
+mc.reportTripsByMode(trips_taz_disk, trips_block_disk, out_csv)
