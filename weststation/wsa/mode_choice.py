@@ -49,7 +49,7 @@ def genMCContainers(template, ref_array, zone_dim, out_hdf, node_path, name,
        
     # Cast data into the mode dimension
     mode_axis_ = template.getAxisByName(mode_axis)
-    ref_array = ref_array.cast(mode_axis, copy_data=copy_data)
+    ref_array = ref_array.cast(mode_axis_, copy_data=copy_data)
         
     # Assure proper axis and label alignment
     ref_array = lba.alignAxes(ref_array, mc_template)
@@ -219,7 +219,7 @@ def loadWalkTimeToTransit(block_taz_df, block_axis, taz_axis, prem_base,
 
 
 def fetchAccessScores(scen, mode, purpose, direction, activity, index_cols,
-                      suffix="", match_axis=None, match_level=None,
+                      suffix="", match_axis=None, match_level="TAZ",
                       imped_tag=""):
     """
     Pull acess scores for this scenario based on mode, purpose, etc. from
@@ -248,7 +248,7 @@ def fetchAccessScores(scen, mode, purpose, direction, activity, index_cols,
         If scores will be used in labeled_array applications, specify the
         axis they are associated with to ensure appropriate ordering of 
         access score values.
-    match_level: String, default=None
+    match_level: String, default="TAZ"
         If `match_axis` uses a MultiIndex, specify the level on which to sort
         access scores.
     imped_tag: String, default=""
@@ -297,22 +297,23 @@ def inheritAccessScore(taz_scores, block_axis, taz_level="TAZ",
     
     Parameters
     -------------
-    taz_scores: pandas data frame
+    taz_scores: DataFrame
     block_axis: LbAxis
     taz_level: String, default="TAZ"
     block_level: String, default="block_id"  
     
     Returns
     -------
-    pd.DataFrame
+    DataFrame
     
     See Also
     ---------
     fetchAccessScores
     """
-    idx_df = block_axis.to_frame()    
-    df = idx_df.merge(taz_scores, how="left", left_on=taz_level,
-                            right_index=True)
+    idx_df = block_axis.to_frame()[[block_level, taz_level]]  
+    taz_df = taz_scores.reset_index(level=taz_level)
+    df = idx_df.merge(taz_df, how="left", left_on=taz_level,
+                      right_on=taz_level)
     df.fillna(0.0, inplace=True)
     df.set_index([block_level, taz_level], inplace=True)
     return df.reindex(block_axis.labels)
@@ -484,7 +485,8 @@ def pushSharesToMCArray(mc_array, model_array, this_mode, mode_dict,
     else:
         # Update estimates for child modes
         for _mode in _modes:
-            pushSharesToMCArray(mc_array, model_array, _mode, **kwargs)
+            pushSharesToMCArray(mc_array, model_array, _mode, mode_dict,
+                                logger=logger, **kwargs)
 
 
 def modeChoiceApply(array, intercept, model_dict, this_mode, complement,
@@ -564,3 +566,46 @@ def mcInfo(logger, trips_taz_disk, trips_block_disk, mc_taz_disk,
         str(mc_taz_disk.sum(["Purpose", "End"]))))
     logger.info("Block choice sums by purpose and end:\n{}".format(
         str(mc_block_disk.sum(["Purpose", "End"]))))
+    
+def reportTripsByMode(trips_taz, trips_block, out_csv, taz_level="TAZ",
+                      block_axis_name="block_id", block_level="block_id",
+                      sum_cols=["Purpose", "End", "Mode"],
+                      levels=["TAZ", "INWINDOW", "INFOCUS" ]):
+    """
+    ...
+
+    Parameters
+    ----------
+    trips_taz : TYPE
+        DESCRIPTION.
+    trips_block : TYPE
+        DESCRIPTION.
+    out_csv : TYPE
+        DESCRIPTION.
+
+    Returns
+    -------
+    None.
+
+    """
+    print("... patching block-level trip estimates in window to TAZs")
+    # TAZ summary
+    _sum_cols = [taz_level] + sum_cols
+    taz_sum = trips_taz.sum(_sum_cols)
+    # Block summary
+    _sum_cols = [block_level] + sum_cols
+    block_sum = trips_block.sum(_sum_cols)
+    # Dissolve blocks to TAZ level
+    block_diss = block_sum.dissolve(block_axis_name, taz_level, np.sum)
+    block_diss[block_axis_name].labels.name = taz_level
+    
+    # Dump to data frames
+    taz_df = taz_sum.to_frame("trips").reset_index()
+    taz_df[levels] = pd.DataFrame(
+        taz_df[taz_level].to_list(), index=taz_df.index)
+    window_df = block_diss.to_frame("trips").reset_index()
+    
+    # Merge
+    taz_df_m = taz_df.merge(window_df, how="left", on=taz_level)
+    print("... writing output")
+    
