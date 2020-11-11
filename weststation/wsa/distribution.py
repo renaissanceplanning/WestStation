@@ -92,10 +92,10 @@ def initTripTable(scen, purpose, period, logger=None):
     return (trips_taz, trips_block)
 
 
-def tripEndsByMode(scen, purpose, period, period_factors,
-                   taz_zone_dim="TAZ", block_zone_dim="block_id",
-                   mode_dim="Mode", purp_dim="Purpose", end_dim="End",
-                   block_taz_level="TAZ", logger=None):
+def tripEndsByMode(scen, purpose, period_factor, taz_zone_dim="TAZ", 
+                   block_zone_dim="block_id", mode_dim="Mode", 
+                   purp_dim="Purpose", end_dim="End", block_taz_level="TAZ", 
+                   logger=None):
     """
     Summarize trips by mode by zone for this purpose (factored into the 
     specified travel period) and return data frames of trips at TAZ and 
@@ -112,8 +112,9 @@ def tripEndsByMode(scen, purpose, period, period_factors,
     ----------
     scen : String
     purpose : String
-    period : String
-    period : factors
+    period_factor: numeric
+        A factor for this period and purpose by which trip estimates are
+        scaled (for all modes) from daily trips to period trips        
     taz_zone_dim : String, default="TAZ"
     block_zone_dim : String, default="block_id"
     mode_dim : String, default="Mode"
@@ -149,13 +150,17 @@ def tripEndsByMode(scen, purpose, period, period_factors,
         [block_zone_dim] + sum_dims)
     
     # Factor by purpose
-    taz_trips.data *= period_factors
-    block_trips.data *= period_factors
+    taz_trips.data *= period_factor
+    block_trips.data *= period_factor
     
     # Dump to data frame
     trips_df_taz = taz_trips.to_frame("trips").reset_index()
+    if isinstance(taz_trips[taz_zone_dim].labels, pd.MultiIndex):
+        levels = taz_trips[taz_zone_dim].levels
+        trips_df_taz[levels] = pd.DataFrame(
+            trips_df_taz[taz_zone_dim].to_list(), index=trips_df_taz.index)
     trips_df_block = block_trips.to_frame("trips").reset_index()
-    trips_df_block[["block", "TAZ"]] = pd.DataFrame(
+    trips_df_block[block_trips[block_zone_dim].levels] = pd.DataFrame(
         trips_df_block[block_zone_dim].tolist(), index=trips_df_block.index)
     
     # Patch blocks into tazs
@@ -166,6 +171,10 @@ def tripEndsByMode(scen, purpose, period, period_factors,
     # -- summarize block trips
     group_by_fields = [block_taz_level, mode_dim, end_dim]
     patch_df = trips_df_block.groupby(group_by_fields).sum().reset_index()
+    # for gb_field in group_by_fields:
+    #     patch_df[gb_field] = patch_df[gb_field].astype(str)
+    #     trips_df_taz[gb_field] = trips_df_taz[gb_field].astype(str)
+    
     # -- merge taz trips with block sums to 
     trips_df_taz_p = trips_df_taz.merge(
         patch_df, how="left", on=group_by_fields, suffixes=("_taz", "_patch"))
@@ -245,7 +254,7 @@ def seedTripTable(net_config, purpose, trip_table, trips_df, decay_refs,
         # Get the decay skim for this mode
         decay_crit = {"Purpose": purpose}
         decay_ref = decay_refs[mode]
-        if scale == "TAZ" and mode in NONMOTOR_MODES:
+        if scale == "TAZ" and mode in nonmotor_modes:
             decay_skim_f = r"net\{}\nonmotor_decay_TAZ.h5".format(net_config)
             decay_crit["Impedance"] = f"{mode.title()}Time"
         else:
@@ -261,8 +270,8 @@ def seedTripTable(net_config, purpose, trip_table, trips_df, decay_refs,
         trips_p_fltr = np.logical_and(mode_fltr, p_fltr)
         trips_a_fltr = np.logical_and(mode_fltr, a_fltr)
         # Fetch trips
-        trips_p = trips_df[trips_p_fltr]
-        trips_a = trips_df[trips_a_fltr]
+        trips_p = trips_df[trips_p_fltr].copy()
+        trips_a = trips_df[trips_a_fltr].copy()
         
         # Summarize total Ps, as these will be used to "scale" the seed
         total_ps = trips_p[trips_col].sum()
@@ -278,6 +287,7 @@ def seedTripTable(net_config, purpose, trip_table, trips_df, decay_refs,
                 dests_id=id_col, level=level, weighting_factor=total_ps,
                 **decay_crit)
         except KeyError:
+            print("-- ... mode name not found")
             continue
         except:
             raise
@@ -322,3 +332,72 @@ def tripTargetsByZone(trips_df, zone_col="TAZ", trips_col="trips",
         logger.info(targets_a)
     
     return targets_p, targets_a
+
+
+def summarizeTripAttributes(trips, mode, net_config, skim_ref, unit,
+                            sum_dims=["From", "To"], factor=1.0):
+    """
+    
+
+    Parameters
+    ----------
+    trips : TYPE
+        DESCRIPTION.
+    mode : TYPE
+        DESCRIPTION.
+    net_config : TYPE
+        DESCRIPTION.
+    skim_ref : TYPE
+        DESCRIPTION.
+    unit : TYPE
+        DESCRIPTION.
+    sum_dims : TYPE, optional
+        DESCRIPTION. The default is ["From", "To"].
+
+    Returns
+    -------
+    TYPE
+        DESCRIPTION.
+
+    """
+    m_trips = trips.take(Mode=mode, squeeze=True)
+    f, node, axis, label = skim_ref[mode]
+    skim_f = r"net\{}\{}.h5".format(net_config, f)
+    skim = emma.od.openSkim_HDF(skim_f, node)   
+    skim_crit = {axis: label}
+    prod = m_trips.impress(
+        fill_with=m_trips.data * skim.take(squeeze=True, **skim_crit).data
+        )
+    
+    stack = []
+    for sum_dim in sum_dims:
+        trip_col = f"Trips_{sum_dim}"
+        prod_col = f"Trip_{unit}_{sum_dim}"
+        avg_col = f"{unit}_{sum_dim}"
+        trip_sum = m_trips.sum(sum_dim)
+        wtd_sum = prod.sum(sum_dim)
+        trip_df = trip_sum.to_frame(trip_col)
+        prod_df = wtd_sum.to_frame(prod_col)
+        prod_df[prod_col] *= factor
+        merge_df = trip_df.merge(prod_df, how="inner", left_index=True, 
+                                 right_index=True)
+        merge_df[avg_col] = merge_df[prod_col]/merge_df[trip_col]
+        
+        # Make a well-formed index
+        merge_df = merge_df.reset_index()
+        names = m_trips[sum_dim].levels
+        merge_df[names] = pd.DataFrame(
+            merge_df[sum_dim].to_list(), index=merge_df.index)
+        merge_df.drop(columns=sum_dim, inplace=True)
+        merge_df.set_index(names, inplace=True)   
+        stack.append(merge_df)
+    return pd.concat(stack, axis=1)
+    
+        
+        
+        
+        
+        
+        
+        
+        
