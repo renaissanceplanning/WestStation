@@ -306,7 +306,7 @@ def estimateTNCCosts(auto_skim, purpose, tnc_cost_skim, value_of_time,
     print(" -- Recording estimated total monetary costs")
     if logger is not None:
         logger.info(" -- Recording estimated monetary costs")
-    dollars = numer + (duration / 60 * vot)
+    dollars = numer + (duration / 60 * value_of_time)
     tnc_cost_skim.put(dollars, Components="EstCostDollars")
     
     # Setup decay rates
@@ -425,14 +425,14 @@ def estimateTNCProb(net_config, purpose, tnc_ratio_skim, tnc_cost_skim,
             raise ValueError(f"use_units value ({use_units}) not understood")
         
         # -- Get modal decay specs
-        specs_f = "input\DecaySpecs.csv"
+        specs_f = "input\decay_specs.csv"
         specs = pd.read_csv(specs_f)
         spec_mode = mode_dict[mode]
         fltr = np.logical_and.reduce(
             [
                 specs.Mode == spec_mode,
                 specs.Purpose == purpose,
-                specs.Use == "distribution"
+                specs.Distribution == "density"
                 ]
             )
         mu = specs[fltr].ConstMu
