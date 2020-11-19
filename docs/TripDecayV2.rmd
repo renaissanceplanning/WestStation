@@ -25,17 +25,14 @@ library(survival)
 library(bookdown)
 knitr::opts_chunk$set(echo = FALSE, warning=FALSE, message=FALSE, 
                       fig.pos = 'H', fig.cap=T)
-
 #### read in data
 total <- readRDS("./data/TripRecords.rds")
-
 # # person = read_xlsx(paste0(base, "MAPC_DB_xlsx/PER.xlsx"))
 # place = read_xlsx(paste0(base, "MAPC_DB_xlsx/PLACE.xlsx"))
 # # vehicle = read_xlsx(paste0(base, "MAPC_DB_xlsx/VEH.xlsx"))
 # household = read_xlsx(paste0(base, "MAPC_DB_xlsx/HH.xlsx"))
 # 
 # total = left_join(place, household, by="SAMPN")
-
 # Mode classifications
 # ------------------------------------------------------------------------------
 non_motorized    <- c(1,2)       #walk, bike
@@ -54,7 +51,6 @@ caption {
  font-size: 16px;
  font-weight: bold;
 }
-
 p.caption {
  color: rgb(63, 78, 86);
  line-height: 1.5em;
@@ -86,7 +82,6 @@ Table <-
              )
 rownames(Table) <-  c("Observational unit", "Event", 
                         "Predictor variables", 'Meaning of "survival"')
-
 kable(Table,
       col.names = c("Common survival analysis", "Analogs in trip decay"),
       row.names = T,
@@ -129,7 +124,6 @@ Table <-
                                     'Not "NA" (indicating either origin or destination is not in the study area)'),
              "Total Records"=prettyNum(rep(c(112262, 26137), 
                                            c(5,3)), big.mark=","))
-
 kable(Table,
       col.names = c("Model", "Modes", "Variable", "Filter condition", "Total records"),
       row.names = F,
@@ -185,7 +179,6 @@ Table <- data.frame("Model" = rep(c("Personal vehicle",
                                      "Household size", 
                                      "Trip purpose (home, work, non-work)",
                                      "Terminal time (by origin and destination TAZ)"))
-
 kable(Table,
       col.names = c("Model", "Covariates"),
       row.names = F,
@@ -223,7 +216,6 @@ Table = data.frame("Purpose Group" = rep(c("Home","Work","Non-work"), c(2,3,17))
                                                  "Outdoor recreation/entertainment",
                                                  "Indoor recreation/entertainment",
                                                  "Visit friends/relatives"))
-
 kable(Table,
       col.names = c("Model", "MAPC survey code", "MAPC purpose definition"),
       row.names = F,
@@ -310,19 +302,14 @@ mod <- total %>%
   filter(purpose != "delete me") %>%
   mutate(purpose = factor(purpose, levels=c("home","work","nonwork"))) %>%
   select(-c(sp, parkunit))
-
 pv <- mod %>% select(-c(MODE, WTP, WTA, BTP, BTA, ParkStart, ParkEnd))
-
 # Model selection: vehicle
 # ------------------------------------------------------------------------------
-
 # Note that if they were kept, we don't really care about the significance
 # of "other" or "don't know/refused" categories. i.e. if they're not
 # significant, we don't worry about it
-
 fit <- coxph(Surv(TIME, STATUS) ~ ., data=pv)
 s   <- summary(fit)
-
 s$coefficients %>%
   data.frame %>%
   mutate(coef = round(coef, 4),
@@ -426,7 +413,6 @@ fitcut <- coxph(Surv(tstart, TIME, STATUS) ~ parkcost:strata(tgroup) +
                  VTA:strata(tgroup),
                data=pv2)
 s <- summary(fitcut)
-
 s$coefficients %>%
   data.frame %>%
   mutate(coef = round(coef, 4),
@@ -486,17 +472,14 @@ The plot of deviance residuals for the updated, time-dependent model is shown in
 ```{r Figure 1, fig.cap = "Figure 1: Time-dependent personal vehicle model deviance residuals", fig.align="center"}
 # Influential observations / outliers
 # ------------------------------------------------------------------------------
-
 # "The deviance residual is a normalized transform of the martingale residual.
 # These residuals should be roughtly symmetrically distributed about zero
 # with a standard deviation of 1."
-
 devres = residuals(fitcut, type="deviance")
 # sum(devres > 0)
 # sum(devres < 0) # about the same number above and below 0
 # mean(devres)    # mean = -0.002
 # sd(devres)      # sd = 1.2
-
 ggplot(data = data.frame(y = devres, x = 1:length(devres))) +
   geom_point(aes(x = x, y = y)) +
   geom_hline(yintercept=0, color="red") +
@@ -509,7 +492,6 @@ ggplot(data = data.frame(y = devres, x = 1:length(devres))) +
                      breaks=seq(-4,6,2))
 # Roughly symmetric, we do have a few outliers that "died too soon" compared to
 # expected survival (large positives). Very few "died to late" (large negatives)
-
 # We should be fine on outliers given this information
 ```
 <br />
@@ -534,10 +516,8 @@ y = apply(pv, 1, function(x){
 })
 d = data.frame(y=y)
 d = d %>% group_by(y) %>% summarise(n=n()) %>% arrange(desc(n))
-
 # Compare survival curves to sample data
 # -----------------------------------------------------------------------------
-
 # Parameters to model for survival
 pc = 0
 tc = 0
@@ -545,7 +525,6 @@ hh = 4
 purp = "nonwork"
 vtp = 1
 vta = 1
-
 # Predict according to our curve (out to 2 hours)
 nd = data.frame(tstart=rep(c(0,5,10,20,30), times=1),
                 TIME=rep(c(5,10,20,30,800), times=1),
@@ -560,7 +539,6 @@ nd = data.frame(tstart=rep(c(0,5,10,20,30), times=1),
                 curve=rep(c("Model"), each=5))
 sfit = survfit(fitcut, newdata=nd, id=curve, data=pv2)
 predicted = data.frame(x=c(0,sfit$time), y=c(1,sfit$surv))
-
 # Filter survey data down to entries matching model parameters
 # Then calculate survival
 pvfilt = pv %>% filter(parkcost %in% pc &
@@ -574,7 +552,6 @@ actual = lapply(0:max(pvfilt$TIME), function(x){
 }) %>% bind_rows %>%
   mutate(y = y/nrow(pvfilt)) %>%
   slice(1:nrow(predicted))
-
 # Compile
 together = rbind(predicted, actual) %>%
   mutate(Curve = rep(c("Model", "Sample"), each=nrow(predicted)))
@@ -619,7 +596,6 @@ The model including all candidate covariates showed household size was an insign
 ```{r Preprocessing Table 10}
 # Variable selection
 # ------------------------------------------------------------------------------
-
 # 1. select trips with a valid time measure (need for survival fitting)
 # 2. add a status variable to reflect censorship (none are censored)
 # 3. select the relevant variables: hh size, purpose
@@ -633,11 +609,9 @@ The model including all candidate covariates showed household size was an insign
 # 9. change purpose to a factor
 # 10. select out secondary purpose
 # 11. select either bike or walk terminal time based on the mode
-
 # Note: we don't ~have~ to filter out DK/R and other responses, 
 # but I think it makes sense for our application and 
 # will make model fitting more interpretable
-
 mod <- total %>%
   filter(MODE %in% non_motorized) %>%
   filter(!is.na(TRPDUR)) %>%
@@ -660,27 +634,20 @@ mod <- total %>%
   select(-sp) %>%
   mutate(TTP = case_when(MODE == 1 ~ WTP, MODE == 2 ~ BTP),
          TTA = case_when(MODE == 1 ~ WTA, MODE == 2 ~ BTA))
-
 nm <- mod %>% select(-c(MODE, WTP, WTA, BTP, BTA))
-
 # Model selection: non-motorized
 # ------------------------------------------------------------------------------
-
 # Note that if they were kept, we don't really care about the significance
 # of "other" or "don't know/refused" categories. i.e. if they're not
 # significant, we don't worry about it
-
 fit <- coxph(Surv(TIME, STATUS) ~ ., data=nm)
 # Production terminal time doesn't matter, take it out
-
 nm  <- nm %>% select(-TTP)
 fit <- coxph(Surv(TIME, STATUS) ~ ., data=nm)
 # Origin parking cost doesn't matter, take it out
-
 nm  <- nm %>% select(-ParkStart)
 fit <- coxph(Surv(TIME, STATUS) ~ ., data=nm)
 # Household size doesn't matter, take it out
-
 nm  <- nm %>% select(-hhsize)
 fit <- coxph(Surv(TIME, STATUS) ~ ParkEnd + TTA + purpose, data=nm)
 s   <- summary(fit)
@@ -767,7 +734,6 @@ Exploration of scaled Schoenfeld residuals vs. time plots followed by iterative 
 ```{r Model Run}
 # Time dependent coefficients
 # ------------------------------------------------------------------------------
-
 # Fit
 nm2 <- survSplit(Surv(TIME, STATUS) ~ .,
                  data=nm,
@@ -864,7 +830,6 @@ A graphical comparison of a modeled travel time decay curve to the sample travel
 purp <-  "nonwork"
 park <-  0
 TTA  <-  0
-
 # Predict according to our curve (out to 2 hours)
 nd <- data.frame(tstart=rep(c(0,5), times=1),
                 TIME=rep(c(5,310), times=1),
@@ -876,7 +841,6 @@ nd <- data.frame(tstart=rep(c(0,5), times=1),
                 curve=rep(c("Model"), each=2))
 sfit <- survfit(fitcut, newdata=nd, id=curve, data=nm2)
 predicted <- data.frame(x=c(0,sfit$time), y=c(1,sfit$surv))
-
 # Filter survey data down to entries matching model parameters
 # Then calculate survival
 nmfilt <- nm %>% filter(purpose %in% purp & 
@@ -918,10 +882,8 @@ for(i in 0:171){
   }
 }
 predicted = data.frame(x=0:171, y=pred_full)
-
 together = rbind(predicted, actual) %>%
   mutate(Curve = rep(c("Model", "Sample"), each=nrow(predicted)))
-
 together %>%
   spread(Curve, y) %>%
   mutate(diff = Model - Sample) %>%
@@ -1046,7 +1008,6 @@ cases = decay_cases(c("$0", "$0", "1", "Work", "0", "0"),
                     c("$0", "$1", "1", "Work", "0", "0"),
                     c("$0", "$2", "1", "Work", "0", "0"),
                     c("$0", "$3", "1", "Work", "0", "0"))
-
 kable(cases,
       booktabs = T,
       row.names = F,
@@ -1072,7 +1033,6 @@ cases$OP = 0
 cases$DP = 0
 cases$OTT = 0
 cases$DTT = 0
-
 nd = data.frame(tstart=rep(c(0,5,10,20,30), times=n),
                 TIME=rep(c(5,10,20,30,800), times=n),
                 STATUS=rep(0, times=n*5),
@@ -1091,12 +1051,10 @@ nd = nd %>%
          tollcost = tollcost %>% as.character %>% as.numeric,
          hhsize = hhsize %>% as.character %>% as.numeric)
 sfit = survfit(fitcut, newdata=nd, id=curve)#, data=data)
-
 df = data.frame(time = sfit$time,
                 surv = sfit$surv,
                 curve = rep(names(sfit$strata), sfit$strata)) %>%
   mutate(cdf = 1-surv)
-
 df = suppressWarnings(
   lapply(cases$Case, function(x){
     sub = df %>% filter(curve == x)
@@ -1104,13 +1062,11 @@ df = suppressWarnings(
     sub %>% mutate(pdf = pdf)
   }) %>% bind_rows
 )
-
 df = bind_rows(df, data.frame(time=0,surv=1,curve=unique(cases$Case),cdf=0,pdf=0))
 ```
 
 ```{r Figure 7, fig.cap="Figure 7: $S_{C_0}(t)$, with $S_{C_0}(14)$ highlighted", fig.align="center"}
 s14 = df$surv[df$curve == cases$Case[1] & df$time == 14]
-
 ggplot() +
   geom_step(data=df %>% filter(curve==cases$Case[1]), 
             mapping=aes(x=time, y=surv), 
@@ -1146,7 +1102,6 @@ totprob = df %>%
   filter(time == 15) %>%
   mutate(d = pdf / pdf[1]) %>%
   select(curve, pdf, d)
-
 kable(totprob %>% mutate(pdf = round(pdf, 3), d = round(d, 3)),
       row.names = F,
       col.names = c("Case", "Density", "Density ratio (to ${C_0}$)"),
@@ -1159,7 +1114,6 @@ kable(totprob %>% mutate(pdf = round(pdf, 3), d = round(d, 3)),
 
 ```{r Figure 8, fig.cap="Figure 8: $f_{C_0}(t)$ and $f_{C_{A_i}}(t), i=1,2,3$", fig.align="center"}
 maxden = max(df$pdf[between(df$time, 10, 20)])
-
 ggplot(data = df) +
   geom_step(aes(x = time, y = pdf, color = curve)) +
   scale_color_manual(name = "Case",
@@ -1182,7 +1136,6 @@ finaldf = totprob %>%
   select(-pdf) %>%
   slice(-1) %>%
   select(c(curve,s,d,f))
-
 kable(finaldf %>% mutate(d = round(d, 3), s = round(s, 3), f = round(f, 3)),
       booktabs = T,
       row.names = F,

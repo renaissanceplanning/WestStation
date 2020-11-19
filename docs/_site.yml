@@ -20,7 +20,7 @@ navbar:
         - text: "Model Sensitivities"
           href: Model_Sensitivities_Report.html
         - text: "Mode choice model"
-          href: Mode_Choice_Report.Rmd
+          href: Mode_Choice_Report.html
         - text: "Survival Decay Concept"
           href: TripDecayV2.html
     - text: "Toolkit Documentation"

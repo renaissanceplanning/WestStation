@@ -1,0 +1,3842 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+
+<meta name="author" content="Aaron Weinstock" />
+
+<meta name="date" content="2019-11-27" />
+
+<title>A SURVIVAL ANALYSIS APPROACH TO UNDERSTANDING TRAVEL TIME DECAY</title>
+
+<script src="site_libs/jquery-1.11.3/jquery.min.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link href="site_libs/bootstrap-3.3.5/css/bootstrap.min.css" rel="stylesheet" />
+<script src="site_libs/bootstrap-3.3.5/js/bootstrap.min.js"></script>
+<script src="site_libs/bootstrap-3.3.5/shim/html5shiv.min.js"></script>
+<script src="site_libs/bootstrap-3.3.5/shim/respond.min.js"></script>
+<script src="site_libs/jqueryui-1.11.4/jquery-ui.min.js"></script>
+<link href="site_libs/tocify-1.9.1/jquery.tocify.css" rel="stylesheet" />
+<script src="site_libs/tocify-1.9.1/jquery.tocify.js"></script>
+<script src="site_libs/navigation-1.1/tabsets.js"></script>
+<link href="site_libs/highlightjs-9.12.0/default.css" rel="stylesheet" />
+<script src="site_libs/highlightjs-9.12.0/highlight.js"></script>
+<link href="site_libs/anchor-sections-1.0/anchor-sections.css" rel="stylesheet" />
+<script src="site_libs/anchor-sections-1.0/anchor-sections.js"></script>
+<script src="site_libs/kePrint-0.0.1/kePrint.js"></script>
+<link href="site_libs/lightable-0.0.1/lightable.css" rel="stylesheet" />
+
+<style type="text/css">
+  code{white-space: pre-wrap;}
+  span.smallcaps{font-variant: small-caps;}
+  span.underline{text-decoration: underline;}
+  div.column{display: inline-block; vertical-align: top; width: 50%;}
+  div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+  ul.task-list{list-style: none;}
+    </style>
+
+<style type="text/css">code{white-space: pre;}</style>
+<style type="text/css">
+  pre:not([class]) {
+    background-color: white;
+  }
+</style>
+<script type="text/javascript">
+if (window.hljs) {
+  hljs.configure({languages: []});
+  hljs.initHighlightingOnLoad();
+  if (document.readyState && document.readyState === "complete") {
+    window.setTimeout(function() { hljs.initHighlighting(); }, 0);
+  }
+}
+</script>
+
+
+
+<style type="text/css">
+h1 {
+  font-size: 34px;
+}
+h1.title {
+  font-size: 38px;
+}
+h2 {
+  font-size: 30px;
+}
+h3 {
+  font-size: 24px;
+}
+h4 {
+  font-size: 18px;
+}
+h5 {
+  font-size: 16px;
+}
+h6 {
+  font-size: 12px;
+}
+.table th:not([align]) {
+  text-align: left;
+}
+</style>
+
+<link rel="stylesheet" href="RPG_Bootstrap_Arial.css" type="text/css" />
+
+
+
+<style type = "text/css">
+.main-container {
+  max-width: 940px;
+  margin-left: auto;
+  margin-right: auto;
+}
+code {
+  color: inherit;
+  background-color: rgba(0, 0, 0, 0.04);
+}
+img {
+  max-width:100%;
+}
+.tabbed-pane {
+  padding-top: 12px;
+}
+.html-widget {
+  margin-bottom: 20px;
+}
+button.code-folding-btn:focus {
+  outline: none;
+}
+summary {
+  display: list-item;
+}
+</style>
+
+
+<style type="text/css">
+/* padding for bootstrap navbar */
+body {
+  padding-top: 51px;
+  padding-bottom: 40px;
+}
+/* offset scroll position for anchor links (for fixed navbar)  */
+.section h1 {
+  padding-top: 56px;
+  margin-top: -56px;
+}
+.section h2 {
+  padding-top: 56px;
+  margin-top: -56px;
+}
+.section h3 {
+  padding-top: 56px;
+  margin-top: -56px;
+}
+.section h4 {
+  padding-top: 56px;
+  margin-top: -56px;
+}
+.section h5 {
+  padding-top: 56px;
+  margin-top: -56px;
+}
+.section h6 {
+  padding-top: 56px;
+  margin-top: -56px;
+}
+.dropdown-submenu {
+  position: relative;
+}
+.dropdown-submenu>.dropdown-menu {
+  top: 0;
+  left: 100%;
+  margin-top: -6px;
+  margin-left: -1px;
+  border-radius: 0 6px 6px 6px;
+}
+.dropdown-submenu:hover>.dropdown-menu {
+  display: block;
+}
+.dropdown-submenu>a:after {
+  display: block;
+  content: " ";
+  float: right;
+  width: 0;
+  height: 0;
+  border-color: transparent;
+  border-style: solid;
+  border-width: 5px 0 5px 5px;
+  border-left-color: #cccccc;
+  margin-top: 5px;
+  margin-right: -10px;
+}
+.dropdown-submenu:hover>a:after {
+  border-left-color: #ffffff;
+}
+.dropdown-submenu.pull-left {
+  float: none;
+}
+.dropdown-submenu.pull-left>.dropdown-menu {
+  left: -100%;
+  margin-left: 10px;
+  border-radius: 6px 0 6px 6px;
+}
+</style>
+
+<script>
+// manage active state of menu based on current page
+$(document).ready(function () {
+  // active menu anchor
+  href = window.location.pathname
+  href = href.substr(href.lastIndexOf('/') + 1)
+  if (href === "")
+    href = "index.html";
+  var menuAnchor = $('a[href="' + href + '"]');
+
+  // mark it active
+  menuAnchor.parent().addClass('active');
+
+  // if it's got a parent navbar menu mark it active as well
+  menuAnchor.closest('li.dropdown').addClass('active');
+});
+</script>
+
+<!-- tabsets -->
+
+<style type="text/css">
+.tabset-dropdown > .nav-tabs {
+  display: inline-table;
+  max-height: 500px;
+  min-height: 44px;
+  overflow-y: auto;
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.tabset-dropdown > .nav-tabs > li.active:before {
+  content: "";
+  font-family: 'Glyphicons Halflings';
+  display: inline-block;
+  padding: 10px;
+  border-right: 1px solid #ddd;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open > li.active:before {
+  content: "&#xe258;";
+  border: none;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open:before {
+  content: "";
+  font-family: 'Glyphicons Halflings';
+  display: inline-block;
+  padding: 10px;
+  border-right: 1px solid #ddd;
+}
+
+.tabset-dropdown > .nav-tabs > li.active {
+  display: block;
+}
+
+.tabset-dropdown > .nav-tabs > li > a,
+.tabset-dropdown > .nav-tabs > li > a:focus,
+.tabset-dropdown > .nav-tabs > li > a:hover {
+  border: none;
+  display: inline-block;
+  border-radius: 4px;
+  background-color: transparent;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open > li {
+  display: block;
+  float: none;
+}
+
+.tabset-dropdown > .nav-tabs > li {
+  display: none;
+}
+</style>
+
+<!-- code folding -->
+
+
+
+<style type="text/css">
+
+#TOC {
+  margin: 25px 0px 20px 0px;
+}
+@media (max-width: 768px) {
+#TOC {
+  position: relative;
+  width: 100%;
+}
+}
+
+@media print {
+.toc-content {
+  /* see https://github.com/w3c/csswg-drafts/issues/4434 */
+  float: right;
+}
+}
+
+.toc-content {
+  padding-left: 30px;
+  padding-right: 40px;
+}
+
+div.main-container {
+  max-width: 1200px;
+}
+
+div.tocify {
+  width: 20%;
+  max-width: 260px;
+  max-height: 85%;
+}
+
+@media (min-width: 768px) and (max-width: 991px) {
+  div.tocify {
+    width: 25%;
+  }
+}
+
+@media (max-width: 767px) {
+  div.tocify {
+    width: 100%;
+    max-width: none;
+  }
+}
+
+.tocify ul, .tocify li {
+  line-height: 20px;
+}
+
+.tocify-subheader .tocify-item {
+  font-size: 0.90em;
+}
+
+.tocify .list-group-item {
+  border-radius: 0px;
+}
+
+
+</style>
+
+
+
+</head>
+
+<body>
+
+
+<div class="container-fluid main-container">
+
+
+<!-- setup 3col/9col grid for toc_float and main content  -->
+<div class="row-fluid">
+<div class="col-xs-12 col-sm-4 col-md-3">
+<div id="TOC" class="tocify">
+</div>
+</div>
+
+<div class="toc-content col-xs-12 col-sm-8 col-md-9">
+
+
+
+
+<div class="navbar navbar-default  navbar-fixed-top" role="navigation">
+  <div class="container">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar">
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="index.html">MAPC Accessibility Modeling</a>
+    </div>
+    <div id="navbar" class="navbar-collapse collapse">
+      <ul class="nav navbar-nav">
+        <li>
+  <a href="index.html">Home</a>
+</li>
+<li>
+  <a href="west_station_exec.html">West Station Walkthrough</a>
+</li>
+<li>
+  <a href="west_station_scen.html">Scenario Comparisons</a>
+</li>
+<li class="dropdown">
+  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
+    Model documentation
+     
+    <span class="caret"></span>
+  </a>
+  <ul class="dropdown-menu" role="menu">
+    <li class="dropdown-header">Overview</li>
+    <li>
+      <a href="ModelOverview.html"></a>
+    </li>
+    <li>
+      <a href="WhitePaper_TripGenAndBuiltEnviron.pdf">Trip Generation</a>
+    </li>
+    <li>
+      <a href="NaiveEstimatorsV1.html">Decay Rate Estimation</a>
+    </li>
+    <li>
+      <a href="Model_Sensitivities_Report.html">Model Sensitivities</a>
+    </li>
+    <li>
+      <a href="Mode_Choice_Report.html">Mode choice model</a>
+    </li>
+    <li>
+      <a href="TripDecayV2.html">Survival Decay Concept</a>
+    </li>
+  </ul>
+</li>
+<li class="dropdown">
+  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
+    Toolkit Documentation
+     
+    <span class="caret"></span>
+  </a>
+  <ul class="dropdown-menu" role="menu">
+    <li>
+      <a href="./sphinx/html/index.html">West Station Area Python library</a>
+    </li>
+    <li>
+      <a href="https://renaissanceplanning.github.io/emma-docs/">Emma Python library</a>
+    </li>
+  </ul>
+</li>
+      </ul>
+      <ul class="nav navbar-nav navbar-right">
+        
+      </ul>
+    </div><!--/.nav-collapse -->
+  </div><!--/.container -->
+</div><!--/.navbar -->
+
+<div class="fluid-row" id="header">
+
+
+
+<h1 class="title toc-ignore">A SURVIVAL ANALYSIS APPROACH TO UNDERSTANDING TRAVEL TIME DECAY</h1>
+<h4 class="author">Aaron Weinstock</h4>
+<h4 class="date">November 27, 2019</h4>
+
+</div>
+
+
+<style type="text/css">
+caption {
+ color: rgb(63, 78, 86);
+ line-height: 1.5em;
+ font-size: 16px;
+ font-weight: bold;
+}
+p.caption {
+ color: rgb(63, 78, 86);
+ line-height: 1.5em;
+ font-size: 16px;
+ font-weight: bold;
+}
+</style>
+<p><br /></p>
+<div id="introduction" class="section level1">
+<h1><span class="header-section-number">1</span> INTRODUCTION</h1>
+<p>Historically, travel time decay curves have been estimated via exponential regression on time. First, for each time <em>t</em> in a set of travel times <span class="math inline">\({\scriptstyle t = 1, 2, ..., t_{max}}\)</span>, number of trips lasting at least <em>t</em> minutes would be calculated. Then, assuming the functional form y = <span class="math inline">\(Ae^{bt}\)</span>, a regression would be fit with <em>t</em> (time) as the sole explanatory variable and <em>y</em> (the number of trips lasting at least <em>t</em> minutes) as the response.</p>
+<p>While this method does elucidate the underlying decay curve, it is a naive approach in that it assumes travel time decay relies only on time. By considering time as the only covariate, this type of model ignores the impact other variables could have on travel time decay. For example, increased age could be associated with shorter tripmaking for walking trips, and thus a steeper travel time decay. Thus, a more informative travel time decay model may seek to include the effects of both time and other relevant covariates. This would not only produce a more realistic travel time decay curve, but allow for a quantification of the relationship between included covariates and travel time decay.</p>
+<p>This paper suggests the use of a survival analysis approach to modeling travel time decay. Survival analysis encompasses a set of statistical methods interested in modeling the time to an “event” using a set of predictor variables. It is most often seen in clinical trials, where a researcher may be interested in how long patients survive after being given a particular treatment. It can be extended to travel time decay by considering the ending of a trip as the “event” of interest. Table 1 provides the travel time decay analogs of a more common survival analysis example.</p>
+<table class="table table-striped table-hover table-responsive table-bordered" style="margin-left: auto; margin-right: auto;">
+<caption>
+Table 1: Travel time decay in a survival analysis context
+</caption>
+<thead>
+<tr>
+<th style="text-align:left;font-weight: bold;">
+</th>
+<th style="text-align:left;font-weight: bold;">
+Common survival analysis
+</th>
+<th style="text-align:left;font-weight: bold;">
+Analogs in trip decay
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left;">
+Observational unit
+</td>
+<td style="text-align:left;">
+Disease patients at a hospital
+</td>
+<td style="text-align:left;">
+Trip records
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Event
+</td>
+<td style="text-align:left;">
+Death
+</td>
+<td style="text-align:left;">
+Ending of a trip
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Predictor variables
+</td>
+<td style="text-align:left;">
+Treatment, age, sex
+</td>
+<td style="text-align:left;">
+Financial cost, purpose
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Meaning of “survival”
+</td>
+<td style="text-align:left;">
+How long the patient survives
+</td>
+<td style="text-align:left;">
+How long the trip lasts
+</td>
+</tr>
+</tbody>
+</table>
+<p><br /></p>
+</div>
+<div id="data" class="section level1">
+<h1><span class="header-section-number">2</span> DATA</h1>
+<p>The data comes from the Massachusetts Travel Survey (MTS), conducted by the Massachusetts Department of Transportation and published in June 2012. It was provided by the Metropolitan Area Planning Council (MAPC), which serves Boston, MA and its metropolitan region.</p>
+<p>The data includes 190,215 trip records from 37,023 persons across 15,033 households in Massachusetts. The trip dataset includes attributes such as duration, mode, purpose, cost, destination, etc. The person dataset includes attributes such as age, education, employment status, etc. The household dataset includes size, number of workers, number of vehicles, income, location, etc.</p>
+<p>This analysis required known values for all model variables, so some trip records were filtered out prior to model fitting based on survey responses. In addition, models were fit individually on different classes of modes, so different filtering conditions were necessary to create each model set. Table 2 details the modes used for each model, the conditions on which model variables were filtered, and the resulting number of trip records used for model fitting.</p>
+<table class="table table-striped table-hover table-responsive table-bordered" style="margin-left: auto; margin-right: auto;">
+<caption>
+Table 2: Trip record filtering protocol for each mode-specific model
+</caption>
+<thead>
+<tr>
+<th style="text-align:left;font-weight: bold;">
+Model
+</th>
+<th style="text-align:left;font-weight: bold;">
+Modes
+</th>
+<th style="text-align:left;font-weight: bold;">
+Variable
+</th>
+<th style="text-align:left;font-weight: bold;">
+Filter condition
+</th>
+<th style="text-align:left;font-weight: bold;">
+Total records
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left;vertical-align: middle !important;" rowspan="5">
+Personal vehicle
+</td>
+<td style="text-align:left;width: 1.3in; vertical-align: middle !important;" rowspan="5">
+Driver or passenger of auto, truck, van, or motorcycle
+</td>
+<td style="text-align:left;">
+Parking cost
+</td>
+<td style="text-align:left;">
+Not “do not know” or “refused”
+</td>
+<td style="text-align:left;vertical-align: middle !important;" rowspan="5">
+112,262
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Toll cost
+</td>
+<td style="text-align:left;">
+Not “do not know” or “refused”
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Household size
+</td>
+<td style="text-align:left;">
+Not “do not know” or “refused”
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Trip purpose
+</td>
+<td style="text-align:left;">
+Not “other” or “while traveling – other”; not a “loop trip” with no secondary purpose
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+TAZ-based measures
+</td>
+<td style="text-align:left;">
+Not “NA” (indicating either origin or destination is not in the study area)
+</td>
+</tr>
+<tr>
+<td style="text-align:left;vertical-align: middle !important;" rowspan="3">
+Non-motorized
+</td>
+<td style="text-align:left;width: 1.3in; vertical-align: middle !important;" rowspan="3">
+Walk or bike
+</td>
+<td style="text-align:left;">
+Household size
+</td>
+<td style="text-align:left;">
+Not “do not know” or “refused”
+</td>
+<td style="text-align:left;vertical-align: middle !important;" rowspan="3">
+26,137
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Trip purpose
+</td>
+<td style="text-align:left;">
+Not “other” or “while traveling – other”; not a “loop trip” with no secondary purpose
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+TAZ-based measures
+</td>
+<td style="text-align:left;">
+Not “NA” (indicating either origin or destination is not in the study area)
+</td>
+</tr>
+</tbody>
+</table>
+<p><br /></p>
+</div>
+<div id="modeling-methods" class="section level1">
+<h1><span class="header-section-number">3</span> MODELING METHODS</h1>
+<div id="the-cox-proportional-hazards-model" class="section level2">
+<h2><span class="header-section-number">3.1</span> THE COX PROPORTIONAL HAZARDS MODEL</h2>
+<p>Of particular interest for travel time decay modeling is the Cox proportional hazards model (henceforth referred to as the Cox model). The Cox model is, in essense, a multivariate regression. It attempts to model the <em>hazard function h(t)</em> using a set of predictor variables. The hazard function can then be used to calculate the <em>survival function S(t)</em>, or the probability that a trip lasts longer than <em>t</em>. Though hazard is <em>not</em> a probability, it is helpful to think of hazard as the probability that a trip will end in an infinitesimally small time window <span class="math inline">\(\scriptstyle [t, t + δt]\)</span>, provided that the trip has lasted until time <em>t</em>. In other words, it is the instantaneous risk of a trip ending, given that it has lasted to that point. The mathematical relationship between the survival function and the hazard function is <span class="math inline">\(\scriptstyle S(t) = e^{−\int^t_0 h(y)dy}\)</span>, where <span class="math inline">\(\scriptstyle \int^t_0 h(y)dy\)</span> is the cumulative hazard function, or the total accumulated risk up to time t. Details are left out for clarity, but this is based on the definition of <em>h(t)</em> as a limit of event probability as <span class="math inline">\(\scriptstyle δ → 0\)</span>.</p>
+<p>The Cox model is multiplicative, in that it assumes a multiplicative relationship between the covariates and the hazard. It takes the following form:</p>
+<p><span class="math display">\[ h(t|x_{i1}, ...x_{ip}) = h0(t) ∗ e^{β1xi1+...+βpxip} \]</span></p>
+<p>Where:</p>
+<ul>
+<li>t is time,</li>
+<li><span class="math inline">\(\scriptstyle h(t|xi)\)</span> is the hazard function for trip <em>i</em> with covariates <span class="math inline">\(\scriptstyle xi1, ..., xip\)</span>,</li>
+<li><span class="math inline">\(\scriptstyle h0(t)\)</span> is the baseline hazard function,</li>
+<li><em>βj</em> is the effect of the <em>j</em> th covariate, and</li>
+<li><span class="math inline">\(\scriptstyle x_{ij}\)</span> is the value of the <span class="math inline">\(\scriptstyle j^{th}\)</span> covariate for the <span class="math inline">\(\scriptstyle i^{th}\)</span> trip</li>
+</ul>
+<p>An important feature of the Cox model is that <em>the baseline hazard function is not specified.</em> This is due to the <em>proportional hazards assumption:</em> the ratio of hazards between two unique observations should <strong>not</strong> rely on time. For example, if after 15 minutes, a walking trip taken by a 60 year old carries twice the risk of ending as a walking trip taken by a 20 year old, it should also carry twice the risk after 10 minutes, 30 minutes, or indeed any other time. Non-proportional hazards may be thought of as an interaction between a covariate and time. Because hazards are all proportional under the proportional hazards assumption, the baseline hazard is arbitrary.</p>
+<p>The Cox model is “semi-parametric”, in that it requires no assumptions about the baseline hazard function. Parametric methods can be used if the baseline hazard itself is of interest, and these methods indeed rely on specifying a distribution for the baseline hazard (common selections include the Exponential, Weibull, and Lognormal distributions). Though these models have more power when this distribution is correctly specified, they are not robust to misspecifications, and thus are highly risky. For this particular application of travel time decay curves, the baseline hazard was not of particular interest, and it sufficed to assume a general decrease in trip survival with time in the absence of covariate information (as is the outcome of Cox modeling). However, it stands to reason that understanding the baseline hazard may be of interest in other travel time decay modeling applications.</p>
+</div>
+<div id="selection-of-covariates" class="section level2">
+<h2><span class="header-section-number">3.2</span> SELECTION OF COVARIATES</h2>
+<p>Covariates to be considered for each mode-specific model were selected from the set of available attributes in the trip, person, and household datasets reviewed in the Data section. Importantly, only covariates that would be (1) known for a given trip/person/household in a predictive setting or (2) easy to estimate for a given trip/person/household were selected for the model. These conditions were established for easier use of final model in practice. For example, though it is easy to see how age may be a relevant predictor of travel time decay for walking trips (older people may tend to take shorter trips, for example), it is unlikely a trip taker’s age is a readily available data point in a predictive setting. Furthermore, attempts to predict age for inclusion in a final model could be complicated and add uncertainty to travel time decay estimates.</p>
+<p>Table 3 details the candidate covariates considered for each mode-specific model.</p>
+<table class="table table-striped table-hover table-responsive table-bordered" style="margin-left: auto; margin-right: auto;">
+<caption>
+Table 3: Candidate covariates considered for each mode-specific model
+</caption>
+<thead>
+<tr>
+<th style="text-align:left;font-weight: bold;">
+Model
+</th>
+<th style="text-align:left;font-weight: bold;">
+Covariates
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left;vertical-align: middle !important;" rowspan="5">
+Personal vehicle
+</td>
+<td style="text-align:left;">
+Parking cost
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Toll cost
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Household size
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Trip purpose (home, work, non-work)
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Terminal time (by origin and destination TAZ)
+</td>
+</tr>
+<tr>
+<td style="text-align:left;vertical-align: middle !important;" rowspan="4">
+Non-motorized
+</td>
+<td style="text-align:left;">
+Parking cost (by origin and destination TAZ)
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Household size
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Trip purpose (home, work, non-work)
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Terminal time (by origin and destination TAZ)
+</td>
+</tr>
+</tbody>
+</table>
+<p>In all models, trip purpose was collapsed from 24 categories provided in the MTS data to three broad “purpose groups”: home, work, and non-work. Table 4 details how purposes were collapsed. “Loop trips” were classified according to their secondary purpose (which were also coded according to Table 4), or filtered out if no secondary purpose was provided.</p>
+<table class="table table-striped table-hover table-responsive table-bordered" style="margin-left: auto; margin-right: auto;">
+<caption>
+Table 4: Methodology for collapsing purpose to home, work, and non-work groups
+</caption>
+<thead>
+<tr>
+<th style="text-align:left;font-weight: bold;">
+Model
+</th>
+<th style="text-align:right;font-weight: bold;">
+MAPC survey code
+</th>
+<th style="text-align:left;font-weight: bold;">
+MAPC purpose definition
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left;vertical-align: middle !important;" rowspan="2">
+Home
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:left;">
+Working at home
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2
+</td>
+<td style="text-align:left;">
+All other home activities
+</td>
+</tr>
+<tr>
+<td style="text-align:left;vertical-align: middle !important;" rowspan="3">
+Work
+</td>
+<td style="text-align:right;">
+3
+</td>
+<td style="text-align:left;">
+Work/job
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+4
+</td>
+<td style="text-align:left;">
+All other activities at work
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+12
+</td>
+<td style="text-align:left;">
+Work business related
+</td>
+</tr>
+<tr>
+<td style="text-align:left;vertical-align: middle !important;" rowspan="17">
+Non-work
+</td>
+<td style="text-align:right;">
+5
+</td>
+<td style="text-align:left;">
+Volunteer work/activities
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+6
+</td>
+<td style="text-align:left;">
+Attending class
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+7
+</td>
+<td style="text-align:left;">
+All other school activities
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+8
+</td>
+<td style="text-align:left;">
+Changed type of transportation
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+9
+</td>
+<td style="text-align:left;">
+Drop off passenger from car
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+10
+</td>
+<td style="text-align:left;">
+Pick up passenger from car
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+13
+</td>
+<td style="text-align:left;">
+Service private vehicle
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+14
+</td>
+<td style="text-align:left;">
+Routine shopping
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+15
+</td>
+<td style="text-align:left;">
+Shopping for major purchases
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+16
+</td>
+<td style="text-align:left;">
+Household errands
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+17
+</td>
+<td style="text-align:left;">
+Personal business
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+18
+</td>
+<td style="text-align:left;">
+Eat meal outside of home
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+19
+</td>
+<td style="text-align:left;">
+Health care
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+20
+</td>
+<td style="text-align:left;">
+Civic/religious activities
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+21
+</td>
+<td style="text-align:left;">
+Outdoor recreation/entertainment
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+22
+</td>
+<td style="text-align:left;">
+Indoor recreation/entertainment
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+23
+</td>
+<td style="text-align:left;">
+Visit friends/relatives
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div id="initial-models" class="section level2">
+<h2><span class="header-section-number">3.3</span> INITIAL MODELS</h2>
+<p>Initial model fitting began by including all candidate covariates for each mode-specific model a linear form (see Table 3). Backward selection was applied to create a “statistically valid” model – one with only significant covariates. Backward selection involves iteratively eliminating the least significant covariate from the model [from the set of insignificant covarites], and refitting the model until all remaining covariates are significant. If all variables were significant in the first model fit, backwards selection was not applied, as there was no need for it.</p>
+</div>
+<div id="the-proportional-hazards-assumption" class="section level2">
+<h2><span class="header-section-number">3.4</span> THE PROPORTIONAL HAZARDS ASSUMPTION</h2>
+<p>Though there are multiple assumptions underlying the Cox model, by far the most important assumption is that of proportional hazards (see Section 3.1, The Cox proportional hazards model). Without this assumption, the Cox model is uninterpretable and completely invalid. Exploration of model diagnostics thus began with the proportional hazards assumption, and proceeded to other assumptions only once proportional hazards was verified.</p>
+<p>The proportional hazards assumption was tested for each covariate using the <em>Schoenfeld Residuals Test</em> (also known as the <em>Schoenfeld Individual Test</em>). The null hypothesis of this test is that time and scaled Schoenfeld residuals are uncorrelated, which should be true in the case of proportional hazards. The alternative hypothesis is that time and scaled Schoenfeld residuals are correlated. Thus, a significant result indicates that a lack of proportional hazards - this would indicate the model results are dependent on time. If no time dependence was observed in any covariate at <em>α</em> = 0.05, diagnostics proceeded to validation of other assumptions. Otherwise, a new model accounting for time dependence was fit.</p>
+<div id="time--dependent-models" class="section level3">
+<h3><span class="header-section-number">3.4.1</span> TIME- DEPENDENT MODELS</h3>
+<p>Multiple strategies exist to account for time dependence in Cox models. One such method is the use of “time-dependent coefficients”, which involves unique effect sizes for covariates depending on the period of time. Essentially, time-dependent coefficients create a step function of survival time, where each covariate is time-independent within each step. This is particularly relevant and interpretable in the context of travel time decay, be ause it allows for a sense of “bracketing” trip times, and understanding unique effects across travel times. Again, consider the theoretical use of age as a covariate in predicting walking travel time decay. For very short trips, there is likely a minimal effect of age (if any), as all people are likely equally comfortable walking less than five minutes. For longer trips, however, the effect size might increase, as young adults may be comfortable walking 20-30 minutes while senior citizens are not.</p>
+<p>To fit a time-dependent coefficients model, variables for which the Schoenfeld Residuals test was significant at <em>α</em> = 0.05 were explored visually using plots of the scaled Schoenfeld residuals against time. This graphical exploration demonstrated the functional form of the effect of these covariates over time, informing decisions on potential break points for intervals in which covariates may be time-independent. Interval break points were also subject to the researcher’s discretion of an “interpretable interval”: in other words, intervals would be created on 5 or 10 minute break points rather than odd-valued break points which would have less practical significance</p>
+<p>Once interval break points were identified, the data was reconfigured with dummy entries to reflect the selected intervals. For example, if trip <em>T</em> lasted 16 minutes, and intervals of 0-10 minutes and 10-20 minutes were identified from the plots, trip <em>T</em> would be split into two entries <span class="math inline">\(\scriptstyle T_1\)</span> and <span class="math inline">\(\scriptstyle T_2\)</span>. Trip <span class="math inline">\(\scriptstyle T_1\)</span> would start at 0 minutes, go until 10 minutes, and would not end (i.e. would not experience an “event”); trip <span class="math inline">\(\scriptstyle T_2\)</span> would start at 10 minutes, go until 20 minutes, and end somewhere in that interval (i.e. would experience an “event”). A time-dependent model was then fit on this reconfigured “interval” data, and the Schoenfeld Residuals Test was again applied to observe if any time dependence remained. This process was repeated until all time dependence was eliminated, yielding a model which adhered to the proportional hazards assumption.</p>
+</div>
+</div>
+<div id="other-diagnostics" class="section level2">
+<h2><span class="header-section-number">3.5</span> OTHER DIAGNOSTICS</h2>
+<p>In addition to the proportional hazards assumption, the Cox model also makes assumptions similar to those of standard regression. For this analysis, diagnostics for the assumptions of (1) no outliers in the data and (2) proper functional form of continuous covariates (which, in this case, was linear) were explored. These two assumptions were checked only after proportional hazards had been verified, either in a standard model or in a time-dependent coefficients model.</p>
+<div id="outliers" class="section level3">
+<h3><span class="header-section-number">3.5.1</span> OUTLIERS</h3>
+<p>Outliers were explored using a plot of the deviance residuals against the index of the residuals. Unusually large positive or negative deviance residuals were indicative of an outlier (large positive-valued deviance residuals indicate a trip that ended far earlier than expected according to the model, while large negativevalued residuals indicate a trip that ended far later than expected according to the model). Trips that were considered outliers by this visual exploration were looked at individually for an inclusion/exclusion decision.</p>
+<p>Given that the trips all came from the same survey and the same state, outlier points would rarely be considered erroneous or apart from the population of interest, and thus would only be excluded in a very extreme case.</p>
+</div>
+<div id="linearity-of-continuous-covariates" class="section level3">
+<h3><span class="header-section-number">3.5.2</span> LINEARITY OF CONTINUOUS COVARIATES</h3>
+<p>Linearity of continuous covariates was explored using plots of martingale residuals of a “null Cox model” (including only one covariate) against that covariate. If the relationship between that covariate and hazard is truly linear, then a linear trend should be evident in the plot; otherwise, a different functional form may represent a better fit. If necessary, better fits were explored by fitting a new “null Cox model” with a different functional form of the covariate.</p>
+<p>Like with outliers, the functional form of a variable would be changed only in a very extreme case, where the deviation from a linear relationship was severe or the use of a nonlinear relationship was obvious. The use of linearity between a covariate and hazard rate does not necessarily make the model wrong if it is not the true relationship, but rather indicates that a better fit may be available. However, estimating the true functional form could be a time-consuming challenge if the relationship is especially complicated, and such an endeavor is likely unnecessary for this particular analysis. In addition, linear relationships will be more easily interpretable, which is a primary goal of this model.</p>
+</div>
+</div>
+</div>
+<div id="model-fitting" class="section level1">
+<h1><span class="header-section-number">4</span> MODEL FITTING</h1>
+<p>The model fitting results are detailed individually for each mode-specific model.</p>
+<div id="personal-vehicle" class="section level2">
+<h2><span class="header-section-number">4.1</span> PERSONAL VEHICLE</h2>
+<p>The model including all candidate covariates produced a statistically valid fit, so no backward selection was completed. Parking cost, toll cost, household size, and purpose were all significant to hazard rate (the purpose “home” was used as the reference level for fitting the purpose covariate). The model coefficients are provided in Table 5, while the hazard ratios are provided in Table 6.</p>
+<table class="table table-striped table-hover table-responsive table-bordered" style="margin-left: auto; margin-right: auto;">
+<caption>
+Table 5: Coefficients for initial personal vehicle model
+</caption>
+<thead>
+<tr>
+<th style="text-align:left;font-weight: bold;">
+Covariate
+</th>
+<th style="text-align:right;font-weight: bold;">
+ß
+</th>
+<th style="text-align:right;font-weight: bold;">
+SE(ß)
+</th>
+<th style="text-align:right;font-weight: bold;">
+z
+</th>
+<th style="text-align:left;font-weight: bold;">
+Pr(&gt;|z|)
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left;">
+Parking cost
+</td>
+<td style="text-align:right;">
+-0.0398
+</td>
+<td style="text-align:right;">
+0.0038
+</td>
+<td style="text-align:right;">
+-10.4519
+</td>
+<td style="text-align:left;">
+&lt; 0.0001
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Toll cost
+</td>
+<td style="text-align:right;">
+-0.1336
+</td>
+<td style="text-align:right;">
+0.0110
+</td>
+<td style="text-align:right;">
+-12.1745
+</td>
+<td style="text-align:left;">
+&lt; 0.0001
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Household size
+</td>
+<td style="text-align:right;">
+0.0511
+</td>
+<td style="text-align:right;">
+0.0028
+</td>
+<td style="text-align:right;">
+17.9736
+</td>
+<td style="text-align:left;">
+&lt; 0.0001
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Purpose: work
+</td>
+<td style="text-align:right;">
+-0.2961
+</td>
+<td style="text-align:right;">
+0.0123
+</td>
+<td style="text-align:right;">
+-24.0616
+</td>
+<td style="text-align:left;">
+&lt; 0.0001
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Purpose: non-work
+</td>
+<td style="text-align:right;">
+0.2245
+</td>
+<td style="text-align:right;">
+0.0085
+</td>
+<td style="text-align:right;">
+26.2894
+</td>
+<td style="text-align:left;">
+&lt; 0.0001
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Origin TAZ terminal time
+</td>
+<td style="text-align:right;">
+-0.0450
+</td>
+<td style="text-align:right;">
+0.0045
+</td>
+<td style="text-align:right;">
+-10.0065
+</td>
+<td style="text-align:left;">
+&lt; 0.0001
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Destination TAZ terminal time
+</td>
+<td style="text-align:right;">
+-0.0619
+</td>
+<td style="text-align:right;">
+0.0034
+</td>
+<td style="text-align:right;">
+-18.2151
+</td>
+<td style="text-align:left;">
+&lt; 0.0001
+</td>
+</tr>
+</tbody>
+</table>
+<p>The coefficients should be interpreted as follows:</p>
+<ul>
+<li><p>For a continuous covariate <span class="math inline">\(\scriptstyle X\)</span>, assuming all other covariates are held constant, $βX &lt; 0 $ indicates that hazard rate – or the risk of the trip ending – decreases as <span class="math inline">\(\scriptstyle X\)</span> increases, which means longer travel times and slower travel time decay for larger values of <span class="math inline">\(\scriptstyle X\)</span>. Conversely, $βX &gt; 0 $ indicates that hazard rate increases as <span class="math inline">\(\scriptstyle X\)</span> increases, which means shorter travel times and faster travel time decay for larger values of <span class="math inline">\(\scriptstyle X\)</span>.</p></li>
+<li><p>For a categorical covariate <span class="math inline">\(\scriptstyle Y\)</span> with levels <em>a, ref</em> (where <em>ref</em> is the reference level), assuming all other covariates are held constant, <span class="math inline">\(\scriptstyle βYa &lt; 0\)</span> indicates that hazard rate is higher in group a than in the reference group, which means longer travel times and slower travel time decay in a relative to <em>ref</em>. Conversely, <span class="math inline">\(\scriptstyle βYa &gt; 0\)</span> indicates that hazard rate is lower in group a than in the reference group), which means shorter travel times and faster travel time decay in a relative to <em>ref</em>.</p></li>
+</ul>
+<table class="table table-striped table-hover table-responsive table-bordered" style="margin-left: auto; margin-right: auto;">
+<caption>
+Table 6: Hazard ratios (HR) for initial personal vehicle model
+</caption>
+<thead>
+<tr>
+<th style="text-align:left;font-weight: bold;">
+Covariate
+</th>
+<th style="text-align:right;font-weight: bold;">
+HR
+</th>
+<th style="text-align:right;font-weight: bold;">
+Inverse HR
+</th>
+<th style="text-align:left;font-weight: bold;">
+95% CI for HR
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left;">
+Parking cost
+</td>
+<td style="text-align:right;">
+0.9610
+</td>
+<td style="text-align:right;">
+1.0406
+</td>
+<td style="text-align:left;">
+[0.9538, 0.9682]
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Toll cost
+</td>
+<td style="text-align:right;">
+0.8750
+</td>
+<td style="text-align:right;">
+1.1429
+</td>
+<td style="text-align:left;">
+[0.8564, 0.894]
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Household size
+</td>
+<td style="text-align:right;">
+1.0524
+</td>
+<td style="text-align:right;">
+0.9502
+</td>
+<td style="text-align:left;">
+[1.0465, 1.0583]
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Purpose: work
+</td>
+<td style="text-align:right;">
+0.7437
+</td>
+<td style="text-align:right;">
+1.3446
+</td>
+<td style="text-align:left;">
+[0.726, 0.7619]
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Purpose: non-work
+</td>
+<td style="text-align:right;">
+1.2517
+</td>
+<td style="text-align:right;">
+0.7989
+</td>
+<td style="text-align:left;">
+[1.231, 1.2729]
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Origin TAZ terminal time
+</td>
+<td style="text-align:right;">
+0.9560
+</td>
+<td style="text-align:right;">
+1.0460
+</td>
+<td style="text-align:left;">
+[0.9476, 0.9645]
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Destination TAZ terminal time
+</td>
+<td style="text-align:right;">
+0.9400
+</td>
+<td style="text-align:right;">
+1.0639
+</td>
+<td style="text-align:left;">
+[0.9337, 0.9462]
+</td>
+</tr>
+</tbody>
+</table>
+<p>The hazard ratios should be interpreted as follows:</p>
+<ul>
+<li><p>For a continuous covariate <span class="math inline">\(\scriptstyle X\)</span>, assuming all other covariates are held constant, the increase of <span class="math inline">\(\scriptstyle X\)</span> to <span class="math inline">\(\scriptstyle X + 1\)</span> results in a change in the hazard rate by a factor of <span class="math inline">\(\scriptstyle HR_X\)</span>.</p></li>
+<li><p>For a categorical covariate <span class="math inline">\(\scriptstyle Y\)</span> with levels a, ref (where ref is the reference level), assuming all other covariates are held constant, group <em>a</em> has a hazard rate <span class="math inline">\(\scriptstyle HR_{Y_a}\)</span> times that of group <em>ref</em>.</p></li>
+</ul>
+<p>Schoenfeld Residuals Tests on the covariates revealed time dependence in all covariates. The results of the test are shown in Table 7 (the <strong>Global</strong> row contains the results of a global test on the model, which tests if there is any time dependence in the model as a whole). A time-dependent coefficients model was explored as a result of present time dependence.</p>
+<table class="table table-striped table-hover table-responsive table-bordered" style="margin-left: auto; margin-right: auto;">
+<caption>
+Table 7: Results of Schoenfeld Residuals Tests for initial personal vehicle model
+</caption>
+<thead>
+<tr>
+<th style="text-align:left;font-weight: bold;">
+Covariate
+</th>
+<th style="text-align:left;font-weight: bold;">
+<span class="math inline">\({\rho}\)</span>
+</th>
+<th style="text-align:right;font-weight: bold;">
+<span class="math inline">\({\chi^2}\)</span>
+</th>
+<th style="text-align:left;font-weight: bold;">
+p
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left;">
+Parking cost
+</td>
+<td style="text-align:left;">
+0.0238
+</td>
+<td style="text-align:right;">
+93.5682
+</td>
+<td style="text-align:left;">
+&lt; 0.0001
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Toll cost
+</td>
+<td style="text-align:left;">
+0.0306
+</td>
+<td style="text-align:right;">
+382.3103
+</td>
+<td style="text-align:left;">
+&lt; 0.0001
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Household size
+</td>
+<td style="text-align:left;">
+-0.0301
+</td>
+<td style="text-align:right;">
+59.4800
+</td>
+<td style="text-align:left;">
+&lt; 0.0001
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Purpose: work
+</td>
+<td style="text-align:left;">
+0.0585
+</td>
+<td style="text-align:right;">
+226.9902
+</td>
+<td style="text-align:left;">
+&lt; 0.0001
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Purpose: non-work
+</td>
+<td style="text-align:left;">
+-0.0301
+</td>
+<td style="text-align:right;">
+60.8103
+</td>
+<td style="text-align:left;">
+&lt; 0.0001
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Origin TAZ terminal time
+</td>
+<td style="text-align:left;">
+0.0315
+</td>
+<td style="text-align:right;">
+64.1502
+</td>
+<td style="text-align:left;">
+&lt; 0.0001
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Destination TAZ terminal time
+</td>
+<td style="text-align:left;">
+0.0371
+</td>
+<td style="text-align:right;">
+90.9722
+</td>
+<td style="text-align:left;">
+&lt; 0.0001
+</td>
+</tr>
+<tr>
+<td style="text-align:left;font-weight: bold;">
+Global
+</td>
+<td style="text-align:left;font-weight: bold;">
+</td>
+<td style="text-align:right;font-weight: bold;">
+1346.1583
+</td>
+<td style="text-align:left;font-weight: bold;">
+&lt; 0.0001
+</td>
+</tr>
+</tbody>
+</table>
+<p>Exploration of scaled Schoenfeld residuals vs. time plots followed by iterative model fitting and re-checking of the proportional hazards assumption resulted in a time-dependent coefficients model with break points at 5, 10, 20, and 30 minutes. This model featured no time dependence, and thus this model was used going forward. The model coefficients are provided in Table 8, while the hazard ratios are provided in Table 9. Interpretation of the coefficients and the hazard ratios stay the same, with the exception that the interpretation is only valid in the specified time interval.</p>
+<table class="table table-striped table-hover table-responsive table-bordered" style="margin-left: auto; margin-right: auto;">
+<caption>
+Table 8: Coefficients for time-dependent personal vehicle model
+</caption>
+<thead>
+<tr>
+<th style="text-align:left;font-weight: bold;">
+Covariate
+</th>
+<th style="text-align:left;font-weight: bold;">
+Interval
+</th>
+<th style="text-align:right;font-weight: bold;">
+ß
+</th>
+<th style="text-align:right;font-weight: bold;">
+SE(ß)
+</th>
+<th style="text-align:right;font-weight: bold;">
+z
+</th>
+<th style="text-align:right;font-weight: bold;">
+Pr(&gt;|z|)
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left;">
+Parking cost
+</td>
+<td style="text-align:left;">
+0-5 minutes
+</td>
+<td style="text-align:right;">
+-0.1571
+</td>
+<td style="text-align:right;">
+0.0276
+</td>
+<td style="text-align:right;">
+-5.6931
+</td>
+<td style="text-align:right;">
+&lt; 0.0001
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Parking cost
+</td>
+<td style="text-align:left;">
+5-10 minutes
+</td>
+<td style="text-align:right;">
+-0.1516
+</td>
+<td style="text-align:right;">
+0.0215
+</td>
+<td style="text-align:right;">
+-7.0594
+</td>
+<td style="text-align:right;">
+&lt; 0.0001
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Parking cost
+</td>
+<td style="text-align:left;">
+10-20 minutes
+</td>
+<td style="text-align:right;">
+-0.0778
+</td>
+<td style="text-align:right;">
+0.0104
+</td>
+<td style="text-align:right;">
+-7.5028
+</td>
+<td style="text-align:right;">
+&lt; 0.0001
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Parking cost
+</td>
+<td style="text-align:left;">
+20-30 minutes
+</td>
+<td style="text-align:right;">
+-0.0467
+</td>
+<td style="text-align:right;">
+0.0088
+</td>
+<td style="text-align:right;">
+-5.2790
+</td>
+<td style="text-align:right;">
+&lt; 0.0001
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Parking cost
+</td>
+<td style="text-align:left;">
+&gt; 30 minutes
+</td>
+<td style="text-align:right;">
+-0.0098
+</td>
+<td style="text-align:right;">
+0.0042
+</td>
+<td style="text-align:right;">
+-2.3124
+</td>
+<td style="text-align:right;">
+0.0208
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Toll cost
+</td>
+<td style="text-align:left;">
+0-5 minutes
+</td>
+<td style="text-align:right;">
+-2.6854
+</td>
+<td style="text-align:right;">
+0.3697
+</td>
+<td style="text-align:right;">
+-7.2643
+</td>
+<td style="text-align:right;">
+&lt; 0.0001
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Toll cost
+</td>
+<td style="text-align:left;">
+5-10 minutes
+</td>
+<td style="text-align:right;">
+-2.8620
+</td>
+<td style="text-align:right;">
+0.3105
+</td>
+<td style="text-align:right;">
+-9.2189
+</td>
+<td style="text-align:right;">
+&lt; 0.0001
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Toll cost
+</td>
+<td style="text-align:left;">
+10-20 minutes
+</td>
+<td style="text-align:right;">
+-0.4504
+</td>
+<td style="text-align:right;">
+0.0380
+</td>
+<td style="text-align:right;">
+-11.8671
+</td>
+<td style="text-align:right;">
+&lt; 0.0001
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Toll cost
+</td>
+<td style="text-align:left;">
+20-30 minutes
+</td>
+<td style="text-align:right;">
+-0.0660
+</td>
+<td style="text-align:right;">
+0.0165
+</td>
+<td style="text-align:right;">
+-3.9915
+</td>
+<td style="text-align:right;">
+&lt; 0.0001
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Toll cost
+</td>
+<td style="text-align:left;">
+&gt; 30 minutes
+</td>
+<td style="text-align:right;">
+-0.0209
+</td>
+<td style="text-align:right;">
+0.0074
+</td>
+<td style="text-align:right;">
+-2.8162
+</td>
+<td style="text-align:right;">
+0.0049
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Household size
+</td>
+<td style="text-align:left;">
+0-5 minutes
+</td>
+<td style="text-align:right;">
+0.0657
+</td>
+<td style="text-align:right;">
+0.0063
+</td>
+<td style="text-align:right;">
+10.4456
+</td>
+<td style="text-align:right;">
+&lt; 0.0001
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Household size
+</td>
+<td style="text-align:left;">
+5-10 minutes
+</td>
+<td style="text-align:right;">
+0.0698
+</td>
+<td style="text-align:right;">
+0.0057
+</td>
+<td style="text-align:right;">
+12.2930
+</td>
+<td style="text-align:right;">
+&lt; 0.0001
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Household size
+</td>
+<td style="text-align:left;">
+10-20 minutes
+</td>
+<td style="text-align:right;">
+0.0515
+</td>
+<td style="text-align:right;">
+0.0053
+</td>
+<td style="text-align:right;">
+9.7416
+</td>
+<td style="text-align:right;">
+&lt; 0.0001
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Household size
+</td>
+<td style="text-align:left;">
+20-30 minutes
+</td>
+<td style="text-align:right;">
+0.0039
+</td>
+<td style="text-align:right;">
+0.0080
+</td>
+<td style="text-align:right;">
+0.4870
+</td>
+<td style="text-align:right;">
+0.6263
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Household size
+</td>
+<td style="text-align:left;">
+&gt; 30 minutes
+</td>
+<td style="text-align:right;">
+0.0111
+</td>
+<td style="text-align:right;">
+0.0080
+</td>
+<td style="text-align:right;">
+1.3842
+</td>
+<td style="text-align:right;">
+0.1663
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Purpose: work
+</td>
+<td style="text-align:left;">
+0-5 minutes
+</td>
+<td style="text-align:right;">
+-0.3952
+</td>
+<td style="text-align:right;">
+0.0342
+</td>
+<td style="text-align:right;">
+-11.5487
+</td>
+<td style="text-align:right;">
+&lt; 0.0001
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Purpose: work
+</td>
+<td style="text-align:left;">
+5-10 minutes
+</td>
+<td style="text-align:right;">
+-0.5800
+</td>
+<td style="text-align:right;">
+0.0297
+</td>
+<td style="text-align:right;">
+-19.5455
+</td>
+<td style="text-align:right;">
+&lt; 0.0001
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Purpose: work
+</td>
+<td style="text-align:left;">
+10-20 minutes
+</td>
+<td style="text-align:right;">
+-0.4373
+</td>
+<td style="text-align:right;">
+0.0236
+</td>
+<td style="text-align:right;">
+-18.4958
+</td>
+<td style="text-align:right;">
+&lt; 0.0001
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Purpose: work
+</td>
+<td style="text-align:left;">
+20-30 minutes
+</td>
+<td style="text-align:right;">
+-0.1549
+</td>
+<td style="text-align:right;">
+0.0294
+</td>
+<td style="text-align:right;">
+-5.2750
+</td>
+<td style="text-align:right;">
+&lt; 0.0001
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Purpose: work
+</td>
+<td style="text-align:left;">
+&gt; 30 minutes
+</td>
+<td style="text-align:right;">
+0.0539
+</td>
+<td style="text-align:right;">
+0.0269
+</td>
+<td style="text-align:right;">
+2.0034
+</td>
+<td style="text-align:right;">
+0.0451
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Purpose: non-work
+</td>
+<td style="text-align:left;">
+0-5 minutes
+</td>
+<td style="text-align:right;">
+0.3321
+</td>
+<td style="text-align:right;">
+0.0190
+</td>
+<td style="text-align:right;">
+17.4895
+</td>
+<td style="text-align:right;">
+&lt; 0.0001
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Purpose: non-work
+</td>
+<td style="text-align:left;">
+5-10 minutes
+</td>
+<td style="text-align:right;">
+0.2058
+</td>
+<td style="text-align:right;">
+0.0168
+</td>
+<td style="text-align:right;">
+12.2794
+</td>
+<td style="text-align:right;">
+&lt; 0.0001
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Purpose: non-work
+</td>
+<td style="text-align:left;">
+10-20 minutes
+</td>
+<td style="text-align:right;">
+0.2280
+</td>
+<td style="text-align:right;">
+0.0158
+</td>
+<td style="text-align:right;">
+14.4423
+</td>
+<td style="text-align:right;">
+&lt; 0.0001
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Purpose: non-work
+</td>
+<td style="text-align:left;">
+20-30 minutes
+</td>
+<td style="text-align:right;">
+0.1764
+</td>
+<td style="text-align:right;">
+0.0243
+</td>
+<td style="text-align:right;">
+7.2497
+</td>
+<td style="text-align:right;">
+&lt; 0.0001
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Purpose: non-work
+</td>
+<td style="text-align:left;">
+&gt; 30 minutes
+</td>
+<td style="text-align:right;">
+0.0632
+</td>
+<td style="text-align:right;">
+0.0250
+</td>
+<td style="text-align:right;">
+2.5301
+</td>
+<td style="text-align:right;">
+0.0114
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Origin TAZ terminal time
+</td>
+<td style="text-align:left;">
+0-5 minutes
+</td>
+<td style="text-align:right;">
+-0.0870
+</td>
+<td style="text-align:right;">
+0.0116
+</td>
+<td style="text-align:right;">
+-7.4663
+</td>
+<td style="text-align:right;">
+&lt; 0.0001
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Origin TAZ terminal time
+</td>
+<td style="text-align:left;">
+5-10 minutes
+</td>
+<td style="text-align:right;">
+-0.0826
+</td>
+<td style="text-align:right;">
+0.0100
+</td>
+<td style="text-align:right;">
+-8.2937
+</td>
+<td style="text-align:right;">
+&lt; 0.0001
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Origin TAZ terminal time
+</td>
+<td style="text-align:left;">
+10-20 minutes
+</td>
+<td style="text-align:right;">
+-0.0221
+</td>
+<td style="text-align:right;">
+0.0081
+</td>
+<td style="text-align:right;">
+-2.7130
+</td>
+<td style="text-align:right;">
+0.0067
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Origin TAZ terminal time
+</td>
+<td style="text-align:left;">
+20-30 minutes
+</td>
+<td style="text-align:right;">
+-0.0036
+</td>
+<td style="text-align:right;">
+0.0112
+</td>
+<td style="text-align:right;">
+-0.3265
+</td>
+<td style="text-align:right;">
+0.7441
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Origin TAZ terminal time
+</td>
+<td style="text-align:left;">
+&gt; 30 minutes
+</td>
+<td style="text-align:right;">
+0.0164
+</td>
+<td style="text-align:right;">
+0.0107
+</td>
+<td style="text-align:right;">
+1.5252
+</td>
+<td style="text-align:right;">
+0.1272
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Destination TAZ terminal time
+</td>
+<td style="text-align:left;">
+0-5 minutes
+</td>
+<td style="text-align:right;">
+-0.1155
+</td>
+<td style="text-align:right;">
+0.0095
+</td>
+<td style="text-align:right;">
+-12.1172
+</td>
+<td style="text-align:right;">
+&lt; 0.0001
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Destination TAZ terminal time
+</td>
+<td style="text-align:left;">
+5-10 minutes
+</td>
+<td style="text-align:right;">
+-0.0786
+</td>
+<td style="text-align:right;">
+0.0079
+</td>
+<td style="text-align:right;">
+-9.9787
+</td>
+<td style="text-align:right;">
+&lt; 0.0001
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Destination TAZ terminal time
+</td>
+<td style="text-align:left;">
+10-20 minutes
+</td>
+<td style="text-align:right;">
+-0.0683
+</td>
+<td style="text-align:right;">
+0.0065
+</td>
+<td style="text-align:right;">
+-10.5465
+</td>
+<td style="text-align:right;">
+&lt; 0.0001
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Destination TAZ terminal time
+</td>
+<td style="text-align:left;">
+20-30 minutes
+</td>
+<td style="text-align:right;">
+-0.0363
+</td>
+<td style="text-align:right;">
+0.0081
+</td>
+<td style="text-align:right;">
+-4.5033
+</td>
+<td style="text-align:right;">
+&lt; 0.0001
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Destination TAZ terminal time
+</td>
+<td style="text-align:left;">
+&gt; 30 minutes
+</td>
+<td style="text-align:right;">
+-0.0112
+</td>
+<td style="text-align:right;">
+0.0071
+</td>
+<td style="text-align:right;">
+-1.5892
+</td>
+<td style="text-align:right;">
+0.112
+</td>
+</tr>
+</tbody>
+</table>
+<p><br /></p>
+<table class="table table-striped table-hover table-responsive table-bordered" style="margin-left: auto; margin-right: auto;">
+<caption>
+Table 9: Hazard ratios (HR) for time-dependent personal vehicle model
+</caption>
+<thead>
+<tr>
+<th style="text-align:left;font-weight: bold;">
+Covariate
+</th>
+<th style="text-align:left;font-weight: bold;">
+Interval
+</th>
+<th style="text-align:right;font-weight: bold;">
+HR
+</th>
+<th style="text-align:right;font-weight: bold;">
+Inverse HR
+</th>
+<th style="text-align:right;font-weight: bold;">
+95% CI for HR
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left;">
+Parking cost
+</td>
+<td style="text-align:left;">
+0-5 minutes
+</td>
+<td style="text-align:right;">
+0.8546
+</td>
+<td style="text-align:right;">
+1.1701
+</td>
+<td style="text-align:right;">
+[0.8096, 0.9021]
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Parking cost
+</td>
+<td style="text-align:left;">
+5-10 minutes
+</td>
+<td style="text-align:right;">
+0.8594
+</td>
+<td style="text-align:right;">
+1.1637
+</td>
+<td style="text-align:right;">
+[0.8239, 0.8963]
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Parking cost
+</td>
+<td style="text-align:left;">
+10-20 minutes
+</td>
+<td style="text-align:right;">
+0.9251
+</td>
+<td style="text-align:right;">
+1.0809
+</td>
+<td style="text-align:right;">
+[0.9065, 0.9441]
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Parking cost
+</td>
+<td style="text-align:left;">
+20-30 minutes
+</td>
+<td style="text-align:right;">
+0.9544
+</td>
+<td style="text-align:right;">
+1.0478
+</td>
+<td style="text-align:right;">
+[0.938, 0.9711]
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Parking cost
+</td>
+<td style="text-align:left;">
+&gt; 30 minutes
+</td>
+<td style="text-align:right;">
+0.9903
+</td>
+<td style="text-align:right;">
+1.0098
+</td>
+<td style="text-align:right;">
+[0.9821, 0.9985]
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Toll cost
+</td>
+<td style="text-align:left;">
+0-5 minutes
+</td>
+<td style="text-align:right;">
+0.0682
+</td>
+<td style="text-align:right;">
+14.6640
+</td>
+<td style="text-align:right;">
+[0.033, 0.1407]
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Toll cost
+</td>
+<td style="text-align:left;">
+5-10 minutes
+</td>
+<td style="text-align:right;">
+0.0572
+</td>
+<td style="text-align:right;">
+17.4973
+</td>
+<td style="text-align:right;">
+[0.0311, 0.105]
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Toll cost
+</td>
+<td style="text-align:left;">
+10-20 minutes
+</td>
+<td style="text-align:right;">
+0.6374
+</td>
+<td style="text-align:right;">
+1.5689
+</td>
+<td style="text-align:right;">
+[0.5917, 0.6866]
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Toll cost
+</td>
+<td style="text-align:left;">
+20-30 minutes
+</td>
+<td style="text-align:right;">
+0.9361
+</td>
+<td style="text-align:right;">
+1.0683
+</td>
+<td style="text-align:right;">
+[0.9062, 0.967]
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Toll cost
+</td>
+<td style="text-align:left;">
+&gt; 30 minutes
+</td>
+<td style="text-align:right;">
+0.9793
+</td>
+<td style="text-align:right;">
+1.0211
+</td>
+<td style="text-align:right;">
+[0.9652, 0.9937]
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Household size
+</td>
+<td style="text-align:left;">
+0-5 minutes
+</td>
+<td style="text-align:right;">
+1.0680
+</td>
+<td style="text-align:right;">
+0.9364
+</td>
+<td style="text-align:right;">
+[1.0549, 1.0812]
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Household size
+</td>
+<td style="text-align:left;">
+5-10 minutes
+</td>
+<td style="text-align:right;">
+1.0723
+</td>
+<td style="text-align:right;">
+0.9326
+</td>
+<td style="text-align:right;">
+[1.0604, 1.0843]
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Household size
+</td>
+<td style="text-align:left;">
+10-20 minutes
+</td>
+<td style="text-align:right;">
+1.0528
+</td>
+<td style="text-align:right;">
+0.9498
+</td>
+<td style="text-align:right;">
+[1.042, 1.0638]
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Household size
+</td>
+<td style="text-align:left;">
+20-30 minutes
+</td>
+<td style="text-align:right;">
+1.0039
+</td>
+<td style="text-align:right;">
+0.9961
+</td>
+<td style="text-align:right;">
+[0.9883, 1.0197]
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Household size
+</td>
+<td style="text-align:left;">
+&gt; 30 minutes
+</td>
+<td style="text-align:right;">
+1.0112
+</td>
+<td style="text-align:right;">
+0.9889
+</td>
+<td style="text-align:right;">
+[0.9954, 1.0272]
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Purpose: work
+</td>
+<td style="text-align:left;">
+0-5 minutes
+</td>
+<td style="text-align:right;">
+0.6736
+</td>
+<td style="text-align:right;">
+1.4846
+</td>
+<td style="text-align:right;">
+[0.6299, 0.7203]
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Purpose: work
+</td>
+<td style="text-align:left;">
+5-10 minutes
+</td>
+<td style="text-align:right;">
+0.5599
+</td>
+<td style="text-align:right;">
+1.7860
+</td>
+<td style="text-align:right;">
+[0.5283, 0.5934]
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Purpose: work
+</td>
+<td style="text-align:left;">
+10-20 minutes
+</td>
+<td style="text-align:right;">
+0.6458
+</td>
+<td style="text-align:right;">
+1.5485
+</td>
+<td style="text-align:right;">
+[0.6165, 0.6764]
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Purpose: work
+</td>
+<td style="text-align:left;">
+20-30 minutes
+</td>
+<td style="text-align:right;">
+0.8565
+</td>
+<td style="text-align:right;">
+1.1675
+</td>
+<td style="text-align:right;">
+[0.8086, 0.9072]
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Purpose: work
+</td>
+<td style="text-align:left;">
+&gt; 30 minutes
+</td>
+<td style="text-align:right;">
+1.0554
+</td>
+<td style="text-align:right;">
+0.9475
+</td>
+<td style="text-align:right;">
+[1.0012, 1.1125]
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Purpose: non-work
+</td>
+<td style="text-align:left;">
+0-5 minutes
+</td>
+<td style="text-align:right;">
+1.3939
+</td>
+<td style="text-align:right;">
+0.7174
+</td>
+<td style="text-align:right;">
+[1.343, 1.4468]
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Purpose: non-work
+</td>
+<td style="text-align:left;">
+5-10 minutes
+</td>
+<td style="text-align:right;">
+1.2285
+</td>
+<td style="text-align:right;">
+0.8140
+</td>
+<td style="text-align:right;">
+[1.1888, 1.2696]
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Purpose: non-work
+</td>
+<td style="text-align:left;">
+10-20 minutes
+</td>
+<td style="text-align:right;">
+1.2561
+</td>
+<td style="text-align:right;">
+0.7961
+</td>
+<td style="text-align:right;">
+[1.2178, 1.2955]
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Purpose: non-work
+</td>
+<td style="text-align:left;">
+20-30 minutes
+</td>
+<td style="text-align:right;">
+1.1929
+</td>
+<td style="text-align:right;">
+0.8383
+</td>
+<td style="text-align:right;">
+[1.1373, 1.2512]
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Purpose: non-work
+</td>
+<td style="text-align:left;">
+&gt; 30 minutes
+</td>
+<td style="text-align:right;">
+1.0653
+</td>
+<td style="text-align:right;">
+0.9387
+</td>
+<td style="text-align:right;">
+[1.0144, 1.1188]
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Origin TAZ terminal time
+</td>
+<td style="text-align:left;">
+0-5 minutes
+</td>
+<td style="text-align:right;">
+0.9167
+</td>
+<td style="text-align:right;">
+1.0909
+</td>
+<td style="text-align:right;">
+[0.896, 0.9379]
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Origin TAZ terminal time
+</td>
+<td style="text-align:left;">
+5-10 minutes
+</td>
+<td style="text-align:right;">
+0.9207
+</td>
+<td style="text-align:right;">
+1.0861
+</td>
+<td style="text-align:right;">
+[0.9029, 0.9389]
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Origin TAZ terminal time
+</td>
+<td style="text-align:left;">
+10-20 minutes
+</td>
+<td style="text-align:right;">
+0.9781
+</td>
+<td style="text-align:right;">
+1.0223
+</td>
+<td style="text-align:right;">
+[0.9627, 0.9939]
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Origin TAZ terminal time
+</td>
+<td style="text-align:left;">
+20-30 minutes
+</td>
+<td style="text-align:right;">
+0.9964
+</td>
+<td style="text-align:right;">
+1.0037
+</td>
+<td style="text-align:right;">
+[0.9748, 1.0184]
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Origin TAZ terminal time
+</td>
+<td style="text-align:left;">
+&gt; 30 minutes
+</td>
+<td style="text-align:right;">
+1.0165
+</td>
+<td style="text-align:right;">
+0.9838
+</td>
+<td style="text-align:right;">
+[0.9953, 1.0381]
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Destination TAZ terminal time
+</td>
+<td style="text-align:left;">
+0-5 minutes
+</td>
+<td style="text-align:right;">
+0.8909
+</td>
+<td style="text-align:right;">
+1.1225
+</td>
+<td style="text-align:right;">
+[0.8744, 0.9077]
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Destination TAZ terminal time
+</td>
+<td style="text-align:left;">
+5-10 minutes
+</td>
+<td style="text-align:right;">
+0.9244
+</td>
+<td style="text-align:right;">
+1.0818
+</td>
+<td style="text-align:right;">
+[0.9102, 0.9388]
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Destination TAZ terminal time
+</td>
+<td style="text-align:left;">
+10-20 minutes
+</td>
+<td style="text-align:right;">
+0.9340
+</td>
+<td style="text-align:right;">
+1.0707
+</td>
+<td style="text-align:right;">
+[0.9222, 0.9459]
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Destination TAZ terminal time
+</td>
+<td style="text-align:left;">
+20-30 minutes
+</td>
+<td style="text-align:right;">
+0.9643
+</td>
+<td style="text-align:right;">
+1.0370
+</td>
+<td style="text-align:right;">
+[0.9492, 0.9797]
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Destination TAZ terminal time
+</td>
+<td style="text-align:left;">
+&gt; 30 minutes
+</td>
+<td style="text-align:right;">
+0.9888
+</td>
+<td style="text-align:right;">
+1.0113
+</td>
+<td style="text-align:right;">
+[0.9752, 1.0026]
+</td>
+</tr>
+</tbody>
+</table>
+<p>The plot of deviance residuals for the updated, time-dependent model is shown in Figure 1. Though a few potential outliers are observed in the “trip ended earlier than expected” category (large positive deviance residuals), they are small in number, and individual exploration revealed no grounds on which to exclude any points as outliers.</p>
+<div class="figure" style="text-align: center">
+<img src="testing_files/figure-html/Figure%201-1.png" alt="Figure 1: Time-dependent personal vehicle model deviance residuals" width="672" />
+<p class="caption">
+Figure 1: Time-dependent personal vehicle model deviance residuals
+</p>
+</div>
+<p><br /></p>
+<p>Plots of null Cox model Martingale residuals against parking cost, toll cost, household size, origin and destination TAZ parking, and origin and destination TAZ terminal time revealed no drastic deviations from linearity, so no functional forms were changed in the time-dependent model. However, exact linearity did not appear to be achieved for any of these covariates, indicating better functional forms likely exist for the inclusion of these covariates in the model. For this analysis, linearity was deemed “close enough” in the context of time and processing limitations.</p>
+<p>Having estimated and validated a Cox proportional hazards model for personal vehicle travel time decay, the estimated survival curve was compared to the sample curve for the “most common set of conditions”. For personal vehicle travel, the most common set of conditions was:</p>
+<ul>
+<li>Parking cost = $0</li>
+<li>Toll cost = $0</li>
+<li>Household size = 4</li>
+<li>Purpose = Non-work</li>
+<li>Origin TAZ parking = $0</li>
+<li>Destination TAZ parking = $0</li>
+<li>Origin TAZ terminal time = 1 minute</li>
+<li>Destination TAZ terminal time = 1 minute</li>
+</ul>
+<p>A graphical comparison of a modeled travel time decay curve to the sample travel time decay curve for these attributes is shown in Figure 2. In addition, a plot of difference in model and the sample trip survival probabilities for these attributes is provided in Figure 3.</p>
+<div class="figure" style="text-align: center">
+<img src="testing_files/figure-html/Figure%202-1.png" alt="Figure 2: Difference in exampel model and sample survival probabilities for personal vehicle travel" width="672" />
+<p class="caption">
+Figure 2: Difference in exampel model and sample survival probabilities for personal vehicle travel
+</p>
+</div>
+<p><br /></p>
+<div class="figure" style="text-align: center">
+<img src="testing_files/figure-html/Figure%203-1.png" alt="Figure 3: Difference in exampel model and sample survival probabilities for personal vehicle travel" width="672" />
+<p class="caption">
+Figure 3: Difference in exampel model and sample survival probabilities for personal vehicle travel
+</p>
+</div>
+<p>As evidenced in Figures 2 and 3, the model predicted a slower travel time decay than is reflected in the sample, overpredicting survival probability at nearly every point. However, that the maximum absolute error at any time point is just over 3% indicated that the model reflects the sample well.</p>
+</div>
+<div id="non-motorized" class="section level2">
+<h2><span class="header-section-number">4.2</span> NON-MOTORIZED</h2>
+<p>The model including all candidate covariates showed household size was an insignificant contributor to hazard. When backward selection was used to exclude household size, a statistically valid fit was achieved. The final initial model included only purpose (again, the purpose “home” was used as the reference level for fitting the purpose covariate). The model coefficients are provided in Table 10, while the hazard ratios are provided in Table 11.</p>
+<table class="table table-striped table-hover table-responsive table-bordered" style="margin-left: auto; margin-right: auto;">
+<caption>
+Table 10: Coefficients for initial non-motorized model
+</caption>
+<thead>
+<tr>
+<th style="text-align:left;font-weight: bold;">
+Covariate
+</th>
+<th style="text-align:right;font-weight: bold;">
+ß
+</th>
+<th style="text-align:right;font-weight: bold;">
+SE(ß)
+</th>
+<th style="text-align:right;font-weight: bold;">
+z
+</th>
+<th style="text-align:left;font-weight: bold;">
+Pr(&gt;|z|)
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left;">
+Destination TAZ parking
+</td>
+<td style="text-align:right;">
+0.0053
+</td>
+<td style="text-align:right;">
+0.0007
+</td>
+<td style="text-align:right;">
+7.6080
+</td>
+<td style="text-align:left;">
+&lt; 0.0001
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Destination TAZ terminal time
+</td>
+<td style="text-align:right;">
+-0.1714
+</td>
+<td style="text-align:right;">
+0.0094
+</td>
+<td style="text-align:right;">
+-18.2873
+</td>
+<td style="text-align:left;">
+&lt; 0.0001
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Purpose: work
+</td>
+<td style="text-align:right;">
+0.3069
+</td>
+<td style="text-align:right;">
+0.0235
+</td>
+<td style="text-align:right;">
+13.0760
+</td>
+<td style="text-align:left;">
+&lt; 0.0001
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Purpose: non-work
+</td>
+<td style="text-align:right;">
+0.3908
+</td>
+<td style="text-align:right;">
+0.0165
+</td>
+<td style="text-align:right;">
+23.6941
+</td>
+<td style="text-align:left;">
+&lt; 0.0001
+</td>
+</tr>
+</tbody>
+</table>
+<table class="table table-striped table-hover table-responsive table-bordered" style="margin-left: auto; margin-right: auto;">
+<caption>
+Table 11: Hazard ratios (HR) for initial non-motorized model
+</caption>
+<thead>
+<tr>
+<th style="text-align:left;font-weight: bold;">
+Covariate
+</th>
+<th style="text-align:right;font-weight: bold;">
+HR
+</th>
+<th style="text-align:right;font-weight: bold;">
+Inverse HR
+</th>
+<th style="text-align:left;font-weight: bold;">
+95% CI for HR
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left;">
+Destination TAZ parking
+</td>
+<td style="text-align:right;">
+1.0053
+</td>
+<td style="text-align:right;">
+0.9947
+</td>
+<td style="text-align:left;">
+[1.0039, 1.0067]
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Destination TAZ terminal time
+</td>
+<td style="text-align:right;">
+0.8425
+</td>
+<td style="text-align:right;">
+1.1869
+</td>
+<td style="text-align:left;">
+[0.8272, 0.8581]
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Purpose: work
+</td>
+<td style="text-align:right;">
+1.3592
+</td>
+<td style="text-align:right;">
+0.7357
+</td>
+<td style="text-align:left;">
+[1.2981, 1.4232]
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Purpose: non-work
+</td>
+<td style="text-align:right;">
+1.4782
+</td>
+<td style="text-align:right;">
+0.6765
+</td>
+<td style="text-align:left;">
+[1.4312, 1.5267]
+</td>
+</tr>
+</tbody>
+</table>
+<p>Schoenfeld Residuals Tests on the covariates revealed time dependence in the non-work purpose, but not for the work purpose. The results of the test are shown in Table 12. A time-dependent coefficients model was explored as a result of present time dependence</p>
+<table class="table table-striped table-hover table-responsive table-bordered" style="margin-left: auto; margin-right: auto;">
+<caption>
+Table 12: Results of Schoenfeld Residuals Tests for initial non-motorized model
+</caption>
+<thead>
+<tr>
+<th style="text-align:left;font-weight: bold;">
+Covariate
+</th>
+<th style="text-align:right;font-weight: bold;">
+<span class="math inline">\({\rho}\)</span>
+</th>
+<th style="text-align:right;font-weight: bold;">
+<span class="math inline">\({\chi^2}\)</span>
+</th>
+<th style="text-align:right;font-weight: bold;">
+p
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left;">
+Destination TAZ parking
+</td>
+<td style="text-align:right;">
+0.0332
+</td>
+<td style="text-align:right;">
+21.8417
+</td>
+<td style="text-align:right;">
+&lt; 0.0001
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Destination TAZ terminal time
+</td>
+<td style="text-align:right;">
+0.0312
+</td>
+<td style="text-align:right;">
+19.3586
+</td>
+<td style="text-align:right;">
+&lt; 0.0001
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Purpose: work
+</td>
+<td style="text-align:right;">
+-0.0134
+</td>
+<td style="text-align:right;">
+3.8630
+</td>
+<td style="text-align:right;">
+0.0494
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Purpose: non-work
+</td>
+<td style="text-align:right;">
+-0.0548
+</td>
+<td style="text-align:right;">
+64.7239
+</td>
+<td style="text-align:right;">
+&lt; 0.0001
+</td>
+</tr>
+<tr>
+<td style="text-align:left;font-weight: bold;">
+Global
+</td>
+<td style="text-align:right;font-weight: bold;">
+</td>
+<td style="text-align:right;font-weight: bold;">
+126.6509
+</td>
+<td style="text-align:right;font-weight: bold;">
+&lt; 0.0001
+</td>
+</tr>
+</tbody>
+</table>
+<p>Exploration of scaled Schoenfeld residuals vs. time plots followed by iterative model fitting and re-checking of the proportional hazards assumption resulted in a time-dependent coefficients model with a single break point at 5 minutes. This model featured no time dependence, and thus this model was used going forward. The model coefficients are provided in Table 13, while the hazard ratios are provided in Table 14.</p>
+<table class="table table-striped table-hover table-responsive table-bordered" style="margin-left: auto; margin-right: auto;">
+<caption>
+Table 13: Coefficients for time-dependent non-motorized model
+</caption>
+<thead>
+<tr>
+<th style="text-align:left;font-weight: bold;">
+Covariate
+</th>
+<th style="text-align:left;font-weight: bold;">
+Interval
+</th>
+<th style="text-align:right;font-weight: bold;">
+ß
+</th>
+<th style="text-align:right;font-weight: bold;">
+SE(ß)
+</th>
+<th style="text-align:right;font-weight: bold;">
+z
+</th>
+<th style="text-align:left;font-weight: bold;">
+Pr(&gt;|z|)
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left;">
+Destination TAZ parking
+</td>
+<td style="text-align:left;">
+0-5 minutes
+</td>
+<td style="text-align:right;">
+0.0024
+</td>
+<td style="text-align:right;">
+0.0010
+</td>
+<td style="text-align:right;">
+2.3269
+</td>
+<td style="text-align:left;">
+0.02
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Destination TAZ parking
+</td>
+<td style="text-align:left;">
+&gt; 5 minutes
+</td>
+<td style="text-align:right;">
+0.0084
+</td>
+<td style="text-align:right;">
+0.0009
+</td>
+<td style="text-align:right;">
+9.0147
+</td>
+<td style="text-align:left;">
+&lt; 0.0001
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Destination TAZ terminal time
+</td>
+<td style="text-align:left;">
+0-5 minutes
+</td>
+<td style="text-align:right;">
+-0.2198
+</td>
+<td style="text-align:right;">
+0.0162
+</td>
+<td style="text-align:right;">
+-13.5900
+</td>
+<td style="text-align:left;">
+&lt; 0.0001
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Destination TAZ terminal time
+</td>
+<td style="text-align:left;">
+&gt; 5 minutes
+</td>
+<td style="text-align:right;">
+-0.1465
+</td>
+<td style="text-align:right;">
+0.0115
+</td>
+<td style="text-align:right;">
+-12.7736
+</td>
+<td style="text-align:left;">
+&lt; 0.0001
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Purpose: work
+</td>
+<td style="text-align:left;">
+0-5 minutes
+</td>
+<td style="text-align:right;">
+0.3530
+</td>
+<td style="text-align:right;">
+0.0371
+</td>
+<td style="text-align:right;">
+9.5180
+</td>
+<td style="text-align:left;">
+&lt; 0.0001
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Purpose: work
+</td>
+<td style="text-align:left;">
+&gt; 5 minutes
+</td>
+<td style="text-align:right;">
+0.2881
+</td>
+<td style="text-align:right;">
+0.0304
+</td>
+<td style="text-align:right;">
+9.4703
+</td>
+<td style="text-align:left;">
+&lt; 0.0001
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Purpose: non-work
+</td>
+<td style="text-align:left;">
+0-5 minutes
+</td>
+<td style="text-align:right;">
+0.5299
+</td>
+<td style="text-align:right;">
+0.0264
+</td>
+<td style="text-align:right;">
+20.0958
+</td>
+<td style="text-align:left;">
+&lt; 0.0001
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Purpose: non-work
+</td>
+<td style="text-align:left;">
+&gt; 5 minutes
+</td>
+<td style="text-align:right;">
+0.2871
+</td>
+<td style="text-align:right;">
+0.0214
+</td>
+<td style="text-align:right;">
+13.4093
+</td>
+<td style="text-align:left;">
+&lt; 0.0001
+</td>
+</tr>
+</tbody>
+</table>
+<table class="table table-striped table-hover table-responsive table-bordered" style="margin-left: auto; margin-right: auto;">
+<caption>
+Table 14: Hazard ratios (HR) for time-dependent non-motorized model
+</caption>
+<thead>
+<tr>
+<th style="text-align:left;font-weight: bold;">
+Covariate
+</th>
+<th style="text-align:left;font-weight: bold;">
+Interval
+</th>
+<th style="text-align:right;font-weight: bold;">
+HR
+</th>
+<th style="text-align:right;font-weight: bold;">
+Inverse HR
+</th>
+<th style="text-align:right;font-weight: bold;">
+95% CI for HR
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left;">
+Destination TAZ parking
+</td>
+<td style="text-align:left;">
+0-5 minutes
+</td>
+<td style="text-align:right;">
+1.0024
+</td>
+<td style="text-align:right;">
+0.9976
+</td>
+<td style="text-align:right;">
+[1.0004, 1.0045]
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Destination TAZ parking
+</td>
+<td style="text-align:left;">
+&gt; 5 minutes
+</td>
+<td style="text-align:right;">
+1.0085
+</td>
+<td style="text-align:right;">
+0.9916
+</td>
+<td style="text-align:right;">
+[1.0066, 1.0103]
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Destination TAZ terminal time
+</td>
+<td style="text-align:left;">
+0-5 minutes
+</td>
+<td style="text-align:right;">
+0.8027
+</td>
+<td style="text-align:right;">
+1.2459
+</td>
+<td style="text-align:right;">
+[0.7776, 0.8285]
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Destination TAZ terminal time
+</td>
+<td style="text-align:left;">
+&gt; 5 minutes
+</td>
+<td style="text-align:right;">
+0.8637
+</td>
+<td style="text-align:right;">
+1.1578
+</td>
+<td style="text-align:right;">
+[0.8445, 0.8833]
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Purpose: work
+</td>
+<td style="text-align:left;">
+0-5 minutes
+</td>
+<td style="text-align:right;">
+1.4233
+</td>
+<td style="text-align:right;">
+0.7026
+</td>
+<td style="text-align:right;">
+[1.3235, 1.5306]
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Purpose: work
+</td>
+<td style="text-align:left;">
+&gt; 5 minutes
+</td>
+<td style="text-align:right;">
+1.3339
+</td>
+<td style="text-align:right;">
+0.7497
+</td>
+<td style="text-align:right;">
+[1.2567, 1.4159]
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Purpose: non-work
+</td>
+<td style="text-align:left;">
+0-5 minutes
+</td>
+<td style="text-align:right;">
+1.6988
+</td>
+<td style="text-align:right;">
+0.5887
+</td>
+<td style="text-align:right;">
+[1.6132, 1.7889]
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Purpose: non-work
+</td>
+<td style="text-align:left;">
+&gt; 5 minutes
+</td>
+<td style="text-align:right;">
+1.3325
+</td>
+<td style="text-align:right;">
+0.7504
+</td>
+<td style="text-align:right;">
+[1.2778, 1.3897]
+</td>
+</tr>
+</tbody>
+</table>
+<p>The plot of deviance residuals for the updated, time-dependent model is shown in Figure 4. Though a few potential outliers are observed in the “trip ended later than expected” category (very negative deviance residuals), they are small in number, and individual exploration revealed no grounds on which to exclude any points as outliers.</p>
+<div class="figure" style="text-align: center">
+<img src="testing_files/figure-html/Figure%204-1.png" alt="Figure 4: Time dependent non-motorized model deviance residuals" width="672" />
+<p class="caption">
+Figure 4: Time dependent non-motorized model deviance residuals
+</p>
+</div>
+<p><br /></p>
+<p>Plots of null Cox model Martingale residuals against destination TAZ parking and destination TAZ terminal time revealed no drastic deviations from linearity, so no functional forms were changed in the time-dependent model. However, like with the personal vehicle model, exact linearity did not appear to be achieved for any of these covariates, indicating better functional forms likely exist for the inclusion of these covariates in the model. For this analysis, linearity was deemed “close enough” in the context of time and processing limitations.</p>
+<p>Having estimated and validated a Cox proportional hazards model for non-motorized travel time decay, the estimated survival curve was compared to the sample curve for the “most common set of conditions”. For non-motorized travel, the most common set of conditions was:</p>
+<p>• Destination TAZ parking = $0 • Destination TAZ terminal time = 0 minutes • Purpose = Non-work</p>
+<p>A graphical comparison of a modeled travel time decay curve to the sample travel time decay curve for these attributes is shown in Figure 5. In addition, a plot of difference in model and the sample trip survival probabilities for these attributes is provided in Figure 6.</p>
+<div class="figure" style="text-align: center">
+<img src="testing_files/figure-html/Figure%205-1.png" alt="Figure 5: Example comparison of model and sample travel time decay curves for non-motorized travel" width="672" />
+<p class="caption">
+Figure 5: Example comparison of model and sample travel time decay curves for non-motorized travel
+</p>
+</div>
+<p><br /></p>
+<div class="figure" style="text-align: center">
+<img src="testing_files/figure-html/Figure%206-1.png" alt="Figure 6: Difference in example model and sample survival probabilities for non-motorized travel" width="672" />
+<p class="caption">
+Figure 6: Difference in example model and sample survival probabilities for non-motorized travel
+</p>
+</div>
+<p>As evidenced in Figures 5 and 6, the model predicted a quicker travel time decay than is reflected in the sample, underpredicting survival probability at most points. However, that the maximum absolute error at any time point is just over 2% indicated that the model reflects the sample well.</p>
+</div>
+</div>
+<div id="operationalizing-the-model" class="section level1">
+<h1><span class="header-section-number">5</span> OPERATIONALIZING THE MODEL</h1>
+<p>Ultimately, it is hoped that this model would be used to answer the following question: how would a change in policy impact trip making? Answering this question relies on comparing the estimated probability density of survival times under varying conitions, and adjusting for natural de-valuing of longer distance trips.</p>
+<div id="deriving-a-decay-factor" class="section level2">
+<h2><span class="header-section-number">5.1</span> DERIVING A DECAY FACTOR</h2>
+<p>Consider two cases: a null case <span class="math inline">\(\scriptstyle C_0\)</span> representing the existing conditions, and an alternative case <span class="math inline">\(\scriptstyle C_A\)</span> representing some sort of change in the travel system (e.g. an increase in toll cost). Define a decay factor <span class="math inline">\(\scriptstyle D_{t,C_0,C_A}\)</span> Dt,C0,CA as the value of a trip of duration <em>t</em> based on:</p>
+<ol style="list-style-type: decimal">
+<li>the duration of the trip, <em>t</em></li>
+<li>the change in conditions from <span class="math inline">\(\scriptstyle C_0\)</span> to <span class="math inline">\(\scriptstyle C_A\)</span>.</li>
+</ol>
+<div id="trip-duration-component" class="section level3">
+<h3><span class="header-section-number">5.1.1</span> TRIP DURATION COMPONENT</h3>
+<p>For the trip duration component, we need to tackle the question <em>what proportion of people are willing to travel t minutes?</em> To answer this, consider the population of people traveling more than <em>t</em> minutes under the existing conditions <span class="math inline">\(\scriptstyle C_0\)</span>. Recall that the survival function <span class="math inline">\(\scriptstyle S(t) = P(T &gt; t)\)</span>, so this population is <span class="math inline">\(\scriptstyle (100·S_{C_0} (t))\)</span>% of all people. The trip duration for people in this set include <span class="math inline">\(\scriptstyle t+ 1, t+ 2, ..., t_{max}\)</span> (because time is discrete in this analysis). Under equal circumstances, we assume that a person whose trip falls in this set would choose to travel the minimum time of the set if given the choice. In other words, all people traveling longer than t would choose to travel <em>t</em> + 1 if they could. By this logic, <span class="math inline">\(\scriptstyle S_{C_0} (t)\)</span> is a measure of “willingness to travel t + 1 minutes”: <span class="math inline">\(\scriptstyle (100·S_{C_0} (t))\)</span>% would travel t + 1 minutes if they could. It follows that <span class="math inline">\(\scriptstyle S_{C_0} (t-1))\)</span> gives the proportion of people willing to travel <em>t</em> minutes, which answers the initial question.</p>
+</div>
+<div id="change-in-condition-component" class="section level3">
+<h3><span class="header-section-number">5.1.2</span> CHANGE IN CONDITION COMPONENT</h3>
+<p>For the change in conditions component, we need to tackle the question <em>how does the likelihood of taking a t minute trip change between</em> <span class="math inline">\(\scriptstyle C_0\)</span> <em>and</em> <span class="math inline">\(\scriptstyle C_A\)</span> <em>?</em> To answer this, we can rely on the formulation of survival curves. Consider the following mathematical equivalencies:</p>
+<p><span class="math display">\[
+\begin{aligned}
+S(t) &amp;= P(T &gt; t) &amp;&amp; \text{(definition of survival function)} \\
+     &amp;= 1 - P(T \le t) &amp;&amp; \text{(probability rules)} \\
+     &amp;= 1 - F(t) &amp;&amp; \text{(definition of cdf)} \\
+     &amp;= 1 - \int_0^t f(t)dt &amp;&amp; \text{(relationship between cdf and pdf)} \\
+     &amp;= 1 - \sum_0^t f(t) &amp;&amp; \text{(equivalency due to discrete nature of } t \text{)} \\
+     &amp;= 1 - \sum_0^t P(T = t) &amp;&amp; \text{(definition of pdf)}
+\end{aligned}
+\]</span></p>
+<p><span class="math inline">\(\scriptstyle f(t) = P(T = t)\)</span> is the value of interest here, because it defines the likelihood of taking an exactly t minute trip. To understand how <em>f(t)</em> can be calculated from survival probabilities, consider the following:</p>
+<p><span class="math display">\[
+\begin{aligned}
+F(t) &amp;= \sum_0^t f(t) \\
+\text{Then: } F(0) &amp;= f(0) \\
+                   &amp;= 0 \\
+              F(1) &amp;= f(0) + f(1) \\
+                   &amp;= F(0) + f(1) \\
+                   &amp;\bf{\implies} \ f(1) = F(1) - F(0) \\
+              F(2) &amp;= f(0) + f(1) + f(2) \\
+                   &amp;= F(1) + f(2) \\
+                   &amp;\bf{\implies} \ f(2) = F(2) - F(1) \\
+              F(3) &amp;= f(0) + f(1) + f(2) + f(3) \\
+                   &amp;= F(2) + f(3) \\
+                   &amp;\bf{\implies} \ f(3) = F(3) - F(2) \\
+              &amp;\vdots \\
+              F(t) &amp;= f(0) + f(1) + ... + f(t) \\
+                   &amp;= F(t-1) + f(t) \\
+                   &amp;\bf{\implies} f(t) = F(t) - F(t-1) \\
+\end{aligned}
+\]</span></p>
+<p>It then follows that: <span class="math display">\[
+\begin{aligned}
+f(t) &amp;= F(t) - F(t-1) \\
+     &amp;= 1 - S(t) - [1 - S(t-1)] \\
+     &amp;= 1 - S(t) - 1 + S(t-1) \\
+     &amp;= S(t-1) - S(t)
+\end{aligned}
+\]</span></p>
+<p>So, the likelihood of taking an exactly t minute trip <span class="math inline">\(\scriptstyle f(t) = S(t − 1) − S(t)\)</span>. For our cases <span class="math inline">\(\scriptstyle C_0\)</span> and <span class="math inline">\(\scriptstyle C_A\)</span>, two unique survival functions <span class="math inline">\(\scriptstyle S_{C_0}(t)\)</span> and <span class="math inline">\(\scriptstyle S_{C_A}(t)\)</span> will be estimated, resulting in unique estimates <span class="math inline">\(\scriptstyle f_{{C_0}}(t)\)</span> and <span class="math inline">\(\scriptstyle f_{{C_A}}(t)\)</span> for the probability of taking a <em>t</em> minute trip in <span class="math inline">\(\scriptstyle C_0\)</span> and <span class="math inline">\(\scriptstyle C_A\)</span> respectively. With these estimates, expected change can be expressed through a density ratio: $ $ represents the factor by which the amount of t minute trips should change with a switch from <span class="math inline">\(\scriptstyle C_0\)</span> and <span class="math inline">\(\scriptstyle C_A\)</span>, which answers the initial question.</p>
+</div>
+<div id="calculating-decay" class="section level3">
+<h3><span class="header-section-number">5.1.3</span> CALCULATING DECAY</h3>
+<p>Let <span class="math inline">\(\scriptstyle S_{C_0}(t-1)\)</span> be the proportion of people who would be willing to travel <em>t</em> minutes. Furthermore, let the density ratio $ $ be the factor of expected change associated with trips of t minutes. Then we can calculate a decay factor of the following form:</p>
+<p><span class="math display">\[ D_t,C_0,C_A=S_{C_0}(t-1) \bullet \frac{f_{C_A}(t)}{f_{{C_0}(t)}}\]</span></p>
+<p><span class="math inline">\(\scriptstyle D_t,C_0,C_A=S_{C_0}(t-1)\)</span> can be interpreted as the proportion of people who would be expected to travel <em>t</em> minutes if given the opportunity in <span class="math inline">\(\scriptstyle C_A\)</span>, assuming the willingness to travel reflected by behavior in <span class="math inline">\(\scriptstyle C_0\)</span>.</p>
+</div>
+</div>
+<div id="a-walkthrough-example" class="section level2">
+<h2><span class="header-section-number">5.2</span> A WALKTHROUGH EXAMPLE</h2>
+<p>To exemplify this operationalization, imagine that we want to quantify the value of a 15 minute vehicle trip in the context of increasing tolls. The null case <span class="math inline">\(\scriptstyle C_0\)</span> will assume no tolls. It will be compared to three alternative cases <span class="math inline">\(\scriptstyle C_{A_i},=1,2,3\)</span> , where <em>i</em> represents a $1, $2, or $3 toll, respectively. All other model variables will be held constant. Table 15 details the covariates in each case.</p>
+<table class="table table-striped table-hover table-responsive table-bordered" style="margin-left: auto; margin-right: auto;">
+<caption>
+Table 15: Covariates for <span class="math inline">\(C_0\)</span> and <span class="math inline">\(C_{A_i}, i=1,2,3\)</span>
+</caption>
+<thead>
+<tr>
+<th style="text-align:left;font-weight: bold;">
+Case
+</th>
+<th style="text-align:right;font-weight: bold;">
+Parking cost
+</th>
+<th style="text-align:right;font-weight: bold;">
+Toll cost
+</th>
+<th style="text-align:right;font-weight: bold;">
+Household size
+</th>
+<th style="text-align:right;font-weight: bold;">
+Purpose
+</th>
+<th style="text-align:right;font-weight: bold;">
+Orig. TAZ term. time
+</th>
+<th style="text-align:right;font-weight: bold;">
+Dest. TAZ term. time
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left;">
+C0
+</td>
+<td style="text-align:right;">
+$0
+</td>
+<td style="text-align:right;">
+$0
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+Work
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+CA1
+</td>
+<td style="text-align:right;">
+$0
+</td>
+<td style="text-align:right;">
+$1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+Work
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+CA2
+</td>
+<td style="text-align:right;">
+$0
+</td>
+<td style="text-align:right;">
+$2
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+Work
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+CA3
+</td>
+<td style="text-align:right;">
+$0
+</td>
+<td style="text-align:right;">
+$3
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+Work
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+</tr>
+</tbody>
+</table>
+<p>The first step involves calculating the proportion of people willing to travel 15 minutes, or <span class="math inline">\(\scriptstyle S_{C_0}(14)\)</span>. Using the personal vehicle model, we predict a survival curve using the conditions in <span class="math inline">\(\scriptstyle C_0\)</span>, and extract the survival probability at <em>t</em> = 14. We find that <span class="math inline">\(\scriptstyle S_{C_0}(14)\)</span>. A visualization is provided in Figure 7.</p>
+<div class="figure" style="text-align: center">
+<img src="testing_files/figure-html/Figure%207-1.png" alt="Figure 7: $S_{C_0}(t)$, with $S_{C_0}(14)$ highlighted" width="672" />
+<p class="caption">
+Figure 7: <span class="math inline">\(S_{C_0}(t)\)</span>, with <span class="math inline">\(S_{C_0}(14)\)</span> highlighted
+</p>
+</div>
+<p>Next, the probabilities that a trip lasts 15 minutes must be calculated in each alternative case, and then compared to the same probability in the null case. Using the personal vehicle model, we predict survivalcurves for <span class="math inline">\(\scriptstyle C_{A_1}\)</span>, <span class="math inline">\(\scriptstyle C_{A_2}\)</span>, and <span class="math inline">\(\scriptstyle C_{A_3}\)</span>, and calculate <span class="math inline">\(\scriptstyle f_{CA}(15)\)</span> according to the survival probabilities at <em>t</em> = 14, 15.</p>
+<p>We refer back to the null case survival curve to calculate <span class="math inline">\(\scriptstyle f_{C_0}(15)\)</span> in the same manner. Finally, we take the ratio of each fCAi(15) <span class="math inline">\(\scriptstyle f_{C_{A_i}}(15)\)</span> to <span class="math inline">\(\scriptstyle f_{C_{0_i}}(15)\)</span>. The results are provided in Table 16. For context, the null and alternative case probability density functions on t ∈ [10, 20] are shown in Figure <strong>XXX2</strong>.</p>
+<table class="table table-striped table-hover table-responsive table-bordered" style="margin-left: auto; margin-right: auto;">
+<caption>
+Table 16: <span class="math inline">\(f_{C_0}(t)\)</span>, <span class="math inline">\(f_{C_{A_i}}(t)\)</span>, and <span class="math inline">\(\frac{f_{C_{A_i}}(15)}{f_{C_0}(15)}\)</span> for 15 minute vehicle trips
+</caption>
+<thead>
+<tr>
+<th style="text-align:left;font-weight: bold;">
+Case
+</th>
+<th style="text-align:right;font-weight: bold;">
+Density
+</th>
+<th style="text-align:right;font-weight: bold;">
+Density ratio (to <span class="math inline">\({C_0}\)</span>)
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left;">
+C0
+</td>
+<td style="text-align:right;">
+0.095
+</td>
+<td style="text-align:right;">
+1.000
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+CA1
+</td>
+<td style="text-align:right;">
+0.091
+</td>
+<td style="text-align:right;">
+0.965
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+CA2
+</td>
+<td style="text-align:right;">
+0.062
+</td>
+<td style="text-align:right;">
+0.655
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+CA3
+</td>
+<td style="text-align:right;">
+0.041
+</td>
+<td style="text-align:right;">
+0.429
+</td>
+</tr>
+</tbody>
+</table>
+<div class="figure" style="text-align: center">
+<img src="testing_files/figure-html/Figure%208-1.png" alt="Figure 8: $f_{C_0}(t)$ and $f_{C_{A_i}}(t), i=1,2,3$" width="672" />
+<p class="caption">
+Figure 8: <span class="math inline">\(f_{C_0}(t)\)</span> and <span class="math inline">\(f_{C_{A_i}}(t), i=1,2,3\)</span>
+</p>
+</div>
+<p>Final, the decay factor <span class="math inline">\(\scriptstyle D_{15,{C_0,C_{A_i}}}=S_{C_0}(14) \bullet \frac{f_{C_A}(15)}{f_{{C_0}(15)}}\)</span> is calculated fro all three <span class="math inline">\(\scriptstyle C_{A_i}\)</span>. The results are provided in Table 17.</p>
+<table class="table table-striped table-hover table-responsive table-bordered" style="margin-left: auto; margin-right: auto;">
+<caption>
+Table 17: Calculation of <span class="math inline">\(D_{15,C_0,C_{A_i}}\)</span>
+</caption>
+<thead>
+<tr>
+<th style="text-align:left;font-weight: bold;">
+Case
+</th>
+<th style="text-align:right;font-weight: bold;">
+Willingness to travel
+</th>
+<th style="text-align:right;font-weight: bold;">
+Density ratio
+</th>
+<th style="text-align:right;font-weight: bold;">
+Decay factor
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left;">
+CA1
+</td>
+<td style="text-align:right;">
+0.624
+</td>
+<td style="text-align:right;">
+0.965
+</td>
+<td style="text-align:right;">
+0.602
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+CA2
+</td>
+<td style="text-align:right;">
+0.624
+</td>
+<td style="text-align:right;">
+0.655
+</td>
+<td style="text-align:right;">
+0.409
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+CA3
+</td>
+<td style="text-align:right;">
+0.624
+</td>
+<td style="text-align:right;">
+0.429
+</td>
+<td style="text-align:right;">
+0.268
+</td>
+</tr>
+</tbody>
+</table>
+<p>So, it is learned that, without even considering toll increases, 15 minute trips are de-valued (relative to a less-than-1 minute trip) by a factor of about 0.65 based on time alone. The impact of the toll increase on a 15 minute trip is negligible at $1 (estimated 0.97 times the 15 minute trips), but is notable at $2 and $3 (estimated 0.68 and 0.46 times the 15 minute trips, respectively). It can be concluded that, for the about 65% of travelers willing to take a 15 minute trip, a $1 toll does not drastically alter accessibility, but that a $2 or more toll does.</p>
+</div>
+</div>
+<div id="conclusion" class="section level1">
+<h1><span class="header-section-number">6</span> CONCLUSION</h1>
+<p>A time-dependent Cox proportional hazards model offers an improvement over classical travel time decay modeling methods by allowing for the inclusion of covariate information and quantifying effect sizes associated with these covariates. Furthermore, the use of time-dependent coefficients in these Cox models allows for an interval understanding of covariate effects, which is particularly useful in travel time since trips are often thought of in 5 or 10 minute intervals. The Cox models fit in this analysis indicate that, depending on the mode of choice, trip purpose, trip cost, and household size may all be significant contributors to trip hazard rate and, consequently, trip survival time. These covariates represent a suite of information that should be readily available for use of these modeling in a predictive or simulative context.</p>
+<p>Future models should seek to explore additional relevant covariate information (such as terminal time) and/or potential interactions between covariates. They also may seek the following modeling improvements, which were not addressed in this analysis due to processing and time constraints.</p>
+<ol style="list-style-type: decimal">
+<li><em>Use of a smoothed function for time-dependent coefficients, as opposed to a step function:</em> Rather than estimating coefficients in discrete time intervals, coefficients could be estimated using a smoothed function of time. For example, in the case of monotonically decreasing effect size with time, a linear function could be valid. This could improve accuracy in estimating effect sizes</li>
+<li><em>Estimation of proper functional form for continuous covariates:</em> Rather than assuming a basic linear form for continuous covariates, more representative functional forms could be estimated using smoothing techniques, for example. This would improve understanding of the relationship between the covariates and hazard, as well as likely improve predictive accuracy.</li>
+</ol>
+</div>
+
+
+
+</div>
+</div>
+
+</div>
+
+<script>
+
+// add bootstrap table styles to pandoc tables
+function bootstrapStylePandocTables() {
+  $('tr.odd').parent('tbody').parent('table').addClass('table table-condensed');
+}
+$(document).ready(function () {
+  bootstrapStylePandocTables();
+});
+
+
+</script>
+
+<!-- tabsets -->
+
+<script>
+$(document).ready(function () {
+  window.buildTabsets("TOC");
+});
+
+$(document).ready(function () {
+  $('.tabset-dropdown > .nav-tabs > li').click(function () {
+    $(this).parent().toggleClass('nav-tabs-open')
+  });
+});
+</script>
+
+<!-- code folding -->
+
+<script>
+$(document).ready(function ()  {
+
+    // move toc-ignore selectors from section div to header
+    $('div.section.toc-ignore')
+        .removeClass('toc-ignore')
+        .children('h1,h2,h3,h4,h5').addClass('toc-ignore');
+
+    // establish options
+    var options = {
+      selectors: "h1,h2",
+      theme: "bootstrap3",
+      context: '.toc-content',
+      hashGenerator: function (text) {
+        return text.replace(/[.\\/?&!#<>]/g, '').replace(/\s/g, '_');
+      },
+      ignoreSelector: ".toc-ignore",
+      scrollTo: 0
+    };
+    options.showAndHide = true;
+    options.smoothScroll = true;
+
+    // tocify
+    var toc = $("#TOC").tocify(options).data("toc-tocify");
+});
+</script>
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>

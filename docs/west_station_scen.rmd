@@ -122,8 +122,6 @@ hh_plot
 
 ### Accessibility scores
 Average HH access to jobs score by transit
-
-
 Average HH access to jobs score by walking
 Average HH access to jobs score by bicycling
 
