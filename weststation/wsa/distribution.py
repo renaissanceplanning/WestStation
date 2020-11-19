@@ -337,28 +337,34 @@ def tripTargetsByZone(trips_df, zone_col="TAZ", trips_col="trips",
 def summarizeTripAttributes(trips, mode, net_config, skim_ref, unit,
                             sum_dims=["From", "To"], factor=1.0):
     """
-    
+    A helper function to facilitate summarization of trip table data, such
+    as person miles of travel, average trip length, etc.
 
     Parameters
     ----------
-    trips : TYPE
-        DESCRIPTION.
-    mode : TYPE
-        DESCRIPTION.
-    net_config : TYPE
-        DESCRIPTION.
-    skim_ref : TYPE
-        DESCRIPTION.
-    unit : TYPE
-        DESCRIPTION.
-    sum_dims : TYPE, optional
-        DESCRIPTION. The default is ["From", "To"].
+    trips : emma.od.Skim
+        A matrix of trips by mode for a given travel purpose
+    mode : String
+        The mode in the `Mode` axis of `trips` to summarize
+    net_config : String
+        Sets the source directory from which to pull OD cost data
+    skim_ref : Dict
+        A dictionary with mode names as keys and skim file parameters
+        (file, node, axis, label) as values to look up key impedance values
+        (distance, time, e.g.) for trip summarization.
+    unit : String
+        The trip units being summarized ("miles", "minutes", etc.). The units
+        appear in output column headings.
+    sum_dims : [String,...], default=["From", "To"]
+        The dimensions over which to summarize trip data.
+    factor: numeric, default=1.0
+        Trip sums may be factored for unit conversion if desired (meters to
+        minutes, time to cost, e.g.).
 
     Returns
     -------
-    TYPE
-        DESCRIPTION.
-
+    trip_sum: DataFrome
+        A data frame with row for each zone
     """
     m_trips = trips.take(Mode=mode, squeeze=True)
     f, node, axis, label = skim_ref[mode]

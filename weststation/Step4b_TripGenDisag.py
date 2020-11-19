@@ -54,7 +54,7 @@ import yaml
 #  to the specified configuration
 root = r"K:\Projects\MAPC\FinalData"
 os.chdir(root)
-lu_config = "FEIR"
+lu_config = "FEIR_MAX"
 
 # Setup logging
 logger = logging.getLogger("EMMA")
@@ -323,5 +323,6 @@ block_tg_sum = block_tg.sum(["block_id", "Purpose", "End"])
 block_df = block_tg_sum.to_frame("trips").reset_index()
 block_df[LEVELS] = pd.DataFrame(
     block_df["block_id"].to_list(), index=block_df.index)
+block_df.to_csv(by_block_csv, index=False)
 
-block_df.to_csv(by_block_csv)
+

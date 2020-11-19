@@ -72,13 +72,16 @@ import logging
 #  will be analyzed. Resulting accessibility scores will reflect land
 #  development in the named `lu_config` and travel costs in the named
 #  `net_config`.  Outputs are stored in the `scen` subfolder.
-root = r"K:\Projects\MAPC\FInalData"
+root = r"K:\Projects\MAPC\FinalData"
 os.chdir(root)
 
 scen = "BRT_Scen_B"
 lu_config = "FEIR"
 net_config = "BRT_Scen_B"
-base_config = "Base"
+
+###
+base_config = "Base" # Generally, keep this as "base" unless another scenario has modelwide walk times to transit
+###
 
 # Setup logging
 logger = logging.getLogger("EMMA")

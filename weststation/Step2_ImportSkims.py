@@ -45,8 +45,8 @@ from wsa import impfuncs
 #  approriate land use configuration.
 root = r"K:\Projects\MAPC\FinalData"
 os.chdir(root)
-net_config = "BRT_Scen_B"
-lu_config = "FEIR"
+net_config = "Base"
+lu_config = "Base"
 
 #%% GLOBALS
 PURPOSES = ["HBW", "HBO", "HBSch", "NHB"]
@@ -69,6 +69,7 @@ P_FACTORS = {
     "HBO": NONWORK_TIME_VALUE,
     "NHB": NONWORK_TIME_VALUE
     }
+SUBMODES = ["BT", "CR", "LB", "RT"]
 
 #%% READ ZONE DATA FOR SKIM INDEXING
 # Skims always include i and j dimeinsions reflecting orign and destination
@@ -273,9 +274,8 @@ wat_costs.put(wat_costs.take(Impedance="IVTT", squeeze=True).data +
 #%% TRANSIT SKIMS (DAT) - INITIALIZATION AND IMPORT
 print("TRANSIT (DAT) - INITIALIZATION/IMPORT/CALCS")
 # There are four submodes for the DAT mode. Each is imported into its own
-#  skim object. Iterate over sbmodes...
-submodes = ["BT", "CR", "LB", "RT"]
-for submode in submodes:
+#  skim object. Iterate over submodes...
+for submode in SUBMODES:
     print(submode)
 # For the transit (drive access) mode, the following impedances are used in
 #  accessibility and travel modeling:
@@ -337,7 +337,7 @@ for submode in submodes:
 # available DAT option, so we'll calculate it now
 print("TRANSIT (DAT) - GENERALIZE TO BEST AVAILABLE SUBMODE (/BestGC)")
 index_fields = ["INWINDOW", "INFOCUS", "TAZ"]
-impedance_labels = ["BestGC"]
+impedance_labels = ["BestGC", "TotalTime"]
 desc = "Generalized transit (DAT) travel costs (best available)"
 # Gen skim initialization
 hdf_dat = r"net\{}\transit_da.h5".format(net_config)
@@ -346,17 +346,23 @@ dat_gen_gc = impfuncs.initImpSkim_wsa(
                 "costs", overwrite=True, init_val=np.inf)
 
 # Iterate over submode skims
-for submode in submodes:
+for submode in SUBMODES:
     ref_hdf = r"net\{}\transit_da_{}.h5".format(net_config, submode)
     hdf_node = f"/costs"
     sub_costs = emma.od.openSkim_HDF(ref_hdf, hdf_node)
-    # Take the generalized costs
-    od_gc = sub_costs.take(Impedance="GenCost")
+    # Take the generalized costs and times
+    od_gc = sub_costs.take(Impedance="GenCost", squeeze=True)
+    od_time = sub_costs.take(Impedance="TotalTime", squeeze=True)
     # Mask out missing values and set to infinity
     mask = np.where(od_gc.data <= 0)
     od_gc.data[mask] = np.inf
+    mask_time = np.where(od_gc.data < dat_gen_gc.data[0])
+    mask_time_g = (np.ones_like(mask_time[0]), mask_time[0], mask_time[1])
+    
     # Get minimum value bewteen the submode skim and prevailing gen skim
-    dat_gen_gc.data[:] = np.minimum(dat_gen_gc.data[:], od_gc.data)
+    dat_gen_gc.data[0, :] = np.minimum(dat_gen_gc.data[0, :], od_gc.data)
+    # Keep times for this submode
+    dat_gen_gc.data[mask_time_g] = od_time.data[mask_time]
     
 #%% WALK - INITIALIZE AND IMPORT
 # For the walk mode, the following impedances are used:

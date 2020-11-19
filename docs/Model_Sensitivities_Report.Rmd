@@ -1,0 +1,132 @@
+---
+title: "MODE CHOICE MODEL SENSITIVITIES"
+author: "Renaissance Planning"
+date: "August 2020"
+output: 
+  html_document:
+    toc: true
+    toc_depth: 2
+    number_sections: true
+    toc_float:
+      collapsed: true
+      smooth_scroll: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning=FALSE, message=FALSE, 
+                      fig.pos = 'H', fig.cap=T)
+```
+
+```{css}
+caption {
+ color: rgb(63, 78, 86);
+ line-height: 1.5em;
+ font-size: 16px;
+ font-weight: bold;
+}
+
+p.caption {
+ color: rgb(63, 78, 86);
+ line-height: 1.5em;
+ font-size: 16px;
+ font-weight: bold;
+}
+```
+
+```{r}
+library(knitr)
+library(kableExtra)
+library(readxl)
+library(dplyr)
+library(stringr)
+```
+
+# Introduction
+
+The tables that follow will detail the sensitivities of the mode choice models used in the MAPC accessibility-based trip modeling process. For more detail on the mode choice modeling approach or model specifics, please see *Mode choice modeling in Massachusetts: approach and production end results*. 
+
+\newpage
+
+# Results
+
+## Production end models: Home-based
+
+```{r}
+# https://stackoverflow.com/questions/49143690/rmarkdown-kable-vertically-align-cells
+# centerText <- function(text){
+#   paste0("\\multirow{1}{*}[0pt]{", text, "}")
+# }
+
+pe_hb = read_xlsx("K:/Projects/MAPC/Tables/ModeChoice/Model_Sensitivities.xlsx",
+                  sheet = "PE_HB")
+pe_hb = data.frame(pe_hb)
+pe_hb = pe_hb %>%
+  setNames(c("Factor","Nest","Influence")) %>%
+  mutate(Factor = str_replace_all(Factor, "\\u200B", ""),
+         Nest = str_replace_all(Nest, "\\u200B", ""),
+         Influence = str_replace_all(Influence, "\\u200B", ""))
+
+kable(pe_hb,
+      booktabs = TRUE,
+      row.names = FALSE,
+      align = rep('l',times=3),
+      caption = "Mode choice model sensitivities for production end home-based models") %>%
+  kable_styling(bootstrap_options = c("striped", "hover",
+                                      "responsive", "bordered")) %>%
+
+  row_spec(0, bold=TRUE) 
+```
+
+\newpage
+
+## Production end models: Non-home-based
+
+```{r}
+pe_nhb = read_xlsx("K:/Projects/MAPC/Tables/ModeChoice/Model_Sensitivities.xlsx",
+                   sheet = "PE_NHB")
+pe_nhb = data.frame(pe_nhb)
+pe_nhb = pe_nhb %>%
+  setNames(c("Factor","Nest","Influence")) %>%
+  mutate(Factor = str_replace_all(Factor, "\\u200B", ""),
+         Nest = str_replace_all(Nest, "\\u200B", ""),
+         Influence = str_replace_all(Influence, "\\u200B", ""))
+
+kable(pe_nhb,
+      booktabs = TRUE,
+      row.names = FALSE,
+      align = rep('l',times=3),
+      caption = "Mode choice model sensitivities for production end non-home-based models") %>%
+  kable_styling(bootstrap_options = c("striped", "hover",
+                                      "responsive", "bordered")) %>%
+
+  row_spec(0, bold=TRUE) 
+```
+
+\newpage
+
+## Attraction end models
+
+```{r}
+ae = read_xlsx("K:/Projects/MAPC/Tables/ModeChoice/Model_Sensitivities.xlsx",
+               sheet = "AE")
+ae = data.frame(ae)
+ae = ae %>%
+  setNames(c("Factor","Nest","Influence")) %>%
+  mutate(Factor = str_replace_all(Factor, "\\u200B", ""),
+         Nest = str_replace_all(Nest, "\\u200B", ""),
+         Influence = str_replace_all(Influence, "\\u200B", "")) %>%
+  setNames(c("\\textbf{Factor}","\\textbf{Nest}","\\textbf{Influence}"))
+
+kable(ae,
+      booktabs = TRUE,
+      longtable = TRUE,
+      row.names = FALSE,
+      escape = FALSE,
+      align = rep('l',times=3),
+      caption = "Mode choice model sensitivities for production end non-home-based models") %>%
+  kable_styling(bootstrap_options = c("striped", "hover",
+                                      "responsive", "bordered")) %>%
+
+  row_spec(0, bold=TRUE) 
+```
+

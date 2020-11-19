@@ -148,7 +148,7 @@ kable(df,
   row_spec(0, bold=T) 
 ```
 
-## DERIVING ORIGIN TAX, DESTINATION TAZ, AND TRIP DURATION
+## DERIVING ORIGIN TAZ, DESTINATION TAZ, AND TRIP DURATION
 
 After trips were fully defined, origin TAZs, destination TAZs, and trip durations were derived according to the criteria in Table 4. The calculation method differed based on whether the trips were single records (NM, SOV, HOV), or chained records (WAT, DAT)
 

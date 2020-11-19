@@ -1,8 +1,480 @@
 ---
 title: "WEST STATION AREA"
 output: html_document
+editor_options: 
+  chunk_output_type: console
 ---
 
-This page will eventually have summary data visualizations embedded in iframes or in multiple tabsets depending on the visualizations. 
+```{r, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning=FALSE, message=FALSE, 
+                      fig.pos = 'H', fig.cap=T)
+library(tidyverse)
+library(sf)
+library(tmap)
+library(tmaptools)
+library(shiny)
+library(rpgcolorsr)
+require("classInt")
+require("mapdeck")
+tmap_mode("view")
 
-Will be a cursory level review of our findings
+# Read shape data
+map_path = getwd()
+zones <- read_sf("./data/mapping/MAPC_Zones_simp.shp")
+blocks <- read_sf("./data/mapping/window_blocks_simp.shp") %>% 
+  filter(Base==1)
+
+# Get zone tags
+setwd('../..')
+data_path = getwd()
+zone_tags <- read_csv("./FinalData/input/model_area_zones.csv")
+zones <- left_join(zone_tags, zones)
+
+```
+
+This page describes the key processing steps in the MAPC sketch 
+accessibility-based travel model piloted in the West Station Area. The maps
+presented provide examples of the modeling components to illustrate the logic
+behind the model and indicate the kinds of outputs it can generate.
+
+The West Station Area analysis focuses on four trip purposes: *home-based work*, 
+*home-based school*, *home-based other*, and *non-home-based*; and six travel 
+modes: *Walk*, *bike*, *auto driver*, *auto passenger*, *transit (walk access)*,
+and *transit (drive access)*. This page presents a sampling of purpose and mode
+results for illustrative purposes.
+
+The sketch travel model is organized into seven steps. The steps are described
+briefly below. Then maps showing the results of steps 3 through 7 are presented
+for the West Station existing conditions analysis to demonstrate the workflow
+and relationships among the steps.
+
+1. **Skim cleaning** - csv files containing OD travel costs are
+processed into a standard format for consistency across all scenarios.
+
+2. **Import skims** - standardized OD skim csv files are imported into emma's
+[Skim class](https://renaissanceplanning.github.io/emma-docs/od.html#skim).
+
+3. **Summarize accessibility** - skim files, land use data, and decay curves
+are used to calculate access to total jobs, retail jobs, and school enrollments
+from origin zones and access from households by vehicle ownership and income
+to destination zones.
+
+4. **Trip generation** - land use data are used to estimate person trip
+productions and attractions by TAZ. In the immediate vicinity around the 
+West Station Area (referred to as the "Window" area), trips are disaggregated
+from TAZ level to census block level.
+
+5. **Mode choice** - Accessibility and demographic data are used to estimate 
+the proportion of trips made by different modes. Mode shares are estimated
+separately for trip productions and attractions. They are applied to trip
+generation estimates to develop an initial estimate of trips by mode.
+
+6. **Distribution** - Trip productions and attractions by mode are matched into 
+OD pairs based on generalized OD costs. The resulting trip table is balanced
+using iterative proportional fitting to ensure total trip productions and 
+attractions in each zone match trip generation estimates.
+
+7. **TNC trips** - Transportation Network Company (TNC) trips are estimated
+based on distribution results, estimated TNC costs, and assumptions about which
+trips are likely to switch to TNC.
+
+## {.tabset}
+
+### Summarize accessibility
+In this step, access to and from various activities and population groups is
+estimated for TAZ's and blocks (for walking and biking in the window area only).
+Access scores inform mode choice models, while the decay curves used to estimate
+access also inform trip distribution patterns.
+
+The example maps below reflect access to all jobs by walking, biking, transit
+(walk access), and car under existing conditions, using decay rates for the 
+home-based work travel purpose.
+
+```{r, eval = TRUE}
+setwd(data_path)
+# Read tables
+zdata_a <- read_csv("./FinalData/Scen/Base/access_to_jobs_auto_HBW.csv")
+zdata_t <- read_csv("./FinalData/Scen/Base/access_to_jobs_transit_HBW.csv")
+zdata_w <- read_csv("./FinalData/Scen/Base/access_to_jobs_walk_HBW_TAZ.csv")
+zdata_b <- read_csv("./FinalData/Scen/Base/access_to_jobs_bike_HBW_TAZ.csv")
+bdata_w <- read_csv("./FinalData/Scen/Base/access_to_jobs_walk_HBW.csv", 
+                    col_types =  cols(block_id = col_character()),
+                    )
+bdata_b <- read_csv("./FinalData/Scen/Base/access_to_jobs_bike_HBW.csv",
+                    col_types =  cols(block_id = col_character())
+                    )
+
+# Join data
+zones_a <- left_join(
+  zdata_a, zones, c("TAZ" = "ID", "INWINDOW"="INWINDOW", "INFOCUS"="INFOCUS"))
+zones_t <- left_join(
+  zdata_t, zones, c("TAZ" = "ID", "INWINDOW"="INWINDOW", "INFOCUS"="INFOCUS"))
+zones_w <- left_join(
+  zdata_w, zones, c("TAZ" = "ID", "INWINDOW"="INWINDOW", "INFOCUS"="INFOCUS"))
+zones_b <- left_join(
+  zdata_b, zones, c("TAZ" = "ID", "INWINDOW"="INWINDOW", "INFOCUS"="INFOCUS"))
+blocks_w <- left_join(
+  bdata_w, blocks, c("block_id" = "GEOID10", "INWINDOW"="INWINDOW", "INFOCUS"="INFOCUS"))
+blocks_b <- left_join(
+  bdata_b, blocks, c("block_id" = "GEOID10", "INWINDOW"="INWINDOW", "INFOCUS"="INFOCUS"))
+
+# Filter data
+zones_w <- zones_w %>% filter(INWINDOW==0)
+zones_b <- zones_b %>% filter(INWINDOW==0)
+
+# Patch data
+zones_w <- zones_w %>% rename(`Total Emp-Purpose-HBW` = `Total Emp-Purpose-HBW-Impedance-WalkTime`,
+                              `Retail-Purpose-HBW` = `Retail-Purpose-HBW-Impedance-WalkTime`,
+                              `Service-Purpose-HBW` = `Service-Purpose-HBW-Impedance-WalkTime`,
+                              `Basic-Purpose-HBW` = `Basic-Purpose-HBW-Impedance-WalkTime`,
+                              `TotEnroll-Purpose-HBW` = `TotEnroll-Purpose-HBW-Impedance-WalkTime`)
+zones_b <- zones_b %>% rename(`Total Emp-Purpose-HBW` = `Total Emp-Purpose-HBW-Impedance-BikeTime`,
+                              `Retail-Purpose-HBW` = `Retail-Purpose-HBW-Impedance-BikeTime`,
+                              `Service-Purpose-HBW` = `Service-Purpose-HBW-Impedance-BikeTime`,
+                              `Basic-Purpose-HBW` = `Basic-Purpose-HBW-Impedance-BikeTime`,
+                              `TotEnroll-Purpose-HBW` = `TotEnroll-Purpose-HBW-Impedance-BikeTime`)
+
+z_cols = c("INWINDOW", "INFOCUS", "TAZ", "Total Emp-Purpose-HBW",
+           "Retail-Purpose-HBW", "Service-Purpose-HBW", "TotEnroll-Purpose-HBW",
+           "geometry")
+combo_w <- zones_w %>% 
+  select(z_cols) %>% 
+  bind_rows(
+    blocks_w %>% select(c('block_id', z_cols)
+                        )
+    )
+combo_b <- zones_b %>% 
+  select(z_cols) %>% 
+  bind_rows(
+    blocks_b %>% select(c('block_id', z_cols)
+                        )
+    )
+
+# Coerce to sf
+zones_a <- st_sf(zones_a)
+zones_t <- st_sf(zones_t)
+combo_w <- st_sf(combo_w)
+combo_b <- st_sf(combo_b)
+
+# Map
+a <- tm_shape(zones_a) + tm_polygons(col = "Total Emp-Purpose-HBW",
+                                     palette = rpg_color_pal("rpg_rainbow")(9),
+                                     n = 9,
+                                     alpha=0.6,
+                                     style = "pretty",
+                                     lwd = 0.1,
+                                     title = "Access to jobs by car")
+
+t <- tm_shape(zones_t) + tm_polygons(col = "Total Emp-Purpose-HBW",
+                                     palette = rpg_color_pal("rpg_rainbow")(9),
+                                     n = 9,
+                                     alpha=0.6,
+                                     style = "pretty",
+                                     lwd = 0.1,
+                                     title = "Access to jobs by transit")
+
+w <- tm_shape(combo_w) + tm_polygons(col = "Total Emp-Purpose-HBW",
+                                     palette = rpg_color_pal("rpg_rainbow")(9),
+                                     n = 9,
+                                     alpha=0.6,
+                                     style = "pretty",
+                                     lwd = 0.1,
+                                     title = "Access to jobs by walking")
+
+b <- tm_shape(combo_b) + tm_polygons(col = "Total Emp-Purpose-HBW",
+                                     palette = rpg_color_pal("rpg_rainbow")(9),
+                                     n = 9,
+                                     alpha=0.6, 
+                                     style = "pretty",
+                                     lwd = 0.1,
+                                     title = "Access to jobs by biking")
+tmap_arrange(a, t, w, b, ncol=2, nrow=2, sync=TRUE)
+```
+
+
+### Trip generation
+Trip generation focuses on the number of trips produced by and attracted to
+each zone. Trip generation estimates vary by household characteristics (size,
+income, number of workers, and vehicle ownership), job types (basic sector, 
+retail, service), and campus-based activities (group quarters populations and
+enrollment). Person trip estimates interact with mode choice estimates to
+approximate trips by mode to and from each zone prior to trip distribution.
+
+The maps below show person trip productions (left) and attractions (right) for
+the home-based work (upper) and home-based other (lower) trip purposes.
+
+```{r, eval = TRUE}
+tmap_mode("plot")
+setwd(data_path)
+# Read tables
+zdata <- read_csv("./FinalData/lu/Base/trips_by_zone.csv")
+prods = zdata %>% filter(End == "P")
+attrs = zdata %>% filter(End == "A")
+hbw_p = prods %>%  filter(Purpose == "HBW")
+hbo_p = prods %>%  filter(Purpose == "HBO")
+hbw_a = attrs %>%  filter(Purpose == "HBW")
+hbo_a = attrs %>%  filter(Purpose == "HBO")
+
+# Join data
+zones_a <- left_join(
+  hbw_p, zones, c("TAZ" = "ID", "INWINDOW"="INWINDOW", "INFOCUS"="INFOCUS"))
+zones_t <- left_join(
+  hbw_a, zones, c("TAZ" = "ID", "INWINDOW"="INWINDOW", "INFOCUS"="INFOCUS"))
+zones_w <- left_join(
+  hbo_p, zones, c("TAZ" = "ID", "INWINDOW"="INWINDOW", "INFOCUS"="INFOCUS"))
+zones_b <- left_join(
+  hbo_a, zones, c("TAZ" = "ID", "INWINDOW"="INWINDOW", "INFOCUS"="INFOCUS"))
+
+# Coerce to sf
+zones_a <- st_sf(zones_a)
+zones_t <- st_sf(zones_t)
+zones_w <- st_sf(zones_w)
+zones_b <- st_sf(zones_b)
+
+# Map
+a <- tm_shape(zones_a) + tm_polygons(col = "Trips",
+                                     palette = rpg_color_pal("rpg_rainbow")(9),
+                                     n = 9,
+                                     alpha=0.6,
+                                     style = "pretty",
+                                     lwd = 0.1,
+                                     title = "HBW Productions")
+
+t <- tm_shape(zones_t) + tm_polygons(col = "Trips",
+                                     palette = rpg_color_pal("rpg_rainbow")(9),
+                                     n = 9,
+                                     alpha=0.6,
+                                     style = "pretty",
+                                     lwd = 0.1,
+                                     title = "HBW Attractions")
+
+w <- tm_shape(zones_w) + tm_polygons(col = "Trips",
+                                     palette = rpg_color_pal("rpg_rainbow")(9),
+                                     n = 9,
+                                     alpha=0.6,
+                                     style = "pretty",
+                                     lwd = 0.1,
+                                     title = "HBO Productions")
+
+b <- tm_shape(zones_b) + tm_polygons(col = "Trips",
+                                     palette = rpg_color_pal("rpg_rainbow")(9),
+                                     n = 9,
+                                     alpha=0.6, 
+                                     style = "pretty",
+                                     lwd = 0.1,
+                                     title = "HBO Attractions")
+tmap_arrange(a, t, w, b, ncol=2, nrow=2, sync=TRUE)
+```
+
+
+### Mode choice
+The mode choice phase estimates the share of trip productions and attractions
+made by each of the six travel modes analyzed. The person trips estimated in the
+trip generation phase are multiplied by each zone's mode share estimated to
+determine the number of trips by mode starting and ending in each zone. 
+
+The maps below show mode share estimates for home-based work trip productions 
+for auto (driver + auto passenger), transit (either access mode), walking, and 
+biking.
+
+```{r, eval = TRUE}
+tmap_mode("view")
+setwd(data_path)
+# Read tables
+zdata <- read_csv("./FinalData/scen/Base/trips_by_mode_predist.csv")
+hbw <- zdata %>% filter(Purpose == "HBW" & End == "P")
+hbw_tot <- hbw %>% group_by(TAZ) %>%  summarise(all_trips = sum(trips))
+
+auto = hbw %>%  filter(Mode == "driver" | Mode == "passenger") %>% 
+  group_by(TAZ) %>% summarise(trips = sum(trips))
+tran = hbw %>%  filter(Mode == "WAT" | Mode == "DAT") %>% 
+  group_by(TAZ) %>% summarise(trips = sum(trips))
+walk = hbw %>%  filter(Mode == "walk")
+bike = hbw %>%  filter(Mode == "bike")
+
+# Calc share
+auto <- left_join(auto, hbw_tot) %>% mutate(share=trips/all_trips)
+tran <- left_join(tran, hbw_tot) %>% mutate(share=trips/all_trips)
+walk <- left_join(walk, hbw_tot) %>% mutate(share=trips/all_trips)
+bike <- left_join(bike, hbw_tot) %>% mutate(share=trips/all_trips)
+
+# Join data
+zones_a <- left_join(
+  auto, zones, c("TAZ" = "ID"))
+zones_t <- left_join(
+  tran, zones, c("TAZ" = "ID"))
+zones_w <- left_join(
+  walk, zones, c("TAZ" = "ID", "INWINDOW"="INWINDOW", "INFOCUS"="INFOCUS"))
+zones_b <- left_join(
+  bike, zones, c("TAZ" = "ID", "INWINDOW"="INWINDOW", "INFOCUS"="INFOCUS"))
+
+# Coerce to sf
+zones_a <- st_sf(zones_a)
+zones_t <- st_sf(zones_t)
+zones_w <- st_sf(zones_w)
+zones_b <- st_sf(zones_b)
+
+# Map
+a <- tm_shape(zones_a) + tm_polygons(col = "share",
+                                     palette = rpg_color_pal("rpg_rainbow")(9),
+                                     n = 9,
+                                     alpha=0.6,
+                                     style = "pretty",
+                                     lwd = 0.1,
+                                     title = "Auto share")
+
+t <- tm_shape(zones_t) + tm_polygons(col = "share",
+                                     palette = rpg_color_pal("rpg_rainbow")(9),
+                                     n = 9,
+                                     alpha=0.6,
+                                     style = "pretty",
+                                     lwd = 0.1,
+                                     title = "Transit share")
+
+w <- tm_shape(zones_w) + tm_polygons(col = "share",
+                                     palette = rpg_color_pal("rpg_rainbow")(9),
+                                     n = 9,
+                                     alpha=0.6,
+                                     style = "pretty",
+                                     lwd = 0.1,
+                                     title = "Walk share")
+
+b <- tm_shape(zones_b) + tm_polygons(col = "share",
+                                     palette = rpg_color_pal("rpg_rainbow")(9),
+                                     n = 9,
+                                     alpha=0.6, 
+                                     style = "pretty",
+                                     lwd = 0.1,
+                                     title = "Bike share")
+tmap_arrange(a, t, w, b, ncol=2, nrow=2, sync=TRUE)
+```
+
+### Distribution
+With trip productions and attractions in each zone broken down by mode, the
+distribution step focuses on estimating which OD pairs those trips travel 
+between. Trips by mode are distributed to approximate typical trip lengths and
+costs, but are constrained to ensure total person trip productions and
+attractions match the trip generation results. 
+
+The map below displays the distribution of trips by mode for home-based work
+trips in the morning peak period.
+
+
+```{r plot trips}
+# Read skims
+setwd(data_path)
+skims <- read_csv("./FinalData/scen/Base/trips_by_mode_od_gt1.csv")
+# Set lat/lon coords for trip ends
+zones_centroid_latlong <- st_sf(zones %>% select(ID, geometry)) %>% 
+  st_centroid(zones) %>%
+  st_transform(4326) %>% 
+  mutate(lon = st_coordinates(.)[,1],
+         lat = st_coordinates(.)[,2]) %>% 
+  st_drop_geometry()
+
+trips_od <- left_join(skims, zones_centroid_latlong, by = c("TAZ_From" = "ID")) %>% 
+  rename(f_lat = lat, f_lon = lon)
+
+trips_od <- left_join(trips_od, zones_centroid_latlong, by = c("TAZ_To" = "ID")) %>% 
+  rename(t_lat = lat, t_lon = lon) %>% 
+  drop_na()
+# Set line widths
+breaks_trips <- classIntervals(trips_od$trips, n=7, style='fisher')
+trips_od$trips_cat <- cut(trips_od$trips, breaks = breaks_trips$brks)
+trips_od$width <- cut(trips_od$trips, breaks = breaks_trips$brks, labels = c(".5", "1", "2", "5", "10", "25", "40"))
+trips_od$width <- as.numeric(as.character(trips_od$width))
+trips_od <- drop_na(trips_od)
+# Make map
+mapdeck(token = "pk.eyJ1IjoiamxlaG1hbjkzIiwiYSI6ImNrYjltdGtkYzAybmMyc25xbGV4ODBjeTYifQ.WjcnEpbpl4mKAjHRb8JD0w", 
+        style = mapdeck_style('dark'), pitch = 90) %>%
+  add_arc(
+    data = trips_od,
+    origin = c('f_lon','f_lat'),
+    destination = c('t_lon','t_lat'),
+    stroke_from = 'Mode',
+    stroke_to = 'Mode',
+    stroke_width = 'width', 
+    legend = TRUE,
+    digits = 4,
+    brush_radius = 1
+  )
+
+```
+
+
+### TNC Trips
+The final step in the accessibility-based travel model focuses on trips made
+using transportation network companies (TNC's) like Uber or Lyft. This is a
+post processing step that estimates which trips are likely to switch to TNC
+travel based on assumed TNC costs, trip purpose, and the original mode selected.
+
+The maps below show TNC trip productions (left) and attractions (right) as
+total estimated TNC trips (upper) and the TNC share of total trips (lower).
+
+```{r, eval = TRUE}
+tmap_mode("plot")
+setwd(data_path)
+# Read tables
+zdata <- read_csv("./FinalData/scen/Base/TNC_zone_summary_AM.csv")
+hbw <- zdata %>% filter(Purpose == "HBW" & INWINDOW == 1)
+
+prods = hbw %>% 
+  filter(FT == F) %>% 
+  group_by(TAZ) %>% 
+  summarise(tnc_trips = sum(tnc_trips), total_trips = sum(total_trips)) %>% 
+  mutate(pct = tnc_trips/total_trips)
+
+attrs = hbw %>% 
+  filter(FT == T) %>% 
+  group_by(TAZ) %>% 
+  summarise(tnc_trips = sum(tnc_trips), total_trips = sum(total_trips)) %>% 
+  mutate(pct = tnc_trips/total_trips)
+
+# Join data
+prods <- left_join(
+  prods, zones, c("TAZ" = "ID"))
+attrs <- left_join(
+  attrs, zones, c("TAZ" = "ID"))
+
+# Coerce to sf
+prods <- st_sf(prods)
+attrs <- st_sf(attrs)
+
+# Map
+a <- tm_shape(prods) + tm_polygons(col = "tnc_trips",
+                                     palette = rpg_color_pal("rpg_rainbow")(9),
+                                     n = 9,
+                                     alpha=0.6,
+                                     style = "pretty",
+                                     lwd = 0.1,
+                                     title = "TNC productions")
+
+t <- tm_shape(attrs) + tm_polygons(col = "tnc_trips",
+                                     palette = rpg_color_pal("rpg_rainbow")(9),
+                                     n = 9,
+                                     alpha=0.6,
+                                     style = "pretty",
+                                     lwd = 0.1,
+                                     title = "TNC attractions")
+
+w <- tm_shape(prods) + tm_polygons(col = "pct",
+                                     palette = rpg_color_pal("rpg_rainbow")(9),
+                                     n = 9,
+                                     alpha=0.6,
+                                     style = "pretty",
+                                     lwd = 0.1,
+                                     title = "% TNC productions")
+
+b <- tm_shape(attrs) + tm_polygons(col = "pct",
+                                     palette = rpg_color_pal("rpg_rainbow")(9),
+                                     n = 9,
+                                     alpha=0.6, 
+                                     style = "pretty",
+                                     lwd = 0.1,
+                                     title = "% TNC attractions")
+tmap_arrange(a, t, w, b, ncol=2, nrow=2, sync=TRUE)
+```
+
+
+
+

@@ -25,12 +25,20 @@ A dictionary with the following elements:
 
 TNC_array = estimated TNC cost and trip probability by purpose
 
+ESTIMATE_TNC_COSTS – this uses auto skim data to prepare TNC generalized cost skims using assumptions about charges. If these have already been calculated for a scenario, you can set this to false since that work takes a little time.
+CALC_ALPHAS – if True, the script will calculate alpha values to calibrate the TNC process to the TNC_target_setting.xlsx input file. This has already been done for the Base scenario, so you shouldn’t need to recalculate anything for the other scenarios. But if you had new TNC data in a year that would alter the target setting assumptions, this is how to generate fresh alpha values.
+ALPHAS – basically, see above. What’s currently there is what’s needed to bring the base in line with the target setting assumptions. These values then are applied to other scenarios to estimate TNC change by scenario.
+TNC_BASE_FARE/TNC_SERVICE_FEE/TNC_COST_PER_MILE – These are the cost parameters for TNC trips. To test a scenario involving price changes update these variables and ensure `ESTIMATE_TNC_COSTS` is set to True. The base fare and service fee combine into a flat cost that expands based on estimated trip mileage and cost per mile. 
+
+
 """
 
 # %% IMPORTS
 import emma
 from emma import lba, ipf
 from wsa import TNC
+import pandas as pd
+import numpy as np
 import os
 
 import logging
@@ -45,9 +53,9 @@ import logging
 root = r"K:\Projects\MAPC\FinalData"
 os.chdir(root)
 
-scen = "RV_gc_parking_tt"
-lu_config = "FEIR"
-net_config = "RV_gc_parking_tt"
+scen = "Base"
+lu_config = "Base"
+net_config = "Base"
 
 # Setup logging
 logger = logging.getLogger("EMMA")
@@ -59,17 +67,17 @@ handler.setFormatter(formatter)
 logger.addHandler(handler)
 
 # %% GLOBALS
-ESTIMATE_TNC_COSTS = True
+ESTIMATE_TNC_COSTS = False
 PERIOD = "AM"
 USE_UNITS = "Dollars"
 CALC_ALPHAS = False
 # Cutoff values if not estimaing on-the-fly, dictionary by purpose - order
 #  of values reflects order of modes listed in trip table arrays.
 ALPHAS = {
-    "HBW": [75.627, 2.067, 4.156, 1.714, 1.095, 1.333],
-    "HBO": [79.838, 2.481, 8.322, 2.914, 1.311, 1.660],
-    "HBSch": [130.170, 2.417, 6.635, 5.493, 1.235, 0.374],
-    "NHB": [7.456, 1.305, 3.266, 2.860, 1.387, 4.226]
+    "HBW": [20.250, 1.952, 3.679, 3.454, 0.900, 1.479],
+    "HBO": [35.046, 2.609, 7.294, 2.913, 1.057, 2.275],
+    "HBSch": [41.365, 2.462, 40.364, 6.298, 1.002, 1.611],
+    "NHB": [40.604, 2.349, 1.800, 1.721, 3.415, 10.639]
     }
 
 PURPOSES = ["HBW", "HBO", "HBSch", "NHB"]
@@ -219,4 +227,78 @@ for purpose in PURPOSES:
     # -- run probability ratios
     tnc_prob = TNC.applyTNCProbRatio(trip_table, tnc_ratio_skim, alphas,
                                      hdf_store=tnc_hdf, node_path="/",
-                                     name="ProbRatio", overwrite=True)
+                                     name="ProbRatio", overwrite=True,
+                                     logger=logger)
+    
+# %% REPORTING
+print("RERPORTING RESULTS")
+
+out_csv = r"scen\{}\TNC_flow_summary_{}.csv".format(scen, PERIOD)
+out_csv2 = r"scen\{}\TNC_zone_summary_{}.csv".format(scen, PERIOD)
+header=True
+m = "w"
+for purpose in PURPOSES:
+    print(f"-- {purpose}")
+    # Open trip table
+    trip_table_f = r"scen\{}\Trip_dist_TAZ_{}_{}.h5".format(
+        scen, PERIOD, purpose)
+    trip_table = emma.od.openSkim_HDF(trip_table_f, "/dist")
+    # Open TNC probability table
+    tnc_hdf = r"scen\{}\TNC_trips_{}_{}.h5".format(scen, PERIOD, purpose)
+    tnc = lba.openLbArray_HDF(tnc_hdf, "/ProbRatio")
+    
+    # FLOW SUM
+    # Summarize number of trips that switch by mode
+    diss_axes = ["From", "To"]
+    diss_labels = ["INWINDOW", "INFOCUS"]
+    switch_by_mode = tnc.dissolve(
+        diss_axes, [diss_labels, diss_labels], np.sum)
+    tnc_df = switch_by_mode.to_frame("tnc_trips")
+    # Summarize total number of trips
+    trips_by_mode = trip_table.dissolve(
+        diss_axes, [diss_labels, diss_labels], np.sum)
+    trips_df  = trips_by_mode.to_frame("total_trips")
+    # Join tables
+    trips_join = tnc_df.join(trips_df)
+    trips_join["Pct_Switch"] = trips_join.tnc_trips/trips_join.total_trips
+    # Add other details
+    trips_join.reset_index(inplace=True)
+    for dx in diss_axes:
+        new_cols = [f"{dx}_{dl}" for dl in diss_labels]
+        trips_join[new_cols] = pd.DataFrame(
+            trips_join[dx].to_list(), index=trips_join.index)
+    trips_join.drop(columns=diss_axes, inplace=True)
+    trips_join["Purpose"] = purpose
+    trips_join["Period"] = PERIOD
+    trips_join["scen"] = scen
+    
+    # ZONE SUM
+    # Summarize number of trips that switch by mode from/to each zone
+    stack = []
+    sum_axes = ["From", "To"]
+    for axis in sum_axes:
+        sum_by = ["Mode", axis]
+        tnc_df = tnc.sum(sum_by).to_frame("tnc_trips", unpack_indices=True)
+        trips_df = trip_table.sum(sum_by).to_frame(
+            "total_trips", unpack_indices=True)
+        # Join tables
+        join_fields = ["Mode", f"{axis}_TAZ", f"{axis}_INWINDOW", f"{axis}_INFOCUS"]
+        renames = ["Mode", "TAZ", "INWINDOW", "INFOCUS"]
+        trips_join = tnc_df.merge(trips_df, how="inner", on=join_fields)
+        trips_join["Pct_Switch"] = trips_join.tnc_trips/trips_join.total_trips
+        trips_join.rename(
+            dict(zip(join_fields, renames)), axis=1, inplace=True)
+        trips_join["FT"] = axis[0]        
+        # Add to the stack
+        stack.append(trips_join)
+    zone_sums = pd.concat(stack)        
+    # Add other details
+    zone_sums["Purpose"] = purpose
+    zone_sums["Period"] = PERIOD
+    zone_sums["scen"] = scen
+    
+    # Write results
+    trips_join.to_csv(out_csv, mode=m, header=header, index=False)
+    zone_sums.to_csv(out_csv2, mode=m, header=header, index=False)
+    header=False
+    m = "a"

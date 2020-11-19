@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+
+<meta name="author" content="Renaissance Planning" />
+
+
+<title>POST MODE-CHOICE ESTIMATION OF TNC TRIP LIKELIHOOD</title>
+
+<script src="site_libs/jquery-1.11.3/jquery.min.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link href="site_libs/bootstrap-3.3.5/css/bootstrap.min.css" rel="stylesheet" />
+<script src="site_libs/bootstrap-3.3.5/js/bootstrap.min.js"></script>
+<script src="site_libs/bootstrap-3.3.5/shim/html5shiv.min.js"></script>
+<script src="site_libs/bootstrap-3.3.5/shim/respond.min.js"></script>
+<script src="site_libs/jqueryui-1.11.4/jquery-ui.min.js"></script>
+<link href="site_libs/tocify-1.9.1/jquery.tocify.css" rel="stylesheet" />
+<script src="site_libs/tocify-1.9.1/jquery.tocify.js"></script>
+<script src="site_libs/navigation-1.1/tabsets.js"></script>
+<link href="site_libs/highlightjs-9.12.0/default.css" rel="stylesheet" />
+<script src="site_libs/highlightjs-9.12.0/highlight.js"></script>
+<link href="site_libs/anchor-sections-1.0/anchor-sections.css" rel="stylesheet" />
+<script src="site_libs/anchor-sections-1.0/anchor-sections.js"></script>
+
+<style type="text/css">
+  code{white-space: pre-wrap;}
+  span.smallcaps{font-variant: small-caps;}
+  span.underline{text-decoration: underline;}
+  div.column{display: inline-block; vertical-align: top; width: 50%;}
+  div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+  ul.task-list{list-style: none;}
+    </style>
+
+<style type="text/css">code{white-space: pre;}</style>
+<style type="text/css">
+  pre:not([class]) {
+    background-color: white;
+  }
+</style>
+<script type="text/javascript">
+if (window.hljs) {
+  hljs.configure({languages: []});
+  hljs.initHighlightingOnLoad();
+  if (document.readyState && document.readyState === "complete") {
+    window.setTimeout(function() { hljs.initHighlighting(); }, 0);
+  }
+}
+</script>
+
+
+
+<style type="text/css">
+h1 {
+  font-size: 34px;
+}
+h1.title {
+  font-size: 38px;
+}
+h2 {
+  font-size: 30px;
+}
+h3 {
+  font-size: 24px;
+}
+h4 {
+  font-size: 18px;
+}
+h5 {
+  font-size: 16px;
+}
+h6 {
+  font-size: 12px;
+}
+.table th:not([align]) {
+  text-align: left;
+}
+</style>
+
+<link rel="stylesheet" href="RPG_Bootstrap_Arial.css" type="text/css" />
+
+
+
+<style type = "text/css">
+.main-container {
+  max-width: 940px;
+  margin-left: auto;
+  margin-right: auto;
+}
+code {
+  color: inherit;
+  background-color: rgba(0, 0, 0, 0.04);
+}
+img {
+  max-width:100%;
+}
+.tabbed-pane {
+  padding-top: 12px;
+}
+.html-widget {
+  margin-bottom: 20px;
+}
+button.code-folding-btn:focus {
+  outline: none;
+}
+summary {
+  display: list-item;
+}
+</style>
+
+
+<style type="text/css">
+/* padding for bootstrap navbar */
+body {
+  padding-top: 51px;
+  padding-bottom: 40px;
+}
+/* offset scroll position for anchor links (for fixed navbar)  */
+.section h1 {
+  padding-top: 56px;
+  margin-top: -56px;
+}
+.section h2 {
+  padding-top: 56px;
+  margin-top: -56px;
+}
+.section h3 {
+  padding-top: 56px;
+  margin-top: -56px;
+}
+.section h4 {
+  padding-top: 56px;
+  margin-top: -56px;
+}
+.section h5 {
+  padding-top: 56px;
+  margin-top: -56px;
+}
+.section h6 {
+  padding-top: 56px;
+  margin-top: -56px;
+}
+.dropdown-submenu {
+  position: relative;
+}
+.dropdown-submenu>.dropdown-menu {
+  top: 0;
+  left: 100%;
+  margin-top: -6px;
+  margin-left: -1px;
+  border-radius: 0 6px 6px 6px;
+}
+.dropdown-submenu:hover>.dropdown-menu {
+  display: block;
+}
+.dropdown-submenu>a:after {
+  display: block;
+  content: " ";
+  float: right;
+  width: 0;
+  height: 0;
+  border-color: transparent;
+  border-style: solid;
+  border-width: 5px 0 5px 5px;
+  border-left-color: #cccccc;
+  margin-top: 5px;
+  margin-right: -10px;
+}
+.dropdown-submenu:hover>a:after {
+  border-left-color: #ffffff;
+}
+.dropdown-submenu.pull-left {
+  float: none;
+}
+.dropdown-submenu.pull-left>.dropdown-menu {
+  left: -100%;
+  margin-left: 10px;
+  border-radius: 6px 0 6px 6px;
+}
+</style>
+
+<script>
+// manage active state of menu based on current page
+$(document).ready(function () {
+  // active menu anchor
+  href = window.location.pathname
+  href = href.substr(href.lastIndexOf('/') + 1)
+  if (href === "")
+    href = "index.html";
+  var menuAnchor = $('a[href="' + href + '"]');
+
+  // mark it active
+  menuAnchor.parent().addClass('active');
+
+  // if it's got a parent navbar menu mark it active as well
+  menuAnchor.closest('li.dropdown').addClass('active');
+});
+</script>
+
+<!-- tabsets -->
+
+<style type="text/css">
+.tabset-dropdown > .nav-tabs {
+  display: inline-table;
+  max-height: 500px;
+  min-height: 44px;
+  overflow-y: auto;
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.tabset-dropdown > .nav-tabs > li.active:before {
+  content: "";
+  font-family: 'Glyphicons Halflings';
+  display: inline-block;
+  padding: 10px;
+  border-right: 1px solid #ddd;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open > li.active:before {
+  content: "&#xe258;";
+  border: none;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open:before {
+  content: "";
+  font-family: 'Glyphicons Halflings';
+  display: inline-block;
+  padding: 10px;
+  border-right: 1px solid #ddd;
+}
+
+.tabset-dropdown > .nav-tabs > li.active {
+  display: block;
+}
+
+.tabset-dropdown > .nav-tabs > li > a,
+.tabset-dropdown > .nav-tabs > li > a:focus,
+.tabset-dropdown > .nav-tabs > li > a:hover {
+  border: none;
+  display: inline-block;
+  border-radius: 4px;
+  background-color: transparent;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open > li {
+  display: block;
+  float: none;
+}
+
+.tabset-dropdown > .nav-tabs > li {
+  display: none;
+}
+</style>
+
+<!-- code folding -->
+
+
+
+<style type="text/css">
+
+#TOC {
+  margin: 25px 0px 20px 0px;
+}
+@media (max-width: 768px) {
+#TOC {
+  position: relative;
+  width: 100%;
+}
+}
+
+@media print {
+.toc-content {
+  /* see https://github.com/w3c/csswg-drafts/issues/4434 */
+  float: right;
+}
+}
+
+.toc-content {
+  padding-left: 30px;
+  padding-right: 40px;
+}
+
+div.main-container {
+  max-width: 1200px;
+}
+
+div.tocify {
+  width: 20%;
+  max-width: 260px;
+  max-height: 85%;
+}
+
+@media (min-width: 768px) and (max-width: 991px) {
+  div.tocify {
+    width: 25%;
+  }
+}
+
+@media (max-width: 767px) {
+  div.tocify {
+    width: 100%;
+    max-width: none;
+  }
+}
+
+.tocify ul, .tocify li {
+  line-height: 20px;
+}
+
+.tocify-subheader .tocify-item {
+  font-size: 0.90em;
+}
+
+.tocify .list-group-item {
+  border-radius: 0px;
+}
+
+
+</style>
+
+
+
+</head>
+
+<body>
+
+
+<div class="container-fluid main-container">
+
+
+<!-- setup 3col/9col grid for toc_float and main content  -->
+<div class="row-fluid">
+<div class="col-xs-12 col-sm-4 col-md-3">
+<div id="TOC" class="tocify">
+</div>
+</div>
+
+<div class="toc-content col-xs-12 col-sm-8 col-md-9">
+
+
+
+
+<div class="navbar navbar-default  navbar-fixed-top" role="navigation">
+  <div class="container">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar">
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="index.html">MAPC Accessibility Modeling</a>
+    </div>
+    <div id="navbar" class="navbar-collapse collapse">
+      <ul class="nav navbar-nav">
+        <li>
+  <a href="index.html">Home</a>
+</li>
+<li>
+  <a href="west_station_exec.html">West Station Walkthrough</a>
+</li>
+<li>
+  <a href="west_station_scen.html">Scenario Comparisons</a>
+</li>
+<li class="dropdown">
+  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
+    Model documentation
+     
+    <span class="caret"></span>
+  </a>
+  <ul class="dropdown-menu" role="menu">
+    <li class="dropdown-header">Overview</li>
+    <li>
+      <a href="ModelOverview.html"></a>
+    </li>
+    <li>
+      <a href="WhitePaper_TripGenAndBuiltEnviron.pdf">Trip Generation</a>
+    </li>
+    <li>
+      <a href="NaiveEstimatorsV1.html">Decay Rate Estimation</a>
+    </li>
+    <li>
+      <a href="Model_Sensitivities_Report.html">Model Sensitivities</a>
+    </li>
+    <li>
+      <a href="Mode_Choice_Report.Rmd">Mode choice model</a>
+    </li>
+    <li>
+      <a href="TripDecayV2.html">Survival Decay Concept</a>
+    </li>
+  </ul>
+</li>
+<li class="dropdown">
+  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
+    Toolkit Documentation
+     
+    <span class="caret"></span>
+  </a>
+  <ul class="dropdown-menu" role="menu">
+    <li>
+      <a href="./sphinx/html/index.html">West Station Area Python library</a>
+    </li>
+    <li>
+      <a href="https://renaissanceplanning.github.io/emma-docs/">Emma Python library</a>
+    </li>
+  </ul>
+</li>
+      </ul>
+      <ul class="nav navbar-nav navbar-right">
+        
+      </ul>
+    </div><!--/.nav-collapse -->
+  </div><!--/.container -->
+</div><!--/.navbar -->
+
+<div class="fluid-row" id="header">
+
+
+
+<h1 class="title toc-ignore">POST MODE-CHOICE ESTIMATION OF TNC TRIP LIKELIHOOD</h1>
+<h4 class="author">Renaissance Planning</h4>
+<h4 class="date">August 2020</h4>
+
+</div>
+
+
+<style type="text/css">
+caption {
+ color: rgb(63, 78, 86);
+ line-height: 1.5em;
+ font-size: 16px;
+ font-weight: bold;
+}
+
+p.caption {
+ color: rgb(63, 78, 86);
+ line-height: 1.5em;
+ font-size: 16px;
+ font-weight: bold;
+}
+</style>
+<div id="introduction" class="section level1">
+<h1><span class="header-section-number">1</span> Introduction</h1>
+<p>The rise of travel using transportation network companies (TNCs), especially in urban areas, necessitates an understanding of how TNCs factor into a mode choice decision. Unfortunately, many trip record surveys (including the one used for this analysis), do not reflect TNC trips. Thus, a methodology must be developed to estimate TNC trip likelihood as a post-processing step to mode choice estimation. This paper will detail the process for performing this estimation.</p>
+</div>
+<div id="methods" class="section level1">
+<h1><span class="header-section-number">2</span> Methods</h1>
+<div id="estimation-of-a-tnc-generalized-cost-distribution" class="section level2">
+<h2><span class="header-section-number">2.1</span> Estimation of a TNC generalized cost distribution</h2>
+<p>The first step in estimating TNC trip likelihood is understanding the cost of these trips. By achieving this, TNC trips can be compared to trips of other modes using generalized cost. Without formal trip record data for TNC trips, a generalized cost distribution for TNCs was estimated from town-level data published by the Massachusetts State Government in the <em>2019 Rideshare in Massachusetts Data Report</em> (<a href="https://tnc.sites.digital.mass.gov/" class="uri">https://tnc.sites.digital.mass.gov/</a>). For 351 municipalities in the state, this report catalogued the following variables:</p>
+<ul>
+<li>Origin trips</li>
+<li>Destination trips</li>
+<li>Origin trips per person</li>
+<li>Destination trips per person</li>
+<li>Average miles from origin [of origin trips]</li>
+<li>Average minutes from origin [of origin trips]</li>
+</ul>
+<p>Using the average miles and minutes statistics, a generalized cost was constructed at the municipality level according to the following general structure:</p>
+<p><span class="math display">\[
+GC = f(base \ fare, service \ fee, distance, duration)
+\]</span> Two generalized cost formulas were produced: one expressing generalized cost in dollars, and another expressing generalized cost in minutes. In dollars, the formula for generalized cost in municipality <span class="math inline">\(m\)</span> for a trip of purpose <span class="math inline">\(p\)</span> was:</p>
+<p><span class="math display">\[
+GC_{m,p} = b + s + (d_m \cdot c) + (\frac{t_m}{60} \cdot v_p)
+\]</span> And in minutes, the formula was:</p>
+<p><span class="math display">\[
+GC_{m,p} = \Big(\frac{b + s + (d_m \cdot c)}{v_p} \cdot 60\Big) + t_m
+\]</span> Where, for both formulas:</p>
+<ul>
+<li><span class="math inline">\(b = 5.80\)</span>, the estimated base fare (taken as the average of Uber and Lyft base fares, as expressed in the 2018 MAPC Fare Choices Report)</li>
+<li><span class="math inline">\(s = 0.20\)</span>, the estimated service fee (reported as an extra trip cost for all TNC trips in the 2018 MAPC Fare Choices Report)</li>
+<li><span class="math inline">\(c = 1.17\)</span>, the estimated cost/mile of a TNC trip (estimated from a example fare offered in the 2018 MAPC Fare Choices Report)</li>
+<li><span class="math inline">\(v_p = \begin{cases} 27.10 &amp; \text{if p is work (HBW, HBSch)} \\ 15.20 &amp; \text{if p is non-work (HBO, NHB)} \end{cases}\)</span>, the value of time in dollars/hour (<strong>source?</strong>)</li>
+<li><span class="math inline">\(d_m =\)</span> average trip miles from origin for municipality <span class="math inline">\(m\)</span></li>
+<li><span class="math inline">\(t_m =\)</span> average trip minutes from the origin for municipality <span class="math inline">\(m\)</span></li>
+</ul>
+<p>Pseudo-sample-distributions of TNC generalized cost by purpose (work or non-work) and construction (dollars or minutes) were created by weighting the occurrence of municipality-level generalized costs by the average origin trips per person for that municipality. Estimation of these distributions was then completed using the <code>fitdistr</code> package in R, and compared the fit of Cauchy, chi-squared, exponential, gamma, logistic, lognormal, normal, t, and Weibull distributions to the data according to AIC. In all four cases, a lognormal distribution offered the best fit (a serendipitous yet logical result, considering generalized cost for all other modes were also best represented by a lognormal distribution). <strong>Do we need to show the parameters or not?</strong></p>
+</div>
+<div id="calculating-a-tnc-probability-ratio" class="section level2">
+<h2><span class="header-section-number">2.2</span> Calculating a TNC probability ratio</h2>
+<p>Going into the step of TNC post-processing, a mode is already observed for all trips. Thus, the goal is understanding how likely it is that this mode may be replaced by TNC, given the trip characteristics (including the mode itself). With TNC generalized cost distributions in hand, and generalized cost distributions for all other modes already calculated, the relative likelihood of TNC trips was inferred from the following process:</p>
+<ol style="list-style-type: decimal">
+<li><p>For a given Origin-Destination (OD) interchange <span class="math inline">\(i\)</span>, both an mode <span class="math inline">\(m\)</span> and a generalized cost <span class="math inline">\(g_{i,m}\)</span> were available prior to the TNC post-processing analysis. We can say that <span class="math inline">\(g_{i,m}\)</span> is an element of <span class="math inline">\(L_m\)</span>, the already-available generalized cost distribution of mode <span class="math inline">\(m\)</span>.</p></li>
+<li><p>For the same <span class="math inline">\(i\)</span>, the distance [in miles] and duration [in minutes] <em>for the auto mode</em> are also available. From these, a “pseudo-TNC” generalized cost <span class="math inline">\(g^{*}_{i, TNC}\)</span> can be calculated according to the formulas detailed above. <span class="math inline">\(g^{*}_{i, TNC}\)</span> is then the estimated generalized cost for a theoretical TNC trip in <span class="math inline">\(i\)</span>, and it follows the distribution <span class="math inline">\(L_{TNC}\)</span>.</p>
+<ul>
+<li>Whether <span class="math inline">\(g^{*}_{i, TNC}\)</span> is calculated in terms of dollars or minutes is a philosophical question. One could argue that the units of <span class="math inline">\(g^{*}_{i, TNC}\)</span> should match the units of <span class="math inline">\(g_{i,m}\)</span>, for a more “apples-to-apples” comparison. However, the case could also be made that the <em>experience</em> of generalized cost is more relevant than the <em>unit</em> of generalized cost, and thus by always expressing <span class="math inline">\(g^{*}_{i, TNC}\)</span> in the units that best reflect the experience of generalized cost when using a TNC, an “apples-to-apples” comparison is being made despite potential discrepancies in units. This decision will be made by exploring the implications of each method in practice. <strong>Have we decided on a methodology yet?</strong></li>
+</ul></li>
+<li><p>From the generalized cost distribution, a probability of trip likelihood in <span class="math inline">\(i\)</span> for mode <span class="math inline">\(m\)</span> (i.e., the probability that the trip would be taken at all) can be estimated by the formula <span class="math inline">\(p_{i,m} = 1 - F_{L_m}(g_{i,m})\)</span>, where <span class="math inline">\(F_{L_m}\)</span> is the cumulative distribution function of the generalized cost distribution for mode <span class="math inline">\(m\)</span>. So, both <span class="math inline">\(p_{i_m}\)</span> (for the observed mode) and <span class="math inline">\(p^{*}_{i, TNC}\)</span> can be calculated using their modes’ respective generalized cost distributions.</p>
+<ul>
+<li>This construction of probability asserts tha <span class="math inline">\(g_{i,m}\)</span> is the upper bound of generalized cost at which a person would take trip <span class="math inline">\(i\)</span> using mode <span class="math inline">\(m\)</span>. In other words, if the generalized cost of this exact trip was somehow made to be lower, the person would still take this trip; however, if the generalized cost of this exact trip was somehow made to be higher, the person would not take this trip. This is the most crucial assumption of the TNC likelihood estimation.</li>
+</ul></li>
+<li><p>Using <span class="math inline">\(p_{i_m}\)</span> and <span class="math inline">\(p^{*}_{i, TNC}\)</span>, a direct comparison of probabilities can be made to understand relative likelihood of a TNC trip in <span class="math inline">\(i\)</span>. A TNC probability ratio can be defined as <span class="math inline">\(R_{i,m} = \frac{p^{*}_{i, TNC}}{p_{i, m}}\)</span>, where an increase in <span class="math inline">\(R_{i_m}\)</span> implies an increasing in the likelihood of a TNC trip replacing mode <span class="math inline">\(m\)</span> in <span class="math inline">\(i\)</span>.</p>
+<ul>
+<li>In the probabilistic sense, consider that if <span class="math inline">\(p^{*}_{i, TNC}\)</span> is notably higher than <span class="math inline">\(p_{i_m}\)</span>, there would be a greater expection of mode <span class="math inline">\(m\)</span> being replaced by TNC in <span class="math inline">\(i\)</span>. Similarly if <span class="math inline">\(p^{*}_{i, TNC}\)</span> is notably less than <span class="math inline">\(p_{i_m}\)</span>, there would be a lesser expection of mode <span class="math inline">\(m\)</span> being replaced by TNC in <span class="math inline">\(i\)</span>.</li>
+</ul></li>
+</ol>
+</div>
+<div id="applying-the-tnc-probability-ratio" class="section level2">
+<h2><span class="header-section-number">2.3</span> Applying the TNC probability ratio</h2>
+<p>Though the TNC probability ratio is build on clear theoretical foundations, its application in practice is more subjective. Ultimately, the ratio needs to be applied to a binary decision: either a trip is replaced by TNC, or it is not. Like the calculation of pseudo-TNC generalized cost, the decision will be by exploring the implications of various methods in practice. <strong>Have we decided on a methodology yet?</strong> A few options include:</p>
+<ol style="list-style-type: decimal">
+<li><p><span class="math inline">\(R_{i,m}\)</span> follows a known distribution, so a quantile cutoff could be used (e.g. only trips with an <span class="math inline">\(R_{i,m}\)</span> in the top <span class="math inline">\(\alpha\)</span>% of the theoretical distribution will be flipped)</p></li>
+<li><p>A numeric cutoff could be used (e.g. only trips with an <span class="math inline">\(R_{i,m}\)</span> greater than <span class="math inline">\(C\)</span> will be flipped).</p></li>
+<li><p>A probabilistic take on applying <span class="math inline">\(R_{i_m}\)</span> could be calculating the conditional probability of taking a TNC trip given the OD interchange and observed mode as <span class="math inline">\(p(TNC|i,m) = \frac{R_{i_m}}{1 + R_{i_m}}\)</span>. Then, trip flipping could be calculated in terms of an expected value, or again by setting a numeric cutoff as in (2).</p></li>
+</ol>
+<p>In all cases, it is possible (and likely advisable) to tailor the cutoff to the observed mode, in an effort to control the number of trips flipping to TNC. In particular, these cutoffs could be calibrated according to the “Travel mode being substituted” data provided in the 2018 MAPC Fare Choices Report, which gives information on the mode that was replaced by a TNC trip. This could serve as a baseline for understanding relative proportions of mode shift to TNC from observed modes.</p>
+</div>
+</div>
+
+
+
+</div>
+</div>
+
+</div>
+
+<script>
+
+// add bootstrap table styles to pandoc tables
+function bootstrapStylePandocTables() {
+  $('tr.odd').parent('tbody').parent('table').addClass('table table-condensed');
+}
+$(document).ready(function () {
+  bootstrapStylePandocTables();
+});
+
+
+</script>
+
+<!-- tabsets -->
+
+<script>
+$(document).ready(function () {
+  window.buildTabsets("TOC");
+});
+
+$(document).ready(function () {
+  $('.tabset-dropdown > .nav-tabs > li').click(function () {
+    $(this).parent().toggleClass('nav-tabs-open')
+  });
+});
+</script>
+
+<!-- code folding -->
+
+<script>
+$(document).ready(function ()  {
+
+    // move toc-ignore selectors from section div to header
+    $('div.section.toc-ignore')
+        .removeClass('toc-ignore')
+        .children('h1,h2,h3,h4,h5').addClass('toc-ignore');
+
+    // establish options
+    var options = {
+      selectors: "h1,h2",
+      theme: "bootstrap3",
+      context: '.toc-content',
+      hashGenerator: function (text) {
+        return text.replace(/[.\\/?&!#<>]/g, '').replace(/\s/g, '_');
+      },
+      ignoreSelector: ".toc-ignore",
+      scrollTo: 0
+    };
+    options.showAndHide = true;
+    options.smoothScroll = true;
+
+    // tocify
+    var toc = $("#TOC").tocify(options).data("toc-tocify");
+});
+</script>
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>

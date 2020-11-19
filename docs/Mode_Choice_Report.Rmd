@@ -1,0 +1,974 @@
+---
+title: "MODE CHOICE MODELING IN MASSACHUSETTS: APPROACH AND PRODUCTION END RESULTS"
+author: "Renaissance Planning"
+date: "August 2020"
+output: 
+  html_document:
+    toc: true
+    toc_depth: 2
+    number_sections: true
+    toc_float:
+      collapsed: true
+      smooth_scroll: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning=FALSE, message=FALSE, 
+                      fig.pos = 'H', fig.cap=T)
+```
+
+```{css}
+caption {
+ color: rgb(63, 78, 86);
+ line-height: 1.5em;
+ font-size: 16px;
+ font-weight: bold;
+}
+
+p.caption {
+ color: rgb(63, 78, 86);
+ line-height: 1.5em;
+ font-size: 16px;
+ font-weight: bold;
+}
+```
+
+```{r}
+library(knitr)
+library(kableExtra)
+library(DiagrammeR)
+library(stringr)
+
+# Needed to install.packages("webshot"), then webshot::install_phantomjs()
+```
+
+# Introduction
+
+Mode choice is a foundational concept to travel behavior analysis, giving intuition on how people choose to travel. For an accessibility based model, such as for MAPC, accessibility scores by mode can be applied to improve understanding of the mode choice decision.
+
+For the MAPC model, the mode choice decision considered six modes: 
+
+- Walk
+- Bike
+- Auto Driver (henceforth referred to as "Driver"), 
+- Auto Passenger (Passenger), 
+- Walk-Access Transit (WAT) 
+- Drive-Access Transit (DAT)
+
+Mode choice modeling aimed to estimate the probability that a trip would be taken using each of these modes, given some characteristics about the environment in which the trip is taken. It was desired that these characteristics themselves should be easily calculated/estimated, for ease of application of the mode choice models.
+
+Mode choice is the primary behavioral outcome of the MAPC accessibility-based model, and becomes a crucial input to trip distribution.
+
+# Data
+
+The modeling dataset was formed from three sources. First, trip records and traveller characteristics were sourced from the Massachusetts Travel Survey (MTS), conducted by the Massachusetts Department of Transportation and published in June 2012. It was provided by the Metropolitan Area Planning Council (MAPC), which serves Boston, MA and its metropolitan region. This data includes 190,215 trip records from 37,023 persons across 15,033 households in Massachusetts. Variables of interest were the observed mode and purpose of the trip, along with the household characteristics of the traveller, including household size, income bracket, number of workers, and number of vehicles.
+
+Trip records were enhanced with accessibility measures developed using the `EMMA` python module (created by Renaissance Planning, 2020). Accessibility was calculated on a mode-purpose basis along the network of the mode, such that accessibility by walking referenced all walkable paths. These accessibility scores were measured at the TAZ level. They were inherited to the trip records separately according to both the trips' origin TAZs and destination TAZs, to create "origin accessibility" and "destination accessibility" metrics.
+
+Trip records were also enhanced with an additional transit accessibility measure: distance to different types of transit. Three types of transit were considered: 
+
+- Premium transit
+- Non-premium transit
+- Ferry
+
+Premium transit included commuter rail or *T* stations; non-premium transit included all other forms of non-ferry transit. For each transit type, distance to transit was defined as:
+
+$$
+d_{i,r} =
+\begin{cases}
+1, & \text{if } t_{i,r} \leq 1 \\
+\frac{1}{t_{i,r}}, & \text{if } 1 <t_{i,r} \leq 30 \\
+0, & \text{if }t_{i,r} > 30 \\
+\end{cases}
+$$
+Where:
+
+- $t_{i,r} =$ travel time from TAZ $i$ to the nearest transit station of transit type $r$ by walking (in minutes)
+
+This equation defined an exponential decrease in the utility of a nearby transit station as travel time increased, to the point of no utility if travel time was greater than 30. Like accessibility, distances to transit were also measured at the TAZ level, and were inherited to the trip records separately according to both the trips' origin TAZs and destination TAZs to create "origin distance to transit" and "destination distance to transit" metrics.
+
+# Methods
+
+Mode choice was estimated using a nested logit model structure. This particular format was selected for two reasons. First, the decision tree for the modes could be easily split into pairwise choices at all levels, giving great interpretability to the model. Second, and more mathematically, it allowed for the discarding of the *independence of irrelevant alternatives* (IIA) assumption required by multinomial choice models. IIA states that the relative odds of one choice to another must not depend on the presence or absence of other "irrelevant" options. To provide a mode-choice-based example, IIA would imply that the relative likelihood of driving to biking should not depend on having the option to walk. For mode choice, this assumption is tenuous at best, so the ability to work around this assumption was welcome.
+
+The decision tree shown in Figure 1 represents the nested logit structure of the mode choice models. Each pair of arrows represents one nest; bold-red text represents a mode of interest. In total, there were five nests, of which three were direct choices between modes of interest. Each nest was fit using individual logistic models, based on the subset of the modeling dataset featured the modes relevant to the nest choices. 
+
+- **Nest O:** Motorized or Non-Motorized? *(Driver/Passenger/WAT/DAT or Walk/Bike?)*
+- **Nest O.M:** Auto or Transit *(Driver/Passenger or WAT/DAT?)*
+- **Nest O.M.A:** Driver or Passenger?
+- **Nest O.M.T:** WAT or DAT?
+- **Nest O.N:** Walk or Bike?
+
+```{r, fig.cap='Structure of nested logit mode choice models', screenshot.opts = list(delay = 1, cliprect = c(100, 25, 975, 400)), dev='jpeg'}
+
+ndf <-
+  create_node_df(
+    n = 11,
+    label = c("All modes", 
+              "Motorized", "Non-motorized",
+              "Auto", "Transit", 
+              "Walk", "Bike",
+              "Driver", "Passenger",
+              "WAT", "DAT"),
+    shape = rep("rectangle", 11),
+    fillcolor = rep("#FFFFFF", 11),
+    penwidth = rep(2, 11),
+    fontcolor = c(rep("#000000", 5),
+                  rep("#FF0000", 6)),
+    fontname = c(rep(NA, 5),
+                 rep("Franklin Gothic Heavy", 6)),
+    fontsize = c(rep(11, 5),
+                 rep(14, 6)),
+    height = rep(0.75, 11),
+    x = c(6, 
+          3.375, 8.625, 
+          1.625, 5.125,
+          7.75, 9.5,
+          0.75, 2.5,
+          4.25, 6),
+    y = c(4,
+          3, 3,
+          2, 2,
+          1, 1,
+          1, 1,
+          1, 1),
+    width = rep(1.5, 11)
+  )
+
+edf <-
+  create_edge_df(
+    from = c(1, 1, 2, 2, 3, 3, 4, 4, 5, 5),
+    to   = c(2, 3, 4, 5, 6, 7, 8, 9, 10, 11),
+    rel  = "leading_to"
+  )
+
+graph <-
+  create_graph(
+    nodes_df = ndf,
+    edges_df = edf
+  ) %>%
+  add_global_graph_attrs(
+    attr = "layout",
+    value = "neato",
+    attr_type = "graph") %>%
+  set_edge_attrs(
+    edge_attr = "color",
+    values = "black"
+  ) %>%
+  set_edge_attrs(
+    edge_attr = "arrowsize",
+    values = 1
+  )
+
+graph %>% render_graph()
+```
+
+The entire decision tree was estimated for four unique purposes:
+
+- Home-based work (HBW)
+- Home-based other (HBO)
+- Home-based work (HBSch)
+- Non-home-based (NHB)
+
+Thus, 20 individual logistic models were estimated (five models each across four purposes). For each model, selection considered statistical significance of covariates, model goodness of fit (as described by AIC), and, crucially, interpretability of covariates and implied relationships to mode choice. 
+
+# Results
+
+The **production end**  mode choices model results are detailed in this report. Each subsection that follows will contain:
+
+- A table of coefficients for the production end model defined by the nest
+- Covariate definitions
+- A brief interpretation of the model in the context of the nest's choice
+
+```{r}
+source("K:/Projects/MAPC/ModeChoiceR/R/Prod_End_HBW_0805.R")
+source("K:/Projects/MAPC/ModeChoiceR/R/Prod_End_HBO_0805.R")
+source("K:/Projects/MAPC/ModeChoiceR/R/Prod_End_HBSch_0805.R")
+source("K:/Projects/MAPC/ModeChoiceR/R/Prod_End_NHB_0805.R")
+```
+
+## HBW mode choice
+
+### Nest O: Motorized vs. non-motorized
+
+```{r}
+mn_hbw = summary(n1_fit_hbw)$coefficients %>%
+  data.frame %>%
+  select(-(2:3)) %>%
+  mutate(Covariate = rownames(.)) %>%
+  setNames(c("Estimate", "p-Value", "Covariate")) %>%
+  select("Covariate", "Estimate", "p-Value") %>%
+  mutate(Covariate = str_replace_all(Covariate, "\\(|\\)", ""),
+         Estimate = round(Estimate, 3),
+         `p-Value` = case_when(`p-Value` < 0.001 ~ "<0.001",
+                               TRUE ~ as.character(round(`p-Value`, 3))))
+
+kable(mn_hbw,
+      booktabs = TRUE,
+      row.names = FALSE,
+      align = rep('l',times=3),
+      linesep = rep('',10),
+      caption = "Coefficients for Nest O, HBW purpose") %>%
+  kable_styling(bootstrap_options = c("striped", "hover",
+                                      "responsive", "bordered")) %>%
+
+  row_spec(0, bold=TRUE) 
+```
+
+Variable descriptions:
+
+- **LBLAR_HBW:** log(Bike HBW origin accessibility) $\div$ log(Auto HBW origin accessibility)
+- **Veh:** vehicles per household
+
+Model interpretation:
+
+- Baseline tendency is toward motorized travel
+- As the relative competitiveness of bike to auto increases, the likelihood of using non-motorized modes increases
+- As vehicle availability increases, the likelihood of non-motorized travel decreases
+
+### Nest O.M: Auto vs. transit
+
+```{r}
+at_hbw = summary(n2_fit_hbw)$coefficients %>%
+  data.frame %>%
+  select(-(2:3)) %>%
+  mutate(Covariate = rownames(.)) %>%
+  setNames(c("Estimate", "p-Value", "Covariate")) %>%
+  select("Covariate", "Estimate", "p-Value") %>%
+  mutate(Covariate = str_replace_all(Covariate, "\\(|\\)", ""),
+         Estimate = round(Estimate, 3),
+         `p-Value` = case_when(`p-Value` < 0.001 ~ "<0.001",
+                               TRUE ~ as.character(round(`p-Value`, 3))))
+
+kable(at_hbw,
+      booktabs = TRUE,
+      row.names = FALSE,
+      align = rep('l',times=3),
+      linesep = c('', '', '', '', '\\addlinespace', rep('',10)),
+      caption = "Coefficients for Nest O.M, HBW purpose") %>%
+  kable_styling(bootstrap_options = c("striped", "hover",
+                                      "responsive", "bordered")) %>%
+
+  row_spec(0, bold=TRUE) 
+```
+
+Variable descriptions:
+
+- **LWATLAR_HBW:** log(WAT HBW origin accessibility) $\div$ log(Auto HBW origin accessibility)
+- **Prem:** origin distance to premium transit (see note on calculation in *Data*)
+- **Work:** workers per household
+- **Veh:** vehicles per household
+- **Income{}:** indicator variable for income bracket (relative to lowest income; "4" is the highest income)
+
+Model interpretation:
+
+- Baseline tendency (assuming the traveler is in income bracket 1) is toward motorized travel
+- As the relative competitiveness of WAT to auto increases, the likelihood of transit travel increases
+- As the distance to a premium transit station decreases, the likelihood of transit travel increases
+- As the household's number of workers increases, the likelihood of transit travel increases
+- As vehicle availability increases, the likelihood of transit travel decreases
+- Those in high income brackets (3 and 4) are more likely to use transit than those in low income brackets (1 or 2)
+
+### Nest O.M.A: Driver vs. passenger
+
+```{r}
+dp_hbw = summary(n3_fit_hbw)$coefficients %>%
+  data.frame %>%
+  select(-(2:3)) %>%
+  mutate(Covariate = rownames(.)) %>%
+  setNames(c("Estimate", "p-Value", "Covariate")) %>%
+  select("Covariate", "Estimate", "p-Value") %>%
+  mutate(Covariate = str_replace_all(Covariate, "\\(|\\)", ""),
+         Estimate = round(Estimate, 3),
+         `p-Value` = case_when(`p-Value` < 0.001 ~ "<0.001",
+                               TRUE ~ as.character(round(`p-Value`, 3))))
+
+kable(dp_hbw,
+      booktabs = TRUE,
+      row.names = FALSE,
+      align = rep('l',times=3),
+      linesep = c('', '', '', '\\addlinespace', rep('',10)),
+      caption = "Coefficients for Nest O.M.A, HBW purpose") %>%
+  kable_styling(bootstrap_options = c("striped", "hover",
+                                      "responsive", "bordered")) %>%
+
+  row_spec(0, bold=TRUE) 
+```
+
+Variable descriptions:
+
+- **VPP:** vehicles per person [in the household]
+- **Size:** household size
+- **Work:** workers per household
+- **Income{}:** indicator variable for income bracket (relative to lowest income; "4" is the highest income)
+
+Model interpretation:
+
+- Baseline tendency (assuming the traveler is in income bracket 1) is toward being a passenger
+- As vehicle availability increases, the likelihood of driving increases
+- As the household's size increases, the likelihood of driving increases
+- As the household's number of workers increases, the likelihood of driving decreases
+- Driving becomes increasingly more likely as income increases; however, the increase in driving likelihood is minimal between income brackets 3 and 4
+
+### Nest O.M.T: WAT vs. DAT
+
+```{r}
+wd_hbw = summary(n4_fit_hbw)$coefficients %>%
+  data.frame %>%
+  select(-(2:3)) %>%
+  mutate(Covariate = rownames(.)) %>%
+  setNames(c("Estimate", "p-Value", "Covariate")) %>%
+  select("Covariate", "Estimate", "p-Value") %>%
+  mutate(Covariate = str_replace_all(Covariate, "\\(|\\)", ""),
+         Estimate = round(Estimate, 3),
+         `p-Value` = case_when(`p-Value` < 0.001 ~ "<0.001",
+                               TRUE ~ as.character(round(`p-Value`, 3)))) 
+
+kable(wd_hbw,
+      booktabs = TRUE,
+      row.names = FALSE,
+      align = rep('l',times=3),
+      linesep = c('', '', '', '', '\\addlinespace', rep('',10)),
+      caption = "Coefficients for Nest O.M.T, HBW purpose") %>%
+  kable_styling(bootstrap_options = c("striped", "hover",
+                                      "responsive", "bordered")) %>%
+
+  row_spec(0, bold=TRUE) 
+```
+
+Variable descriptions:
+
+- **WDR_HBW:** WAT HBW origin accessibility $\div$ DAT HBW origin accessibility
+- **Prem:** origin distance to premium transit (see note on calculation in *Data*)
+- **Veh:** vehicles per household
+- **Work:** workers per household
+- **Income{}:** indicator variable for income bracket (relative to lowest income; "4" is the highest income)
+
+Model interpretation:
+
+- Baseline tendency (assuming the traveler is in income bracket 1) is toward WAT travel
+- As the relative competitiveness of WAT to DAT increases, the likelihood of WAT travel increases
+- As the distance to a premium transit station decreases, the likelihood of WAT travel increases
+- As vehicle availability increases, the likelihood of WAT travel decreases
+- As the household's number of workers increases, the likelihood of transit WAT increases
+- DAT becomes increasingly more likely as income increases; however, the increase in DAT likelihood is minimal between income brackets 3 and 4
+
+### Nest O.N: Walk vs. bike
+
+```{r}
+wb_hbw = summary(n5_fit_hbw)$coefficients %>%
+  data.frame %>%
+  select(-(2:3)) %>%
+  mutate(Covariate = rownames(.)) %>%
+  setNames(c("Estimate", "p-Value", "Covariate")) %>%
+  select("Covariate", "Estimate", "p-Value") %>%
+  mutate(Covariate = str_replace_all(Covariate, "\\(|\\)", ""),
+         Estimate = round(Estimate, 3),
+         `p-Value` = case_when(`p-Value` < 0.001 ~ "<0.001",
+                               TRUE ~ as.character(round(`p-Value`, 3))))
+
+kable(wb_hbw,
+      booktabs = TRUE,
+      row.names = FALSE,
+      align = rep('l',times=3),
+      linesep = c('', '\\addlinespace', rep('',10)),
+      caption = "Coefficients for Nest O.N, HBW purpose") %>%
+  kable_styling(bootstrap_options = c("striped", "hover",
+                                      "responsive", "bordered")) %>%
+
+  row_spec(0, bold=TRUE) 
+```
+
+Variable descriptions:
+
+- **WBR_HBW:** Walk HBW origin accessibility $\div$ Bike HBW origin accessibility
+- **Income{}:** indicator variable for income bracket (relative to lowest income; "4" is the highest income)
+
+Model interpretation:
+
+- Baseline tendency (assuming the traveler is in income bracket 1) is toward walking
+- As the relative competitiveness of walk to bike increases, the likelihood of walking increases
+- Biking becomes increasingly more likely as income increases; however, the change in biking likelihood is minimal between income brackets 3 and 4 (and there is actually a slight decrease between income brackets 3 than 4)
+
+## HBO mode choice
+
+### Nest O: Motorized vs. non-motorized
+
+```{r}
+mn_hbo = summary(n1_fit_hbo)$coefficients %>%
+  data.frame %>%
+  select(-(2:3)) %>%
+  mutate(Covariate = rownames(.)) %>%
+  setNames(c("Estimate", "p-Value", "Covariate")) %>%
+  select("Covariate", "Estimate", "p-Value") %>%
+  mutate(Covariate = str_replace_all(Covariate, "\\(|\\)", ""),
+         Estimate = round(Estimate, 3),
+         `p-Value` = case_when(`p-Value` < 0.001 ~ "<0.001",
+                               TRUE ~ as.character(round(`p-Value`, 3))))
+
+kable(mn_hbo,
+      booktabs = TRUE,
+      row.names = FALSE,
+      align = rep('l',times=3),
+      linesep = rep('',10),
+      caption = "Coefficients for Nest O, HBO purpose") %>%
+  kable_styling(bootstrap_options = c("striped", "hover",
+                                      "responsive", "bordered")) %>%
+
+  row_spec(0, bold=TRUE) 
+```
+
+Variable descriptions:
+
+- **LBLAR_HBO:** log(Bike HBO origin accessibility) $\div$ log(Auto HBO origin accessibility)
+- **Veh:** vehicles per household
+
+Model interpretation:
+
+- Baseline tendency is toward motorized travel
+- As the relative competitiveness of bike to auto increases, the likelihood of using non-motorized modes increases
+- As vehicle availability increases, the likelihood of non-motorized travel decreases
+
+### Nest O.M: Auto vs. transit
+
+```{r}
+at_hbo = summary(n2_fit_hbo)$coefficients %>%
+  data.frame %>%
+  select(-(2:3)) %>%
+  mutate(Covariate = rownames(.)) %>%
+  setNames(c("Estimate", "p-Value", "Covariate")) %>%
+  select("Covariate", "Estimate", "p-Value") %>%
+  mutate(Covariate = str_replace_all(Covariate, "\\(|\\)", ""),
+         Estimate = round(Estimate, 3),
+         `p-Value` = case_when(`p-Value` < 0.001 ~ "<0.001",
+                               TRUE ~ as.character(round(`p-Value`, 3))))
+
+kable(at_hbo,
+      booktabs = TRUE,
+      row.names = FALSE,
+      align = rep('l',times=3),
+      linesep = c('', '', '', '\\addlinespace', rep('',10)),
+      caption = "Coefficients for Nest O.M, HBO purpose") %>%
+  kable_styling(bootstrap_options = c("striped", "hover",
+                                      "responsive", "bordered")) %>%
+
+  row_spec(0, bold=TRUE) 
+```
+
+Variable descriptions:
+
+- **WATAR_HBO:** WAT HBO origin accessibility $\div$ Auto HBO origin accessibility
+- **Prem:** origin distance to premium transit (see note on calculation in *Data*)
+- **Veh:** vehicles per household
+- **Income{}:** indicator variable for income bracket (relative to lowest income; "4" is the highest income)
+
+Model interpretation:
+
+- Baseline tendency (assuming the traveler is in income bracket 1) is toward motorized travel
+- As the relative competitiveness of WAT to auto increases, the likelihood of transit travel increases
+- As the distance to a premium transit station decreases, the likelihood of transit travel increases
+- As vehicle availability increases, the likelihood of transit travel decreases
+- Driving is more likely in income brackets 2, 3, and 4 than income bracket 1; however, the magnitude of this increase in likelihood decreases as income increases
+
+### Nest O.M.A: Driver vs. passenger
+
+```{r}
+dp_hbo = summary(n3_fit_hbo)$coefficients %>%
+  data.frame %>%
+  select(-(2:3)) %>%
+  mutate(Covariate = rownames(.)) %>%
+  setNames(c("Estimate", "p-Value", "Covariate")) %>%
+  select("Covariate", "Estimate", "p-Value") %>%
+  mutate(Covariate = str_replace_all(Covariate, "\\(|\\)", ""),
+         Estimate = round(Estimate, 3),
+         `p-Value` = case_when(`p-Value` < 0.001 ~ "<0.001",
+                               TRUE ~ as.character(round(`p-Value`, 3))))
+
+kable(dp_hbo,
+      booktabs = TRUE,
+      row.names = FALSE,
+      align = rep('l',times=3),
+      linesep = c('', '', '\\addlinespace', rep('',10)),
+      caption = "Coefficients for Nest O.M.A, HBO purpose") %>%
+  kable_styling(bootstrap_options = c("striped", "hover",
+                                      "responsive", "bordered")) %>%
+
+  row_spec(0, bold=TRUE) 
+```
+
+Variable descriptions:
+
+- **VPP:** vehicles per person [in the household]
+- **Size:** household size
+- **Income{}:** indicator variable for income bracket (relative to lowest income; "4" is the highest income)
+
+Model interpretation:
+
+- Baseline tendency is (assuming the traveler is in income bracket 1) toward driving
+- As vehicle availability increases, the likelihood of driving increases
+- As the household's size increases, the likelihood of driving decreases
+- Driving becomes increasingly more likely as income increases; however, the increase in driving likelihood is minimal between income brackets 2, 3, and 4
+
+
+### Nest O.M.T: WAT vs. DAT
+
+```{r}
+wd_hbo = summary(n4_fit_hbo)$coefficients %>%
+  data.frame %>%
+  select(-(2:3)) %>%
+  mutate(Covariate = rownames(.)) %>%
+  setNames(c("Estimate", "p-Value", "Covariate")) %>%
+  select("Covariate", "Estimate", "p-Value") %>%
+  mutate(Covariate = str_replace_all(Covariate, "\\(|\\)", ""),
+         Estimate = round(Estimate, 3),
+         `p-Value` = case_when(`p-Value` < 0.001 ~ "<0.001",
+                               TRUE ~ as.character(round(`p-Value`, 3)))) 
+
+kable(wd_hbo,
+      booktabs = TRUE,
+      row.names = FALSE,
+      align = rep('l',times=3),
+      linesep = rep('',10),
+      caption = "Coefficients for Nest O.M.T, HBO purpose") %>%
+  kable_styling(bootstrap_options = c("striped", "hover",
+                                      "responsive", "bordered")) %>%
+
+  row_spec(0, bold=TRUE) 
+```
+
+Variable descriptions:
+
+- **WDR_HBO:** WAT HBO origin accessibility $\div$ DAT HBO origin accessibility
+- **NonPrem:** origin distance to non-premium transit (see note on calculation in *Data*)
+- **Veh:** vehicles per household
+
+Model interpretation:
+
+- Baseline tendency is toward WAT travel
+- As the relative competitiveness of WAT to DAT increases, the likelihood of WAT travel increases
+- As the distance to a non-premium transit station decreases, the likelihood of WAT travel increases
+- As vehicle availability increases, the likelihood of WAT travel decreases
+
+### Nest O.N: Walk vs. bike
+
+```{r}
+wb_hbo = summary(n5_fit_hbo)$coefficients %>%
+  data.frame %>%
+  select(-(2:3)) %>%
+  mutate(Covariate = rownames(.)) %>%
+  setNames(c("Estimate", "p-Value", "Covariate")) %>%
+  select("Covariate", "Estimate", "p-Value") %>%
+  mutate(Covariate = str_replace_all(Covariate, "\\(|\\)", ""),
+         Estimate = round(Estimate, 3),
+         `p-Value` = case_when(`p-Value` < 0.001 ~ "<0.001",
+                               TRUE ~ as.character(round(`p-Value`, 3))))
+
+kable(wb_hbo,
+      booktabs = TRUE,
+      row.names = FALSE,
+      align = rep('l',times=3),
+      linesep = c('', '\\addlinespace', rep('',10)),
+      caption = "Coefficients for Nest O.N, HBO purpose") %>%
+  kable_styling(bootstrap_options = c("striped", "hover",
+                                      "responsive", "bordered")) %>%
+
+  row_spec(0, bold=TRUE) 
+```
+
+Variable descriptions:
+
+- **WBR_HBO:** Walk HBO origin accessibility $\div$ Bike HBO origin accessibility
+- **Income{}:** indicator variable for income bracket (relative to lowest income; "4" is the highest income)
+
+Model interpretation:
+
+- Baseline tendency (assuming the traveler is in income bracket 1) is toward walking
+- As the relative competitiveness of walk to bike increases, the likelihood of walking increases
+- Biking becomes increasingly more likely as income increases; however, the increase in biking likelihood is minimal between income brackets 2, 3, and 4
+
+## HBSch mode choice
+
+### Nest O: Motorized vs. non-motorized
+
+```{r}
+mn_hbsch = summary(n1_fit_hbs)$coefficients %>%
+  data.frame %>%
+  select(-(2:3)) %>%
+  mutate(Covariate = rownames(.)) %>%
+  setNames(c("Estimate", "p-Value", "Covariate")) %>%
+  select("Covariate", "Estimate", "p-Value") %>%
+  mutate(Covariate = str_replace_all(Covariate, "\\(|\\)", ""),
+         Estimate = round(Estimate, 3),
+         `p-Value` = case_when(`p-Value` < 0.001 ~ "<0.001",
+                               TRUE ~ as.character(round(`p-Value`, 3))))
+
+kable(mn_hbsch,
+      booktabs = TRUE,
+      row.names = FALSE,
+      align = rep('l',times=3),
+      linesep = rep('',10),
+      caption = "Coefficients for Nest O, HBSch purpose") %>%
+  kable_styling(bootstrap_options = c("striped", "hover",
+                                      "responsive", "bordered")) %>%
+
+  row_spec(0, bold=TRUE) 
+```
+
+Variable descriptions:
+
+- **LBLAR_HBS:** log(Bike HBSch origin accessibility) $\div$ log(Auto HBSch origin accessibility)
+- **Veh:** vehicles per household
+
+Model interpretation:
+
+- Baseline tendency is toward motorized travel
+- As the relative competitiveness of bike to auto increases, the likelihood of using non-motorized modes increases
+- As vehicle availability increases, the likelihood of non-motorized travel decreases
+
+### Nest O.M: Auto vs. transit
+
+```{r}
+at_hbsch = summary(n2_fit_hbs)$coefficients %>%
+  data.frame %>%
+  select(-(2:3)) %>%
+  mutate(Covariate = rownames(.)) %>%
+  setNames(c("Estimate", "p-Value", "Covariate")) %>%
+  select("Covariate", "Estimate", "p-Value") %>%
+  mutate(Covariate = str_replace_all(Covariate, "\\(|\\)", ""),
+         Estimate = round(Estimate, 3),
+         `p-Value` = case_when(`p-Value` < 0.001 ~ "<0.001",
+                               TRUE ~ as.character(round(`p-Value`, 3))))
+
+kable(at_hbsch,
+      booktabs = TRUE,
+      row.names = FALSE,
+      align = rep('l',times=3),
+      linesep = c('', '', '', '\\addlinespace', rep('',10)),
+      caption = "Coefficients for Nest O.M, HBSch purpose") %>%
+  kable_styling(bootstrap_options = c("striped", "hover",
+                                      "responsive", "bordered")) %>%
+
+  row_spec(0, bold=TRUE) 
+```
+
+Variable descriptions:
+
+- **LWATLAR_HBS:** log(WAT HBSch origin accessibility) $\div$ log(Auto HBSch origin accessibility)
+- **Prem:** origin distance to premium transit (see note on calculation in *Data*)
+- **Veh:** vehicles per household
+- **Income{}:** indicator variable for income bracket (relative to lowest income; "4" is the highest income)
+
+Model interpretation:
+
+- Baseline tendency (assuming the traveler is in income bracket 1) is toward motorized travel
+- As the relative competitiveness of WAT to auto increases, the likelihood of transit travel increases
+- As the distance to a premium transit station decreases, the likelihood of transit travel increases
+- As vehicle availability increases, the likelihood of transit travel decreases
+- Driving likelihood increases as income increases
+
+### Nest O.M.A: Driver vs. passenger
+
+```{r}
+dp_hbsch = summary(n3_fit_hbs)$coefficients %>%
+  data.frame %>%
+  select(-(2:3)) %>%
+  mutate(Covariate = rownames(.)) %>%
+  setNames(c("Estimate", "p-Value", "Covariate")) %>%
+  select("Covariate", "Estimate", "p-Value") %>%
+  mutate(Covariate = str_replace_all(Covariate, "\\(|\\)", ""),
+         Estimate = round(Estimate, 3),
+         `p-Value` = case_when(`p-Value` < 0.001 ~ "<0.001",
+                               TRUE ~ as.character(round(`p-Value`, 3))))
+
+kable(dp_hbsch,
+      booktabs = TRUE,
+      row.names = FALSE,
+      align = rep('l',times=3),
+      linesep = rep('',10),
+      caption = "Coefficients for Nest O.M.A, HBSch purpose") %>%
+  kable_styling(bootstrap_options = c("striped", "hover",
+                                      "responsive", "bordered")) %>%
+
+  row_spec(0, bold=TRUE) 
+```
+
+Variable descriptions:
+
+- **VPP:** vehicles per person [in the household]
+
+Model interpretation:
+
+- Baseline tendency is toward being a passenger
+- As vehicle availability increases, the likelihood of driving increases
+
+### Nest O.M.T: WAT vs. DAT
+
+```{r}
+wd_hbsch = summary(n4_fit_hbs)$coefficients %>%
+  data.frame %>%
+  select(-(2:3)) %>%
+  mutate(Covariate = rownames(.)) %>%
+  setNames(c("Estimate", "p-Value", "Covariate")) %>%
+  select("Covariate", "Estimate", "p-Value") %>%
+  mutate(Covariate = str_replace_all(Covariate, "\\(|\\)", ""),
+         Estimate = round(Estimate, 3),
+         `p-Value` = case_when(`p-Value` < 0.001 ~ "<0.001",
+                               TRUE ~ as.character(round(`p-Value`, 3)))) 
+
+kable(wd_hbsch,
+      booktabs = TRUE,
+      row.names = FALSE,
+      align = rep('l',times=3),
+      linesep = rep('',10),
+      caption = "Coefficients for Nest O.M.T, HBSch purpose") %>%
+  kable_styling(bootstrap_options = c("striped", "hover",
+                                      "responsive", "bordered")) %>%
+
+  row_spec(0, bold=TRUE) 
+```
+
+Variable descriptions:
+
+- **WDR_HBS:** WAT HBSch origin accessibility $\div$ DAT HBSch origin accessibility
+- **Prem:** origin distance to premium transit (see note on calculation in *Data*)
+- **Veh:** vehicles per household
+- **Size:** household size
+
+Model interpretation:
+
+- Baseline tendency is toward WAT travel
+- As the relative competitiveness of WAT to DAT increases, the likelihood of WAT travel increases
+- As the distance to a premium transit station decreases, the likelihood of WAT travel increases
+- As vehicle availability increases, the likelihood of WAT travel decreases
+- As the household's size increases, the likelihood of transit WAT increases
+
+### Nest O.N: Walk vs. bike
+
+```{r}
+wb_hbsch = summary(n5_fit_hbs)$coefficients %>%
+  data.frame %>%
+  select(-(2:3)) %>%
+  mutate(Covariate = rownames(.)) %>%
+  setNames(c("Estimate", "p-Value", "Covariate")) %>%
+  select("Covariate", "Estimate", "p-Value") %>%
+  mutate(Covariate = str_replace_all(Covariate, "\\(|\\)", ""),
+         Estimate = round(Estimate, 3),
+         `p-Value` = case_when(`p-Value` < 0.001 ~ "<0.001",
+                               TRUE ~ as.character(round(`p-Value`, 3))))
+
+kable(wb_hbsch,
+      booktabs = TRUE,
+      row.names = FALSE,
+      align = rep('l',times=3),
+      linesep = c('', '\\addlinespace', rep('',10)),
+      caption = "Coefficients for Nest O.N, HBSch purpose") %>%
+  kable_styling(bootstrap_options = c("striped", "hover",
+                                      "responsive", "bordered")) %>%
+
+  row_spec(0, bold=TRUE) 
+```
+
+Variable descriptions:
+
+- **WBR_HBS:** Walk HBSch origin accessibility $\div$ Bike HBSch origin accessibility
+- **Income{}:** indicator variable for income bracket (relative to lowest income; "4" is the highest income)
+
+Model interpretation:
+
+- Baseline tendency (assuming the traveler is in income bracket 1) is toward walking
+- As the relative competitiveness of walk to bike increases, the likelihood of walking increases
+- Biking is slightly more likely in income brackets 2 and 4 than in income bracket 1, but is only significantly more likely in income bracket 3 
+
+## NHB mode choice
+
+### Nest O: Motorized vs. non-motorized
+
+```{r}
+mn_nhb = summary(n1_fit_nhb)$coefficients %>%
+  data.frame %>%
+  select(-(2:3)) %>%
+  mutate(Covariate = rownames(.)) %>%
+  setNames(c("Estimate", "p-Value", "Covariate")) %>%
+  select("Covariate", "Estimate", "p-Value") %>%
+  mutate(Covariate = str_replace_all(Covariate, "\\(|\\)", ""),
+         Estimate = round(Estimate, 3),
+         `p-Value` = case_when(`p-Value` < 0.001 ~ "<0.001",
+                               TRUE ~ as.character(round(`p-Value`, 3))))
+
+kable(mn_nhb,
+      booktabs = TRUE,
+      row.names = FALSE,
+      align = rep('l',times=3),
+      linesep = c('', '\\addlinespace', rep('',10)),
+      caption = "Coefficients for Nest O, NHB purpose") %>%
+  kable_styling(bootstrap_options = c("striped", "hover",
+                                      "responsive", "bordered")) %>%
+
+  row_spec(0, bold=TRUE) 
+```
+
+Variable descriptions:
+
+- **LBLAR_NHB:** log(Bike NHB origin accessibility) $\div$ log(Auto NHB origin accessibility)
+- **PrevMode_{}:** indicator variable for mode used on most recent home-based trip prior to the NHB trip (relative to driving)
+
+Model interpretation:
+
+- Baseline tendency (assuming driving as the prior mode) is toward motorized travel
+- As the relative competitiveness of bike to auto increases, the likelihood of using non-motorized modes increases
+- The prior use of any non-driving mode increases the likelihood of non-motorized travel; this is most true for prior use of non-motorized modes
+
+### Nest O.M: Auto vs. transit
+
+```{r}
+at_nhb = summary(n2_fit_nhb)$coefficients %>%
+  data.frame %>%
+  select(-(2:3)) %>%
+  mutate(Covariate = rownames(.)) %>%
+  setNames(c("Estimate", "p-Value", "Covariate")) %>%
+  select("Covariate", "Estimate", "p-Value") %>%
+  mutate(Covariate = str_replace_all(Covariate, "\\(|\\)", ""),
+         Estimate = round(Estimate, 3),
+         `p-Value` = case_when(`p-Value` < 0.001 ~ "<0.001",
+                               TRUE ~ as.character(round(`p-Value`, 3))))
+
+kable(at_nhb,
+      booktabs = TRUE,
+      row.names = FALSE,
+      align = rep('l',times=3),
+      linesep = c('', '', '', '\\addlinespace', rep('',10)),
+      caption = "Coefficients for Nest O.M, NHB purpose") %>%
+  kable_styling(bootstrap_options = c("striped", "hover",
+                                      "responsive", "bordered")) %>%
+
+  row_spec(0, bold=TRUE) 
+```
+
+Variable descriptions:
+
+- **WATAR_NHB:** WAT NHB origin accessibility $\div$ Auto NHB origin accessibility
+- **Prem:** origin distance to premium transit (see note on calculation in *Data*)
+- **NonPrem:** origin distance to non-premium transit (see note on calculation in *Data*)
+- **PrevMode_{}:** indicator variable for mode used on most recent home-based trip prior to the NHB trip (relative to driving)
+
+Model interpretation:
+
+- Baseline tendency (assuming driving as the prior mode) is toward motorized travel
+- As the relative competitiveness of WAT to auto increases, the likelihood of transit travel increases
+- As the distance to a premium transit station decreases, the likelihood of transit travel increases
+- As the distance to a premium transit station decreases, the likelihood of transit travel increases (note that the impact is smaller than that of premium transit)
+- The prior use of any non-driving mode increases the likelihood of transit travel; this is most true for prior use of transit modes
+
+### Nest O.M.A: Driver vs. passenger
+
+```{r}
+dp_nhb = summary(n3_fit_nhb)$coefficients %>%
+  data.frame %>%
+  select(-(2:3)) %>%
+  mutate(Covariate = rownames(.)) %>%
+  setNames(c("Estimate", "p-Value", "Covariate")) %>%
+  select("Covariate", "Estimate", "p-Value") %>%
+  mutate(Covariate = str_replace_all(Covariate, "\\(|\\)", ""),
+         Estimate = round(Estimate, 3),
+         `p-Value` = case_when(`p-Value` < 0.001 ~ "<0.001",
+                               TRUE ~ as.character(round(`p-Value`, 3))))
+
+kable(dp_nhb,
+      booktabs = TRUE,
+      row.names = FALSE,
+      align = rep('l',times=3),
+      linesep = c('\\addlinespace', rep('',10)),
+      caption = "Coefficients for Nest O.M.A, NHB purpose") %>%
+  kable_styling(bootstrap_options = c("striped", "hover",
+                                      "responsive", "bordered")) %>%
+
+  row_spec(0, bold=TRUE) 
+```
+
+Variable descriptions:
+
+- **PrevMode_{}:** indicator variable for mode used on most recent home-based trip prior to the NHB trip (relative to driving)
+
+Model interpretation:
+
+- Baseline tendency (assuming driving as the prior mode) is toward driving
+- The prior use of any non-driving mode shifts the tendency toward being a passenger; this shift is smallest for prior use of DAT, and is largest for prior passenger trips.
+
+
+### Nest O.M.T: WAT vs. DAT
+
+```{r}
+wd_nhb = summary(n4_fit_nhb)$coefficients %>%
+  data.frame %>%
+  select(-(2:3)) %>%
+  mutate(Covariate = rownames(.)) %>%
+  setNames(c("Estimate", "p-Value", "Covariate")) %>%
+  select("Covariate", "Estimate", "p-Value") %>%
+  mutate(Covariate = str_replace_all(Covariate, "\\(|\\)", ""),
+         Estimate = round(Estimate, 3),
+         `p-Value` = case_when(`p-Value` < 0.001 ~ "<0.001",
+                               TRUE ~ as.character(round(`p-Value`, 3)))) 
+
+kable(wd_nhb,
+      booktabs = TRUE,
+      row.names = FALSE,
+      align = rep('l',times=3),
+      linesep = c('', '', '\\addlinespace', rep('',10)),
+      caption = "Coefficients for Nest O.M.T, NHB purpose") %>%
+  kable_styling(bootstrap_options = c("striped", "hover",
+                                      "responsive", "bordered")) %>%
+
+  row_spec(0, bold=TRUE) 
+```
+
+Variable descriptions:
+
+- **WDR_NHB:** WAT NHB origin accessibility $\div$ DAT NHB origin accessibility
+- **Prem:** origin distance to premium transit (see note on calculation in *Data*)
+- **PrevMode_WD{}:** indicator variable for mode used on most recent home-based trip prior to the NHB trip (relative to driving); it combines walk and bike into "non-motorized" (NM), and combines WAT and DAT into "transit" (Transit)
+
+Model interpretation:
+
+- Baseline tendency (assuming driving as the prior mode) is toward DAT travel
+- As the relative competitiveness of WAT to DAT increases, the likelihood of WAT travel increases
+- As the distance to a premium transit station decreases, the likelihood of WAT travel increases
+- The prior use of any non-driving mode increases the likelihood of WAT travel; this is most true for prior use of non-motorized modes
+
+### Nest O.N: Walk vs. bike
+
+```{r}
+wb_nhb = summary(n5_fit_nhb)$coefficients %>%
+  data.frame %>%
+  select(-(2:3)) %>%
+  mutate(Covariate = rownames(.)) %>%
+  setNames(c("Estimate", "p-Value", "Covariate")) %>%
+  select("Covariate", "Estimate", "p-Value") %>%
+  mutate(Covariate = str_replace_all(Covariate, "\\(|\\)", ""),
+         Estimate = round(Estimate, 3),
+         `p-Value` = case_when(`p-Value` < 0.001 ~ "<0.001",
+                               TRUE ~ as.character(round(`p-Value`, 3))))
+
+kable(wb_nhb,
+      booktabs = TRUE,
+      row.names = FALSE,
+      align = rep('l',times=3),
+      linesep = c('', '\\addlinespace', rep('',10)),
+      caption = "Coefficients for Nest O.N, NHB purpose") %>%
+  kable_styling(bootstrap_options = c("striped", "hover",
+                                      "responsive", "bordered")) %>%
+
+  row_spec(0, bold=TRUE) 
+```
+
+Variable descriptions:
+
+- **WBR_NHB:** Walk NHB origin accessibility $\div$ Bike NHB origin accessibility
+- **Prem:** origin distance to premium transit (see note on calculation in *Data*)
+- **PrevMode_WB{}:** indicator variable for mode used on most recent home-based trip prior to the NHB trip (relative to "motorized" travel, which combines the driver, passenger, WAT, and DAT modes)
+
+Model interpretation:
+
+- Baseline tendency (assuming a motorized prior mode) is toward walking
+- As the relative competitiveness of WAT to DAT increases, the likelihood of walking increases
+- As the distance to a premium transit station decreases, the likelihood of WAT travel increases
+- The prior use of biking or walking increases the likelihood of using that mode

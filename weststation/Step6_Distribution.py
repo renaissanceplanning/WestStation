@@ -40,11 +40,6 @@ After the balancing step is complete, results are reported in csv files.
 """
 
 #%% IMPORTS
-import sys
-emma_path = r"K:\tools\rp\emma\scripts"
-sys.path.insert(0, emma_path)
-
-
 # Main imports
 import emma
 from emma import lba, ipf
@@ -65,9 +60,9 @@ import logging
 root = r"K:\Projects\MAPC\FinalData"
 os.chdir(root)
 
-scen = "Base"
-lu_config = "Base"
-net_config = "Base"
+scen = "RailVision"
+lu_config = "FEIR"
+net_config = "RailVision"
 
 # Setup logging
 logger = logging.getLogger("EMMA")
@@ -108,6 +103,17 @@ TIME_SKIMS = {
     "driver": ["auto", "/costs", "Impedance", "TravelTime"],
     "passenger": ["auto", "/costs", "Impedance", "TravelTime"],
     "WAT": ["transit", "/costs", "Impedance", "TotalTime"],
+    "DAT": ["transit_da", "/costs", "Impedance", "TotalTime"],
+    "bike": ["auto", "/costs", "Impedance", "BikeTime"],
+    "walk": ["auto", "/costs", "Impedance", "WalkTime"]
+    }
+
+# For each mode, what skim details (file, node, axis, label) are used 
+#  for generalized cost estimates?
+COST_SKIMS = {
+    "driver": ["auto", "/gc_by_purpose", "Purpose", "{get purp}"],
+    "passenger": ["auto", "/gc_by_purpose", "Purpose", "{get purp}"],
+    "WAT": ["transit", "/costs", "Impedance", "GenCost"],
     "DAT": ["transit_da", "/costs", "Impedance", "BestGC"],
     "bike": ["auto", "/costs", "Impedance", "BikeTime"],
     "walk": ["auto", "/costs", "Impedance", "WalkTime"]
@@ -132,6 +138,15 @@ TOLERANCE = 1e-5
 #K_FACTORS = [0.70, 0.70, 1.18, 1.18, 0.49, 0.22] # CTPS LRTP region
 #K_FACTORS = [0.99, 0.99, 1.01, 1.01, 1.01, 0.42] # CTPS Base window
 K_FACTORS = [0.83, 0.83, 1.41, 1.41, 0.57, 0.24] # CTPS LRTP window
+
+WORK_TIME_VALUE = 0.45
+NONWORK_TIME_VALUE = 0.25
+P_FACTORS = {
+    "HBW": WORK_TIME_VALUE,
+    "HBO": NONWORK_TIME_VALUE,
+    "HBSch": WORK_TIME_VALUE,
+    "NHB": NONWORK_TIME_VALUE
+    }
 
 # %% DISTRIBUTION
 for pi, purpose in enumerate(PURPOSES):
@@ -267,6 +282,7 @@ for purpose in PURPOSES:
 print("REPORTING - TRIP LENGTH AND DURATION")
 trip_len_csv = r"scen\{}\trip_len_dist_{}.csv".format(scen, PERIOD)
 trip_dur_csv = r"scen\{}\trip_dur_dist_{}.csv".format(scen, PERIOD)
+trip_cost_csv = r"scen\{}\trip_cost_dist_{}.csv".format(scen, PERIOD)
 group_cols = ["INWINDOW", "INFOCUS"]
 header=True
 m="w"
@@ -281,9 +297,6 @@ for purpose in PURPOSES:
     # Iterate over mode
     for mode in MODES:
         factor = 1.0
-        #if mode in NONMOTOR_MODES:
-            # Convert meters to miles
-        #    factor = 0.00062137
         miles = ds.summarizeTripAttributes(trips_taz, mode, net_config, 
                                            DISTANCE_SKIMS, "Miles",
                                            sum_dims=["From", "To"],
@@ -291,16 +304,34 @@ for purpose in PURPOSES:
         minutes =  ds.summarizeTripAttributes(trips_taz, mode, net_config,
                                               TIME_SKIMS, "Minutes",
                                               sum_dims=["From", "To"])
+        # Cost summaries
+        if TIME_SKIMS[mode][-1] == "{get_purp}":
+            p_spec_label = True
+            TIME_SKIMS[mode][-1] = purpose
+        else:
+            p_spec_label = False
+        factor = P_FACTORS[purpose]
+        costs = ds.summarizeTripAttributes(trips_taz, mode, net_config,
+                                           COST_SKIMS, "Cost",
+                                           sum_dims=["From", "To"],
+                                           factor=factor)
+        if p_spec_label:
+            TIME_SKIMS[mode][-1] = "{get_purp}"
+        
         # Tag with mode, purpose, scenario
         miles["Mode"] = mode
         minutes["Mode"] = mode
+        costs["Mode"] = mode
         miles["Purpose"] = purpose
         minutes["Purpose"] = purpose
+        costs["Purpose"] = purpose
         miles["scen"] = scen
         minutes["scen"] = scen
+        costs["scen"] = scen
         # Export
         miles.to_csv(trip_len_csv, mode=m, header=header)
         minutes.to_csv(trip_dur_csv, mode=m, header=header)
+        costs.to_csv(trip_cost_csv, mode=m, header=header)
         header=False
         m = "a"
         

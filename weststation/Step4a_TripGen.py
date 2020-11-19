@@ -59,7 +59,7 @@ from wsa import tg
 #  specified configuration
 root = r"K:\Projects\MAPC\FinalData"
 os.chdir(root)
-lu_config = "FEIR"
+lu_config = "FEIR_MAX"
 
 #%% ASSUMPTIONS/GLOBALS
 # The travel purposes to analyze

@@ -1,0 +1,134 @@
+---
+title: "POST MODE-CHOICE ESTIMATION OF TNC TRIP LIKELIHOOD"
+author: "Renaissance Planning"
+date: "August 2020"
+output: 
+  html_document:
+    toc: true
+    toc_depth: 2
+    number_sections: true
+    toc_float:
+      collapsed: true
+      smooth_scroll: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning=FALSE, message=FALSE, 
+                      fig.pos = 'H', fig.cap=T)
+```
+
+```{css}
+caption {
+ color: rgb(63, 78, 86);
+ line-height: 1.5em;
+ font-size: 16px;
+ font-weight: bold;
+}
+
+p.caption {
+ color: rgb(63, 78, 86);
+ line-height: 1.5em;
+ font-size: 16px;
+ font-weight: bold;
+}
+```
+
+```{r}
+library(knitr)
+library(kableExtra)
+```
+
+# Introduction
+
+The rise of travel using transportation network companies (TNCs), especially in urban areas, necessitates an understanding of how TNCs factor into a mode choice decision. Unfortunately, many trip record surveys (including the one used for this analysis), do not reflect TNC trips. Thus, a methodology must be developed to estimate TNC trip likelihood as a post-processing step to mode choice estimation. This paper will detail the process for performing this estimation.
+
+# Methods
+
+## Estimation of a TNC generalized cost distribution
+
+The first step in estimating TNC trip likelihood is understanding the cost of these trips. By achieving this, TNC trips can be compared to trips of other modes using generalized cost. Without formal trip record data for TNC trips, a generalized cost distribution for TNCs was estimated from town-level data published by the Massachusetts State Government in the *2019 Rideshare in Massachusetts Data Report* (https://tnc.sites.digital.mass.gov/). For 351 municipalities in the state, this report catalogued the following variables:
+
+- Origin trips
+- Destination trips
+- Origin trips per person
+- Destination trips per person
+- Average miles from origin [of origin trips]
+- Average minutes from origin [of origin trips]
+
+Using the average miles and minutes statistics, a generalized cost was constructed at the municipality level according to the following general structure:
+
+$$
+GC = f(base \ fare, service \ fee, distance, duration)
+$$
+Two generalized cost formulas were produced: one expressing generalized cost in dollars, and another expressing generalized cost in minutes. In dollars, the formula for generalized cost in municipality $m$ for a trip of purpose $p$ was:
+
+$$
+GC_{m,p} = b + s + (d_m \cdot c) + (\frac{t_m}{60} \cdot v_p)
+$$
+And in minutes, the formula was:
+
+
+$$
+GC_{m,p} = \Big(\frac{b + s + (d_m \cdot c)}{v_p} \cdot 60\Big) + t_m
+$$
+Where, for both formulas:
+
+- $b = 5.80$, the estimated base fare (taken as the average of Uber and Lyft base fares, as expressed in the 2018 MAPC Fare Choices Report)
+- $s = 0.20$, the estimated service fee (reported as an extra trip cost for all TNC trips in the 2018 MAPC Fare Choices Report)
+- $c = 1.17$, the estimated cost/mile of a TNC trip (estimated from a example fare offered in the 2018 MAPC Fare Choices Report)
+- $v_p = \begin{cases} 27.10 & \text{if p is work (HBW, HBSch)} \\ 15.20 & \text{if p is non-work (HBO, NHB)} \end{cases}$, the value of time in dollars/hour (**source?**)
+- $d_m =$ average trip miles from origin for municipality $m$
+- $t_m =$ average trip minutes from the origin for municipality $m$
+
+Pseudo-sample-distributions of TNC generalized cost by purpose (work or non-work) and construction (dollars or minutes) were created by weighting the occurrence of municipality-level generalized costs by the average origin trips per person for that municipality. Estimation of these distributions was then completed using the `fitdistr` package in R, and compared the fit of Cauchy, chi-squared, exponential, gamma, logistic, lognormal, normal, t, and Weibull distributions to the data according to AIC. In all four cases, a lognormal distribution offered the best fit (a serendipitous yet logical result, considering generalized cost for all other modes were also best represented by a lognormal distribution). **Do we need to show the parameters or not?**
+
+```{r}
+# GET THE PARAMETERS
+# The parameters of these distributions (meanlog and sdlog) are provided in Table 1.
+# df = data.frame(Purpose = c("Work","Work","Non-work","Non-work"),
+#                 Construction = c("Dollars","Minutes","Dollars","Minutes"),
+#                 meanlog = rep(NA, 4),
+#                 sdlog = rep(NA, 4))
+# kable(df,
+#       booktabs = TRUE,
+#       row.names = FALSE,
+#       align = rep('l',times=4),
+#       caption = "Lognormal parameters for TNC generalized cost distributions") %>%
+#   kable_styling(latex_options = "HOLD_position") %>%
+#   row_spec(0, bold=TRUE) %>%
+#   column_spec(1:2, width="1.25in") %>%
+#   column_spec(3:4, width="0.75in") 
+```
+
+## Calculating a TNC probability ratio
+
+Going into the step of TNC post-processing, a mode is already observed for all trips. Thus, the goal is understanding how likely it is that this mode may be replaced by TNC, given the trip characteristics (including the mode itself). With TNC generalized cost distributions in hand, and generalized cost distributions for all other modes already calculated, the relative likelihood of TNC trips was inferred from the following process:
+
+1. For a given Origin-Destination (OD) interchange $i$, both an mode $m$ and a generalized cost $g_{i,m}$ were available prior to the TNC post-processing analysis. We can say that $g_{i,m}$ is an element of $L_m$, the already-available generalized cost distribution of mode $m$.
+
+2. For the same $i$, the distance [in miles] and duration [in minutes] *for the auto mode* are also available. From these, a "pseudo-TNC" generalized cost $g^{*}_{i, TNC}$ can be calculated according to the formulas detailed above. $g^{*}_{i, TNC}$ is then the estimated generalized cost for a theoretical TNC trip in $i$, and it follows the distribution $L_{TNC}$.
+
+    - Whether $g^{*}_{i, TNC}$ is calculated in terms of dollars or minutes is a philosophical question. One could argue that the units of $g^{*}_{i, TNC}$ should match the units of $g_{i,m}$, for a more "apples-to-apples" comparison. However, the case could also be made that the *experience* of generalized cost is more relevant than the *unit* of generalized cost, and thus by always expressing $g^{*}_{i, TNC}$ in the units that best reflect the experience of generalized cost when using a TNC, an "apples-to-apples" comparison is being made despite potential discrepancies in units. This decision will be made by exploring the implications of each method in practice. **Have we decided on a methodology yet?**
+
+3. From the generalized cost distribution, a probability of trip likelihood in $i$ for mode $m$ (i.e., the probability that the trip would be taken at all) can be estimated by the formula $p_{i,m} = 1 - F_{L_m}(g_{i,m})$, where $F_{L_m}$ is the cumulative distribution function of the generalized cost distribution for mode $m$. So, both $p_{i_m}$ (for the observed mode) and $p^{*}_{i, TNC}$ can be calculated using their modes' respective generalized cost distributions.
+
+    - This construction of probability asserts tha $g_{i,m}$ is the upper bound of generalized cost at which a person would take trip $i$ using mode $m$. In other words, if the generalized cost of this exact trip was somehow made to be lower, the person would still take this trip; however, if the generalized cost of this exact trip was somehow made to be higher, the person would not take this trip. This is the most crucial assumption of the TNC likelihood estimation.
+    
+4. Using $p_{i_m}$ and $p^{*}_{i, TNC}$, a direct comparison of probabilities can be made to understand relative likelihood of a TNC trip in $i$. A TNC probability ratio can be defined as $R_{i,m} = \frac{p^{*}_{i, TNC}}{p_{i, m}}$, where an increase in $R_{i_m}$ implies an increasing in the likelihood of a TNC trip replacing mode $m$ in $i$.
+
+    - In the probabilistic sense, consider that if $p^{*}_{i, TNC}$ is notably higher than $p_{i_m}$, there would be a greater expection of mode $m$ being replaced by TNC in $i$. Similarly if $p^{*}_{i, TNC}$ is notably less than $p_{i_m}$, there would be a lesser expection of mode $m$ being replaced by TNC in $i$.
+
+## Applying the TNC probability ratio
+
+Though the TNC probability ratio is build on clear theoretical foundations, its application in practice is more subjective. Ultimately, the ratio needs to be applied to a binary decision: either a trip is replaced by TNC, or it is not. Like the calculation of pseudo-TNC generalized cost, the decision will be by exploring the implications of various methods in practice. **Have we decided on a methodology yet?** A few options include:
+
+1. $R_{i,m}$ follows a known distribution, so a quantile cutoff could be used (e.g. only trips with an $R_{i,m}$ in the top $\alpha$% of the theoretical distribution will be flipped)
+
+2. A numeric cutoff could be used (e.g. only trips with an $R_{i,m}$ greater than $C$ will be flipped).
+
+3. A probabilistic take on applying $R_{i_m}$ could be calculating the conditional probability of taking a TNC trip given the OD interchange and observed mode as $p(TNC|i,m) = \frac{R_{i_m}}{1 + R_{i_m}}$. Then, trip flipping could be calculated in terms of an expected value, or again by setting a numeric cutoff as in (2).
+  
+In all cases, it is possible (and likely advisable) to tailor the cutoff to the observed mode, in an effort to control the number of trips flipping to TNC. In particular, these cutoffs could be calibrated according to the "Travel mode being substituted" data provided in the 2018 MAPC Fare Choices Report, which gives information on the mode that was replaced by a TNC trip. This could serve as a baseline for understanding relative proportions of mode shift to TNC from observed modes.
+
+
+

@@ -22,6 +22,17 @@
 <script src="site_libs/navigation-1.1/tabsets.js"></script>
 <link href="site_libs/highlightjs-9.12.0/default.css" rel="stylesheet" />
 <script src="site_libs/highlightjs-9.12.0/highlight.js"></script>
+<link href="site_libs/anchor-sections-1.0/anchor-sections.css" rel="stylesheet" />
+<script src="site_libs/anchor-sections-1.0/anchor-sections.js"></script>
+
+<style type="text/css">
+  code{white-space: pre-wrap;}
+  span.smallcaps{font-variant: small-caps;}
+  span.underline{text-decoration: underline;}
+  div.column{display: inline-block; vertical-align: top; width: 50%;}
+  div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+  ul.task-list{list-style: none;}
+    </style>
 
 <style type="text/css">code{white-space: pre;}</style>
 <style type="text/css">
@@ -268,7 +279,7 @@ $(document).ready(function () {
         <span class="icon-bar"></span>
         <span class="icon-bar"></span>
       </button>
-      <a class="navbar-brand" href="index.html">MAPC Accessability Modeling</a>
+      <a class="navbar-brand" href="index.html">MAPC Accessibility Modeling</a>
     </div>
     <div id="navbar" class="navbar-collapse collapse">
       <ul class="nav navbar-nav">
@@ -276,62 +287,51 @@ $(document).ready(function () {
   <a href="index.html">Home</a>
 </li>
 <li>
-  <a href="west_station_exec.html">West Station Summary</a>
+  <a href="west_station_exec.html">West Station Walkthrough</a>
+</li>
+<li>
+  <a href="west_station_scen.html">Scenario Comparisons</a>
 </li>
 <li class="dropdown">
   <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
-    Findings
+    Model documentation
      
     <span class="caret"></span>
   </a>
   <ul class="dropdown-menu" role="menu">
-    <li class="dropdown-header">Theoretical Foundations</li>
+    <li class="dropdown-header">Overview</li>
     <li>
-      <a href="travel.html">Travel Behavior and Accessibility</a>
+      <a href="ModelOverview.html"></a>
     </li>
-    <li class="divider"></li>
-    <li class="dropdown-header">Indepth Findings</li>
     <li>
-      <a href="area.html">West Station Area</a>
+      <a href="WhitePaper_TripGenAndBuiltEnviron.pdf">Trip Generation</a>
+    </li>
+    <li>
+      <a href="NaiveEstimatorsV1.html">Decay Rate Estimation</a>
+    </li>
+    <li>
+      <a href="Model_Sensitivities_Report.html">Model Sensitivities</a>
+    </li>
+    <li>
+      <a href="Mode_Choice_Report.Rmd">Mode choice model</a>
+    </li>
+    <li>
+      <a href="TripDecayV2.html">Survival Decay Concept</a>
     </li>
   </ul>
 </li>
 <li class="dropdown">
   <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
-    Further Reading
-     
-    <span class="caret"></span>
-  </a>
-  <ul class="dropdown-menu" role="menu">
-    <li class="dropdown-header">White Papers</li>
-    <li>
-      <a href="NaiveEstimatorsV1.html">Naive Estimators</a>
-    </li>
-    <li>
-      <a href="TripDecayV2.html">Trip Decay</a>
-    </li>
-    <li class="divider"></li>
-    <li class="dropdown-header">Analysis Scripts</li>
-    <li>
-      <a href="trip.html">Trip Generation</a>
-    </li>
-    <li>
-      <a href="summarize.html">Summarize Accessibility</a>
-    </li>
-  </ul>
-</li>
-<li class="dropdown">
-  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
-    Documentation
+    Toolkit Documentation
      
     <span class="caret"></span>
   </a>
   <ul class="dropdown-menu" role="menu">
     <li>
-      <a href="./sphinx/html/index.html">West Station Analysis</a>
+      <a href="./sphinx/html/index.html">West Station Area Python library</a>
     </li>
     <li>
-      <a href="https://renaissanceplanning.github.io/emma-docs/">Emma Site</a>
+      <a href="https://renaissanceplanning.github.io/emma-docs/">Emma Python library</a>
     </li>
   </ul>
 </li>
@@ -379,437 +379,39 @@ $(document).ready(function () {
 <h2>STEP 1</h2>
 <div id="imports" class="section level3">
 <h3>IMPORTS</h3>
-<pre class="python"><code>import sys
-sys.path.append(r&quot;K:\Tools\RP\emma\scripts&quot;)
-
-import emma
-from emma import ipf
-from emma import labeled_array as lba
-import pandas as pd
-import numpy as np
-import os
-
-root = r&quot;K:\Projects\MAPC\WestStationScenarios&quot;
-os.chdir(root)
-lu_config = &quot;FEIR_MAX&quot;</code></pre>
 </div>
 <div id="global-and-assumptions" class="section level3">
 <h3>GLOBAL AND ASSUMPTIONS</h3>
-<pre class="python"><code>PURPOSES = [&quot;HBW&quot;, &quot;HBO&quot;, &quot;HBSch&quot;, &quot;NHB&quot;]
-HB_PURPS = [p for p in PURPOSES if p!= &quot;NHB&quot;]
-
-# Generalized trip-making propensity assumptions are used to guide the
-#  trip gen disaggregation process. Trip totals are governed by the regional
-#  TAZ-level estimates, but these are pushed down to blocks based on the
-#  block-level activities and their relative trip-making propensities.
-#  Define the trip making propensities below. 
-
-BASE_PROP = 0.0001
-
-# HH Size: as household size increases, trip-making increases (there are 4
-#          size classes -  1 person, 2 persons, 3 persons, 4+ persons)
-HHSIZE_PROP = [10, 20, 30, 35]
-
-# Income: as income increases, trip-making increases (there are 4 income 
-#         classes - less than $35k, $35-75K, $75-125K, $125K+)
-INCOME_PROP = [10, 20, 30, 40]
-
-# Workers: as the number of workers increases, trip-making increases (there
-#          are 4 worker classes - no workers, 1 worker, 2 workers, 3+ workers)
-WORKER_PROP = [5, 10, 20, 30]
-
-# Vehicle Ownership: as the number of vehicles increases, trip-making 
-#                    goes up slightly (there are 4 vehicle ownership classes - 
-#                    no vehicles, 1 vehicle, 2 vehicles, 3+ vehicles)
-VEHICLE_PROP = [10, 15, 20, 20]
-
-# Attraction-end activities: different attraction end activities impact
-#  trip-making differently by purpose. 
-ATTR_ACTIVITIES = [&quot;Basic&quot;, &quot;Retail&quot;, &quot;Service&quot;, &quot;EnrollPreK&quot;, &quot;EnrollK12&quot;,
-                   &quot;EnrollCU&quot;]
-
-# Each activity&#39;s purpose-specific propensity is stored in a dictionary.
-#  Propensity values are listed in the order shown in the list above to 
-#  make a nested dictionary.
-ATTR_PROP = {
-    &quot;HBW&quot;: dict(zip(ATTR_ACTIVITIES, [40, 40, 40, 1, 1, 1])),
-    &quot;HBO&quot;: dict(zip(ATTR_ACTIVITIES, [5, 40, 20, 1, 1, 1])),
-    &quot;HBSch&quot;: dict(zip(ATTR_ACTIVITIES, [1, 1, 1, 10, 30, 40])),
-    &quot;NHB&quot;: dict(zip(ATTR_ACTIVITIES, [40, 40, 40, 10, 10, 20]))
-    }</code></pre>
 </div>
 <div id="read-and-process-input-data" class="section level3">
 <h3>READ AND PROCESS INPUT DATA</h3>
-<pre class="python"><code>#%% READ INPUT DATA
-# For trip disaggregation, we need the following data sets
-#  - Block level activity data
-#     - Households by type
-#     - Jobs by type and school enrollments
-#  - A lookup table of blocks-to-TAZs and which blocks are in the window and
-#     focus areas
-#  - TAZ-level trip generation estimates
-
-# Block level activity
-#  - Households by type
-hh_file = r&quot;input\Zones\{}\Household_Types_by_Block.csv&quot;.format(lu_config)
-hh_df = pd.read_csv(hh_file, dtype={&quot;block_id&quot;: str})
-
-#  - Jobs by type and enrollments
-nh_file = r&quot;input\Zones\{}\Jobs_Enroll_by_Block.csv&quot;.format(lu_config)
-nh_df = pd.read_csv(nh_file, dtype={&quot;block_id&quot;: str})
-
-# Block lookup data
-window_blocks_file = r&quot;input\window_blocks.csv&quot;
-wb_df = pd.read_csv(window_blocks_file, dtype={&quot;GEOID10&quot;: str})
-
-# TAZ-level trip generation estimates
-#  These are stored in a mulit-dimensional array by activity type
-taz_tg_file = r&quot;lu\{}\trips_by_taz.h5&quot;.format(lu_config)
-taz_tg = lba.openLbArray_HDF(taz_tg_file, &quot;/trips&quot;)
-
-#%% PROCESS INPUT DATA
-
-# Create a labeled array of households by type in the window area.
-
-# Disaggregation only needs to occur for locations in the window area.
-#  Use the block lookup data to get the TAZ&#39;s in the window area and 
-#  the focus area.
-window_zones = wb_df[wb_df[&quot;INWINDOW&quot;] == 1][&quot;TAZ&quot;].unique()
-focus_zones = wb_df[wb_df[&quot;INFOCUS&quot;] == 1][&quot;TAZ&quot;].unique()
-
-# Convert block-level household details into a labeled array for the window
-#  area. Ensure dimensioning matches the TAZ trip gen dimensions.
-hh_dims = [&quot;HHSize&quot;, &quot;Income&quot;, &quot;Workers&quot;, &quot;VehOwn&quot;]
-dim_cols = [&quot;block_id&quot;] + [x_name for x_name in taz_tg.axisNames() if 
-                           x_name in hh_dims]
-
-# Left join block HH data to the window blocks file to ensure all blocks in
-#  in the window are included. For gaps in the households data, use dummy
-#  values (zero households, e.g.). This helps ensure consistent dimensionsing 
-#  of activity and trip arrays across LU configurations.
-
-# Dummy values for HH dimension labels are tiled based on the values expected
-#  to be present to ensure that all household types are represented in the
-#  resulting array.
-hh_df = wb_df.merge(hh_df, how=&quot;left&quot;, left_on=&quot;GEOID10&quot;, right_on=&quot;block_id&quot;)
-hh_df.Households.fillna(0, inplace=True)
-
-for dim in hh_dims:
-    # Lookup axis labels and &quot;tile&quot; them as fill values - missing records
-    #  will be populated with each HH dimension label in series.
-    ref_axis = taz_tg.getAxisByName(dim)
-    fill_vals = [label for label in ref_axis.labels if label != &quot;-&quot;]
-
-    
-    # Make a copy of the dimension columns and a mask array of missing values
-    #  (tally the number of na&#39;s)
-    col_vals = hh_df[dim].values
-    mask = pd.isna(hh_df[dim]).values
-    num_na = len(col_vals[mask])
-    fill_series = np.tile(fill_vals, (num_na//len(fill_vals)) + 1)
-
-    # Fill column values with tiled labels and update the data frame
-    col_vals[mask] = fill_series[:num_na]
-    hh_df[dim] = pd.Series(col_vals)
-
-# Convert the hh data frame to a labeled array
-hh_df[&quot;block_id&quot;] = hh_df[&quot;GEOID10&quot;]
-hh_array = lba.dfToLabeledArray(hh_df.sort_values(by=&quot;block_id&quot;), 
-                                dim_cols, &quot;Households&quot;, fill_value=0.0)
-
-# Add the parent TAZ ID as a new level in the `block_id` axis.
-#  Then update the level names so `index` is replaced with `block_id`
-hh_array.block_id.addLevel(
-    wb_df[[&quot;GEOID10&quot;, &quot;TAZ&quot;]], left_on=&quot;index&quot;, right_on=&quot;GEOID10&quot;)
-hh_array.block_id.levels = [&quot;block_id&quot;, &quot;TAZ&quot;]</code></pre>
 </div>
 <div id="setting-output-container" class="section level3">
 <h3>Setting Output Container</h3>
-<pre class="python"><code># Write two new H5 files to hold block-level data
-#  - Save the households by type data to an on-disk labeled array
-#  - Create a new on-disk labeled array to store block-level trip estimates
-
-# HHs by type
-hdf_store = r&quot;lu\{}\HHs_by_type_block.h5&quot;.format(lu_config)
-node_path = &quot;/&quot;
-name = &quot;households&quot;
-# Use the `copy` method to store it on disk
-hh_output = hh_array.copy(hdf_store, node_path, name)
-
-# Trip container
-#  The array for block-level trip data has the same organization and 
-#  dimensions as the trip array for TAZs, except the TAZ `dimension` is
-#  replaced with a `block_id` dimension.
-hdf_store = r&quot;lu\{}\trips_by_block.h5&quot;.format(lu_config)
-node_path = &quot;/&quot;
-name = &quot;trips&quot;
-# Create an impression to set dimensions
-block_imp = taz_tg.cast(hh_array.block_id, copy_data=False, drop=&quot;TAZ&quot;)
-# Fill the impression to initialize all values to zero on-disk
-block_tg = block_imp.fill(0.0, hdf_store, node_path, name)</code></pre>
 </div>
 </div>
 <div id="step-2" class="section level2">
 <h2>STEP 2</h2>
 <div id="applying-trip-propensities" class="section level3">
 <h3>APPLYING TRIP PROPENSITIES</h3>
-<pre class="python"><code># Apply trip propensities by household dimensions to each block.
-#  This is done by broadcasting the propensity values to match the
-#  dimensions of `hh_array` and updating the data through multiplication
-
-hh_props = [HHSIZE_PROP, INCOME_PROP, WORKER_PROP, VEHICLE_PROP]
-for dim, prop_rates in zip(hh_dims, hh_props):
-    hh_array.data *= lba.broadcast1dByAxis(hh_array, dim, prop_rates).data
-
-# Bump each propensity value up by the `BASE_PROP` constant
-hh_array.data += BASE_PROP</code></pre>
 </div>
 </div>
 <div id="step-3" class="section level2">
 <h2>STEP 3</h2>
 <div id="summarizing-trip-propensities" class="section level3">
 <h3>SUMMARIZING TRIP PROPENSITIES</h3>
-<pre class="python"><code># Summarize each block&#39;s total trip propensity using the .sum method.
-block_prop_hh = hh_array.sum(&quot;block_id&quot;)
-
-# Dissolve the block-level sums based on TAZ ID to get each zone&#39;s total
-#  propensity
-taz_prop_hh = hh_array.dissolve(&quot;block_id&quot;, &quot;TAZ&quot;, np.sum).sum(&quot;block_id&quot;)</code></pre>
 </div>
 </div>
 <div id="step-4" class="section level2">
 <h2>STEP 4</h2>
 <div id="block-share-of-taz-trip-propensity" class="section level3">
 <h3>BLOCK SHARE OF TAZ TRIP PROPENSITY</h3>
-<pre class="python"><code># Calculate each block&#39;s share of its TAZ&#39;s trips
-#  For each block with a propensity sum...
-#   - get the sum
-#   - grab the block data associated with the TAZ
-#   - and modify the data by dividing the block propensities by the TAZ total
-for taz in taz_prop_hh.block_id.labels:
-    total_prop = taz_prop_hh.take(block_id=taz).data[0]
-    crit = {&quot;block_id&quot;: {&quot;TAZ&quot;: taz}}
-    block_prop_hh.put(
-        block_prop_hh.take(**crit).data/total_prop,
-        **crit)
-    
-# Multiply the block share of propensity by the activity-based normalized
-#  propensities. In this way, each block&#39;s activity-specific cell contains a
-#  number defining it&#39;s share of total TAZ productions.
-crit = dict([(x.name, list(x.labels)) for x in hh_array.axes 
-             if x.name in hh_dims])
-for p in HB_PURPS:
-    purp_chunk = block_tg.take(Purpose=p, End=&quot;P&quot;, **crit)
-    block_tg.put(
-        purp_chunk.data *
-        lba.broadcast1dByAxis(purp_chunk, &quot;block_id&quot;, block_prop_hh.data).data,
-        Purpose=p, End = &quot;P&quot;, **crit
-        )</code></pre>
 </div>
 </div>
 <div id="step-5" class="section level2">
 <h2>STEP 5</h2>
 <div id="section-1" class="section level3">
 <h3></h3>
-<pre class="python"><code># Multiply TAZ-level trip estimates by block-level, activity-specific
-#  propensities
-
-problems = {}
-for wz in window_zones:
-    # Get trip total for each zone for each purpose
-    taz_trips_by_purp = taz_tg.take(
-        TAZ=wz, Purpose=HB_PURPS, End=&quot;P&quot;).sum([&quot;Purpose&quot;])
-    
-    # Multiply trips by purpose across relevant block features
-   
-    for p in HB_PURPS:
-        # Trips
-        trips = taz_trips_by_purp.take(Purpose=p).data[0]
-        
-        # Ensure the window zone is in the block propensity file
-        if np.any(block_tg.block_id.labels.get_level_values(&quot;TAZ&quot;) == wz):        
-            # Apply
-            crit = {&quot;Purpose&quot;: p, &quot;End&quot;: &quot;P&quot;,
-                    &quot;block_id&quot;: {&quot;TAZ&quot;: wz}}
-            block_tg.put(
-                block_tg.take(**crit).data * trips,
-                **crit)    
-        else:
-            prob_dict = problems.get(wz, {})
-            prob_dict[p] = trips
-            problems[wz] = prob_dict
-
-#%% QUALITY CHECK
-check_z = taz_tg.take(TAZ=window_zones).sum([&quot;Purpose&quot;, &quot;End&quot;])
-check_b = block_tg.sum([&quot;Purpose&quot;, &quot;End&quot;])
-for p in PURPOSES:
-    for e in [&quot;P&quot;, &quot;A&quot;]:
-        z = np.round(check_z.take(Purpose=p, End=e).data[0], 2)
-        b = np.round(check_b.take(Purpose=p, End=e).data[0], 2)
-        print(p, e, z, b, b-z)
-        
-print(&quot;TAZs with no block data:\n&quot;, problems)
-
-#%% ATTRACTION-END STEP 1 - ACTIVITY-BASED TRIP PROPENSITY
-
-# Apply trip propensities by destination activity type to each block.
-#  This is done by multiplying purpose-specific propensity rates by
-#  the activity types in non-home activity data frame (`nh_df`)
-
-# Since the ultimate application is to tabulate all trip attractions simply
-#  as &#39;non-home&#39; activities (&#39;-&#39; is the axis label for activity dimensions),
-#  this work can be done quickly in a data frame to create block trip
-#  propensity vectors that can be converted to a labeled array for subsquent
-#  steps.
-
-# Make a data frame of attraction-end propensities
-a_prop_df = pd.DataFrame(ATTR_PROP, index=ATTR_ACTIVITIES)
-
-# Join propensities to block-level data
-nh_df_prop = nh_df.merge(a_prop_df, how=&quot;inner&quot;, left_on=&quot;GenSector&quot;, 
-                         right_index=True)
-
-# Multiply the activities by propensities
-# Ensure each block activity has the BASE_PROP propensity at a minimum
-for p in PURPOSES:
-    props = ATTR_PROP[p]
-    nh_df_prop[p] = (nh_df_prop[p] * nh_df_prop[&quot;tot_emp&quot;]) + BASE_PROP
-    
-    
-# Melt this data frame for conversion to an LbArray
-nh_melted = nh_df_prop.melt(
-    [&quot;block_id&quot;, &quot;ID&quot;], PURPOSES, &quot;Purpose&quot;, &quot;Prop&quot;).groupby(
-        [&quot;block_id&quot;, &quot;ID&quot;, &quot;Purpose&quot;]).sum().reset_index()
-
-# Create the non-home array and add the TAZ ID to the block dimension, as
-#  with the `hh_array` above.
-# Merge to ensure all the blocks are there
-nh_melted = wb_df.merge(nh_melted, how=&quot;left&quot;, left_on=&quot;GEOID10&quot;, 
-                        right_on=&quot;block_id&quot;)
-nh_melted.Purpose.fillna(&quot;HBW&quot;, inplace=True)
-nh_melted.Prop.fillna(BASE_PROP, inplace=True)
-nh_melted[&quot;block_id&quot;] = nh_melted[&quot;GEOID10&quot;]
-nh_melted = nh_melted.groupby([&quot;block_id&quot;, &quot;Purpose&quot;]).sum().reset_index()
-
-nh_array = lba.dfToLabeledArray(nh_melted.sort_values(by=&quot;block_id&quot;), 
-                                [&quot;block_id&quot;, &quot;Purpose&quot;], &quot;Prop&quot;,
-                                fill_value=BASE_PROP)
-nh_array.block_id.addLevel(
-    wb_df[[&quot;GEOID10&quot;, &quot;TAZ&quot;]], left_on=&quot;index&quot;, right_on=&quot;GEOID10&quot;)
-nh_array.block_id.levels = [&quot;block_id&quot;, &quot;TAZ&quot;]
-
-#%% ATTRACTON-END: STEP 2 - TOTAL BLOCK TRIP PROPENSITY
-
-# Summarize each block&#39;s total trip propensity using the .sum method.
-block_prop_nh = nh_array.sum([&quot;block_id&quot;, &quot;Purpose&quot;])
-
-# Dissolve the block-level sums based on TAZ ID to get each zone&#39;s total
-#  propensity
-taz_prop_nh = nh_array.dissolve(&quot;block_id&quot;, &quot;TAZ&quot;, np.sum).sum(
-    [&quot;block_id&quot;, &quot;Purpose&quot;])
-
-#%% ATTRACTION-END: STEP 3 - NORMALIZE ACTIVITY-BASED PROPENSITIES
-
-# There are no activity-specific propensities needed. The focus here is on
-#  each block&#39;s share of the TAZ propensity by purpose. For correspondance
-#  to the production-end methodology, we can just push values of 1.0 to the
-#  non-home sections of the `block_tg` array
-crit = dict([(x.name, &quot;-&quot;) for x in block_tg.axes 
-             if x.name in hh_dims])
-
-# Apply to attractions
-block_tg.put(1.0, End=&quot;A&quot;, **crit)
-
-# Also apply to NHB productions
-block_tg.put(1.0, Purpose=&quot;NHB&quot;, End=&quot;P&quot;, **crit)
-
-#%% ATTRACTION-END: STEP 4 - BLOCK SHARE OF TAZ TRIP PROPENSITY
-
-# Calculate each block&#39;s share of its TAZ&#39;s trips
-#  Iterate over purposes since block propensity varies by purpose
-for p in PURPOSES:
-    #  For each block with a propensity sum...
-    #   - get the sum
-    #   - grab the block data associated with the TAZ
-    #   - and modify the data by dividing the block propensities by the TAZ total
-    for taz in taz_prop_nh.block_id.labels:
-        total_prop = taz_prop_nh.take(block_id=taz, Purpose=p, squeeze=True).data
-        crit = {&quot;block_id&quot;: {&quot;TAZ&quot;: taz}, &quot;Purpose&quot;: p}
-        block_prop_nh.put(
-            block_prop_nh.take(**crit).data/total_prop,
-            **crit)
-    
-    # Multiply the block share of propensity by the activity-based normalized
-    #  propensities. In this way, each block&#39;s activity-specific cell contains a
-    #  number defining it&#39;s share of total TAZ productions.
-    crit = dict([(x.name, &quot;-&quot;) for x in block_tg.axes 
-             if x.name in hh_dims])
-    purp_chunk = block_tg.take(Purpose=p, End=&quot;A&quot;, **crit)
-    prop_vector = block_prop_nh.take(Purpose=p).data
-    block_tg.put(
-        purp_chunk.data *
-        lba.broadcast1dByAxis(purp_chunk, &quot;block_id&quot;, prop_vector).data,
-        Purpose=p, End=&quot;A&quot;, **crit)
-    
-    if p == &quot;NHB&quot;:
-        # Do the same thing but on the production end
-        purp_chunk = block_tg.take(Purpose=p, End=&quot;P&quot;, **crit)
-        block_tg.put(
-            purp_chunk.data *
-            lba.broadcast1dByAxis(purp_chunk, &quot;block_id&quot;, prop_vector).data,
-            Purpose=p, End=&quot;P&quot;, **crit)
-
-#%%Check
-c=block_tg.take(block_id={&quot;TAZ&quot;: 1013}, End=&quot;A&quot;, HHSize=&quot;-&quot;, Income=&quot;-&quot;,
-              Workers=&quot;-&quot;, VehOwn=&quot;-&quot;, squeeze=True)
-
-#%% ATTRACTION-END: STEP 5 - ESTIMATE DETAILED TRIPS BY BLOCK AND ACTIVITY
-
-# Multiply TAZ-level trip estimates by block-level, activity-specific
-#  propensities
-
-problems = {}
-for wz in window_zones:
-    # Get trip total for each zone for each purpose
-    taz_trips_by_purp = taz_tg.take(
-        TAZ=wz, End=&quot;A&quot;).sum([&quot;Purpose&quot;])
-    
-    # Multiply trips by purpose across relevant block features
-   
-    for p in PURPOSES:
-        # Trips
-        trips = taz_trips_by_purp.take(Purpose=p).data[0]
-        
-        # Ensure the window zone is in the block propensity file
-        if np.any(block_tg.block_id.labels.get_level_values(&quot;TAZ&quot;) == wz):        
-            # Apply
-            crit = {&quot;Purpose&quot;: p, &quot;End&quot;: &quot;A&quot;,
-                    &quot;block_id&quot;: {&quot;TAZ&quot;: wz}}
-            block_tg.put(
-                block_tg.take(**crit).data * trips,
-                **crit)    
-            
-            # Also do NHB Ps
-            if p == &quot;NHB&quot;:
-                crit[&quot;End&quot;] = &quot;P&quot;
-                block_tg.put(
-                    block_tg.take(**crit).data * trips,
-                    **crit)    
-        else:
-            prob_dict = problems.get(wz, {})
-            prob_dict[p] = trips
-            problems[wz] = prob_dict
-
-#%% QUALITY CHECK
-check_z = taz_tg.take(TAZ=window_zones).sum([&quot;Purpose&quot;, &quot;End&quot;])
-check_b = block_tg.sum([&quot;Purpose&quot;, &quot;End&quot;])
-for p in PURPOSES:
-    for e in [&quot;P&quot;, &quot;A&quot;]:
-        z = np.round(check_z.take(Purpose=p, End=e).data[0], 2)
-        b = np.round(check_b.take(Purpose=p, End=e).data[0], 2)
-        print(p, e, z, b, b-z)
-
-print(&quot;TAZs with no block data:\n&quot;, problems)</code></pre>
 </div>
 </div>
 </div>
@@ -823,7 +425,7 @@ print(&quot;TAZs with no block data:\n&quot;, problems)</code></pre>
 
 // add bootstrap table styles to pandoc tables
 function bootstrapStylePandocTables() {
-  $('tr.header').parent('thead').parent('table').addClass('table table-condensed');
+  $('tr.odd').parent('tbody').parent('table').addClass('table table-condensed');
 }
 $(document).ready(function () {
   bootstrapStylePandocTables();

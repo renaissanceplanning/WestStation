@@ -1,39 +1,33 @@
 name: "MAPC-Project-Site"
 output_dir: "."
 navbar:
-  title: "MAPC Accessability Modeling"
+  title: "MAPC Accessibility Modeling"
   left:
     - text: "Home"
       href: index.html
-    - text: "West Station Summary"
+    - text: "West Station Walkthrough"
       href: west_station_exec.html
-    - text: "Findings"
+    - text: "Scenario Comparisons"
+      href: west_station_scen.html
+    - text: "Model documentation"
       menu:
-        - text: "Theoretical Foundations"
-        - text: "Travel Behavior and Accessibility"
-          href: travel.html
-        - text: "---------"
-        - text: "Indepth Findings"
-        - text: "West Station Area"
-          href: area.html
-    - text: "Further Reading"
-      menu:
-        - text: "White Papers"
-        - text: "Naive Estimators"
-          href: NaiveEstimatorsV1.html
-        - text: "Trip Decay"
-          href: TripDecayV2.html
-        - text: "---------"
-        - text: "Analysis Scripts"
+        - text: "Overview"
+        - href: ModelOverview.html
         - text: "Trip Generation"
-          href: trip.html
-        - text: "Summarize Accessibility"
-          href: summarize.html
-    - text: "Documentation"
+          href: WhitePaper_TripGenAndBuiltEnviron.pdf
+        - text: "Decay Rate Estimation"
+          href: NaiveEstimatorsV1.html
+        - text: "Model Sensitivities"
+          href: Model_Sensitivities_Report.html
+        - text: "Mode choice model"
+          href: Mode_Choice_Report.Rmd
+        - text: "Survival Decay Concept"
+          href: TripDecayV2.html
+    - text: "Toolkit Documentation"
       menu:
-        - text: "West Station Analysis"
+        - text: "West Station Area Python library"
           href: ./sphinx/html/index.html
-        - text: "Emma Site"
+        - text: "Emma Python library"
           href: https://renaissanceplanning.github.io/emma-docs/
 
 output: 
