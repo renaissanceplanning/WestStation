@@ -397,7 +397,7 @@ mapdeck(token = "pk.eyJ1IjoiamxlaG1hbjkzIiwiYSI6ImNrYjltdGtkYzAybmMyc25xbGV4ODBj
     legend = TRUE,
     digits = 4,
     brush_radius = 1000,
-    palette = "rainbow"
+    palette = "matlab_like2"
   )
 
 ```
