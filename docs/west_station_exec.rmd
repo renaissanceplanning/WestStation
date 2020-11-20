@@ -396,7 +396,7 @@ mapdeck(token = "pk.eyJ1IjoiamxlaG1hbjkzIiwiYSI6ImNrYjltdGtkYzAybmMyc25xbGV4ODBj
     stroke_width = 'width', 
     legend = TRUE,
     digits = 4,
-    brush_radius = 1
+    brush_radius = 10000
   )
 
 ```
