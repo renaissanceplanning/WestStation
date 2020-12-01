@@ -60,9 +60,9 @@ import logging
 root = r"K:\Projects\MAPC\FinalData"
 os.chdir(root)
 
-scen = "RailVision"
-lu_config = "FEIR"
-net_config = "RailVision"
+scen = "BRT_Scen_B"
+lu_config = "LRTP"
+net_config = "BRT_Scen_B"
 
 # Setup logging
 logger = logging.getLogger("EMMA")
@@ -305,9 +305,9 @@ for purpose in PURPOSES:
                                               TIME_SKIMS, "Minutes",
                                               sum_dims=["From", "To"])
         # Cost summaries
-        if TIME_SKIMS[mode][-1] == "{get_purp}":
+        if COST_SKIMS[mode][-1] == "{get purp}":
             p_spec_label = True
-            TIME_SKIMS[mode][-1] = purpose
+            COST_SKIMS[mode][-1] = purpose
         else:
             p_spec_label = False
         factor = P_FACTORS[purpose]
@@ -316,7 +316,7 @@ for purpose in PURPOSES:
                                            sum_dims=["From", "To"],
                                            factor=factor)
         if p_spec_label:
-            TIME_SKIMS[mode][-1] = "{get_purp}"
+            COST_SKIMS[mode][-1] = "{get purp}"
         
         # Tag with mode, purpose, scenario
         miles["Mode"] = mode

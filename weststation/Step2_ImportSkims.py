@@ -392,8 +392,8 @@ print("WALK - IMPORT")
 # Import data
 #  Make sure block id's are read in as strings rather than numbers
 emma.od.loadOD_csv(skim_walk, walk_csv, o_field, d_field,
-                   field_map, level="block_id",
-                   dtype={o_field: str, d_field: str})
+                    field_map, level="block_id",
+                    dtype={o_field: str, d_field: str})
 
 #%% BIKE - SETUP AND IMPORT
 # For the bike mode, the following impedances are used:

@@ -36,9 +36,9 @@ from wsa import access
 #  `net_config`. Outputs are stored in the `scen` subfolder.
 root = r"K:\Projects\MAPC\FinalData"
 os.chdir(root)
-scen = "BRT_Scen_B"
+scen = "BRT_FEIR"
 lu_config = "FEIR"
-net_config = "BRT_Scen_B"
+net_config = "BRT_FEIR"
 
 #%% GLOBALS
 MODES = ["auto",

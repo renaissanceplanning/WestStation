@@ -75,9 +75,9 @@ import logging
 root = r"K:\Projects\MAPC\FinalData"
 os.chdir(root)
 
-scen = "BRT_Scen_B"
+scen = "BRT_FEIR"
 lu_config = "FEIR"
-net_config = "BRT_Scen_B"
+net_config = "BRT_FEIR"
 
 ###
 base_config = "Base" # Generally, keep this as "base" unless another scenario has modelwide walk times to transit

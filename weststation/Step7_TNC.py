@@ -53,9 +53,9 @@ import logging
 root = r"K:\Projects\MAPC\FinalData"
 os.chdir(root)
 
-scen = "Base"
-lu_config = "Base"
-net_config = "Base"
+scen = "RailVision"
+lu_config = "FEIR"
+net_config = "RailVision"
 
 # Setup logging
 logger = logging.getLogger("EMMA")
@@ -104,7 +104,7 @@ MODE_IMPEDANCES = {
     "driver": ("/gc_by_purpose", "Purpose", PURPOSES, "minutes"),
     "passenger": ("/gc_by_purpose", "Purpose", PURPOSES, "minutes"),
     "WAT": ("/costs", "Impedance", "GenCost", "dollars"),
-    "DAT": ("/costs", None, None, "dollars"),
+    "DAT": ("/costs", "Impedance", "BestGC", "dollars"),
     "bike": ("/costs", "Impedance", "BikeTime", "minutes"),
     "walk": ("/costs", "Impedance", "WalkTime", "minutes")
     }
