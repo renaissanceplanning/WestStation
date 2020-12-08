@@ -319,7 +319,7 @@ s$coefficients %>%
                             T ~ round(Pr...z.., 4) %>% as.character)) %>%
   select(-exp.coef.) %>%
   setNames(c("β", "SE(β)", "z", "Pr(>|z|)")) %>%
-  add_column("Covariate"=c("Parking cost", "Toll cost", "Household size", 
+  tibble::add_column("Covariate"=c("Parking cost", "Toll cost", "Household size", 
                            "Purpose: work", "Purpose: non-work",
                            "Origin TAZ terminal time",
                            "Destination TAZ terminal time"),
@@ -349,7 +349,7 @@ s$conf.int %>%
          CI = paste0("[", lower..95, ", ", upper..95, "]")) %>%
   select(-c(lower..95, upper..95)) %>%
   setNames(c("HR", "Inverse HR", "95% CI for HR")) %>%
-  add_column("Covariate"=c("Parking cost", "Toll cost", "Household size", 
+  tibble::add_column("Covariate"=c("Parking cost", "Toll cost", "Household size", 
                            "Purpose: work", "Purpose: non-work",
                            "Origin TAZ terminal time",
                            "Destination TAZ terminal time"),
@@ -381,7 +381,7 @@ test %$%
                        T ~ round(p) %>% as.character)) %>%
   replace_na(list(rho="")) %>%
   setNames(c("${\\rho}$", "${\\chi^2}$", "p")) %>%
-  add_column("Covariate"=c("Parking cost", "Toll cost", "Household size", 
+  tibble::add_column("Covariate"=c("Parking cost", "Toll cost", "Household size", 
                            "Purpose: work", "Purpose: non-work",
                            "Origin TAZ terminal time",
                            "Destination TAZ terminal time",
@@ -422,12 +422,12 @@ s$coefficients %>%
                             T ~ round(Pr...z.., 4) %>% as.character)) %>%
   select(-exp.coef.) %>%
   setNames(c("β", "SE(β)", "z", "Pr(>|z|)")) %>%
-  add_column("Covariate"=rep(c("Parking cost", "Toll cost", "Household size", 
+  tibble::add_column("Covariate"=rep(c("Parking cost", "Toll cost", "Household size", 
                                "Purpose: work", "Purpose: non-work",
                                "Origin TAZ terminal time",
                                "Destination TAZ terminal time"), each=5),
              .before=1) %>%
-  add_column("Interval"=rep(c("0-5 minutes", "5-10 minutes", "10-20 minutes", 
+  tibble::add_column("Interval"=rep(c("0-5 minutes", "5-10 minutes", "10-20 minutes", 
                                "20-30 minutes", "> 30 minutes"), times=7),
              .before=2) %>%
   kable(row.names = F,
@@ -450,12 +450,12 @@ s$conf.int %>%
          CI = paste0("[", lower..95, ", ", upper..95, "]")) %>%
   select(-c(lower..95, upper..95)) %>%
   setNames(c("HR", "Inverse HR", "95% CI for HR")) %>%
-  add_column("Covariate"=rep(c("Parking cost", "Toll cost", "Household size", 
+  tibble::add_column("Covariate"=rep(c("Parking cost", "Toll cost", "Household size", 
                                "Purpose: work", "Purpose: non-work",
                                "Origin TAZ terminal time",
                                "Destination TAZ terminal time"), each=5),
              .before=1) %>%
-  add_column("Interval"=rep(c("0-5 minutes", "5-10 minutes", "10-20 minutes", 
+  tibble::add_column("Interval"=rep(c("0-5 minutes", "5-10 minutes", "10-20 minutes", 
                                "20-30 minutes", "> 30 minutes"), times=7),
              .before=2) %>%
  kable(booktabs = T,
@@ -664,7 +664,7 @@ s$coefficients %>%
                             T ~ round(Pr...z.., 4) %>% as.character)) %>%
   select(-exp.coef.) %>%
   setNames(c("β", "SE(β)", "z", "Pr(>|z|)")) %>%
-  add_column("Covariate"=c("Destination TAZ parking",
+  tibble::add_column("Covariate"=c("Destination TAZ parking",
                            "Destination TAZ terminal time",
                            "Purpose: work", 
                            "Purpose: non-work"),
@@ -687,7 +687,7 @@ s$conf.int %>%
          CI = paste0("[", lower..95, ", ", upper..95, "]")) %>%
   select(-c(lower..95, upper..95)) %>%
   setNames(c("HR", "Inverse HR", "95% CI for HR")) %>%
-  add_column("Covariate"=c("Destination TAZ parking",
+  tibble::add_column("Covariate"=c("Destination TAZ parking",
                            "Destination TAZ terminal time",
                            "Purpose: work", 
                            "Purpose: non-work"),
@@ -712,7 +712,7 @@ test %$%
                        T ~ round(p, 4) %>% as.character)) %>%
   replace_na(list(rho="")) %>%
   setNames(c("${\\rho}$", "${\\chi^2}$", "p")) %>%
-  add_column("Covariate"=c("Destination TAZ parking",
+  tibble::add_column("Covariate"=c("Destination TAZ parking",
                            "Destination TAZ terminal time",
                            "Purpose: work", 
                            "Purpose: non-work",
@@ -758,12 +758,12 @@ s$coefficients %>%
                             T ~ round(Pr...z.., 4) %>% as.character)) %>%
   select(-exp.coef.) %>%
   setNames(c("β", "SE(β)", "z", "Pr(>|z|)")) %>%
-  add_column("Covariate"=rep(c("Destination TAZ parking",
+  tibble::add_column("Covariate"=rep(c("Destination TAZ parking",
                                "Destination TAZ terminal time",
                                "Purpose: work", 
                                "Purpose: non-work"), each=2),
              .before=1) %>%
-  add_column("Interval"=rep(c("0-5 minutes", "> 5 minutes"), times=4),
+  tibble::add_column("Interval"=rep(c("0-5 minutes", "> 5 minutes"), times=4),
              .before=2) %>%
   kable(linesep = c('', '\\addlinespace'),
         row.names = F,
@@ -784,12 +784,12 @@ s$conf.int %>%
          CI = paste0("[", lower..95, ", ", upper..95, "]")) %>%
   select(-c(lower..95, upper..95)) %>%
   setNames(c("HR", "Inverse HR", "95% CI for HR")) %>%
-  add_column("Covariate"=rep(c("Destination TAZ parking",
+  tibble::add_column("Covariate"=rep(c("Destination TAZ parking",
                                "Destination TAZ terminal time",
                                "Purpose: work", 
                                "Purpose: non-work"), each=2),
              .before=1) %>%
-  add_column("Interval"=rep(c("0-5 minutes", "> 5 minutes"), times=4),
+  tibble::add_column("Interval"=rep(c("0-5 minutes", "> 5 minutes"), times=4),
              .before=2) %>%
   kable(linesep = c('', '\\addlinespace'),
         row.names = F,
@@ -999,7 +999,7 @@ decay_cases = function(base_case, ...){
       data.frame("Park"=r[1], "Toll"=r[2], "HH_Size"=r[3], "Purpose"=r[4],
                  "OTT"=r[5], "DTT"=r[6])
     }) %>% bind_rows %>%
-      add_column(Case=c("C0","CA1","CA2","CA3"),
+      tibble::add_column(Case=c("C0","CA1","CA2","CA3"),
                  .before=1)
   )
   return(cases)

@@ -15,6 +15,7 @@
     <script src="_static/language_data.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Step 6 - Trip Distribution" href="Step6.html" />
     <link rel="prev" title="Step 4 - Trip Generation" href="Step4.html" /> 
   </head><body>
     <div class="related" role="navigation" aria-label="related navigation">
@@ -26,6 +27,9 @@
         <li class="right" >
           <a href="py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
+        <li class="right" >
+          <a href="Step6.html" title="Step 6 - Trip Distribution"
+             accesskey="N">next</a> |</li>
         <li class="right" >
           <a href="Step4.html" title="Step 4 - Trip Generation"
              accesskey="P">previous</a> |</li>
@@ -79,14 +83,14 @@ during the trip gen process that contain cross-classified households.</p></li>
 </ul>
 </dd>
 <dt>A mode choice labeled array is generated with the following dimensions:</dt><dd><ul class="simple">
-<li><p>Zones (TAZs or blocks depending on the scale of anlysis)</p></li>
-<li><p>HH Size (“-“, “HHSize1”, “HHSize2”, “HHSize3”, “HHSize4p”)</p></li>
-<li><p>Vehicle Ownership (“-“, “Veh0”, “Veh1”, “Veh2”, “Veh3p”)</p></li>
-<li><p>Income (“-“, “Inc1”, “Inc2”, “Inc3”, “Inc4”)</p></li>
-<li><p>Workers (“-“, “worker0”, “worker1”, “worker2”, “worker3p”)</p></li>
-<li><p>Purpose (“-“, “HBW”, “HBSch”, “HBO”, “NHB”)</p></li>
-<li><p>End (“P”, “A”)</p></li>
-<li><p>Mode (“Walk”, “Bike”, “Drive”, “Passenger”, “Transit WAT”, “Transit DAT”)</p></li>
+<li><p><strong>Zones</strong> (TAZs or blocks depending on the scale of anlysis)</p></li>
+<li><p><strong>HH Size</strong> (“-“, “HHSize1”, “HHSize2”, “HHSize3”, “HHSize4p”)</p></li>
+<li><p><strong>Vehicle Ownership</strong> (“-“, “Veh0”, “Veh1”, “Veh2”, “Veh3p”)</p></li>
+<li><p><strong>Income</strong> (“-“, “Inc1”, “Inc2”, “Inc3”, “Inc4”)</p></li>
+<li><p><strong>Workers</strong> (“-“, “worker0”, “worker1”, “worker2”, “worker3p”)</p></li>
+<li><p><strong>Purpose</strong> (“-“, “HBW”, “HBSch”, “HBO”, “NHB”)</p></li>
+<li><p><strong>End</strong> (“P”, “A”)</p></li>
+<li><p><strong>Mode</strong> (“Walk”, “Bike”, “Drive”, “Passenger”, “Transit WAT”, “Transit DAT”)</p></li>
 </ul>
 </dd>
 </dl>
@@ -94,23 +98,73 @@ during the trip gen process that contain cross-classified households.</p></li>
 attractions or NHB productions since these are non-home generators), purpose,
 and trip end. These shares can then be applied to yet another labeled array:
 trips-by-mode, which is the product of the mode choice and trip gen arrays.</p>
-<p>Model application entails fetching appropriate sections of the demographic
-array (HH by type); vectorizing, reindexing, and broadcasting accessibility
-arrays; transforming values based on model coefficients as needed; and
-adding model intercept constants.  All of this occurs in an in-memory array
-dimensioned to match the targeted section of the on-disk mode choice array.
-The accumulated values effectively apply a linear regression formula by adding
-coefficient-adjusted factors together. The mode choice models are, however,
-binomial logistic equations, and the linear results are used to determine
-the probability of selecting each mode in the nest as follows:</p>
+<dl class="simple">
+<dt>Model application entails…</dt><dd><ul class="simple">
+<li><p>fetching appropriate sections of the demographic array (HH by type);</p></li>
+<li><p>vectorizing, reindexing, and broadcasting accessibility arrays;</p></li>
+<li><p>transforming values based on model coefficients as needed; and</p></li>
+<li><p>adding model intercept constants.</p></li>
+</ul>
+</dd>
+</dl>
+<p>All of this occurs in an in-memory array dimensioned to match the targeted
+section of the on-disk mode choice array. The accumulated values effectively
+apply a linear regression formula by adding coefficient-adjusted factors
+together. The mode choice models are, however, binomial logistic equations,
+and the linear results are used to determine the probability of selecting each
+mode in the nest as follows:</p>
 <blockquote>
 <div><ul class="simple">
 <li><p>choice1 = exp(linear_result)/(1 + exp(linear_result))</p></li>
 <li><p>choice0 = 1 - choice1</p></li>
 </ul>
 </div></blockquote>
+<p>The script produces the output files listed below. Note that TAZ- and block-level
+analyses are run and stored independently. Block-level mode choice estimates are
+“patched” into the TAZ-level estimates when generating the <cite>Trips_by_mode_predist.csv</cite>
+table, but the H5 outputs are unadulterated results from each scale of analysis.
+In the <a class="reference external" href="Step6">distribution</a> phase, block-level trip details are again patched into the
+regional trips by mode estimates for the window area, prior to distributing trips.</p>
+<blockquote>
+<div><ul class="simple">
+<li><dl class="simple">
+<dt><strong>Mode_choice_taz.h5</strong>: LbArray</dt><dd><p>TAZ mode choice estimates by the 8 dimensions listed above. These estimates
+do not account for the number of activities by type in each zone. Rather, they
+provide estimates of mode shares for a given activity type. These are then
+applied to trip generation estimates to make trips by mode tables (see below).</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt><strong>Mode_choice_block.h5</strong>: LbArray</dt><dd><p>A block-level version of Mode_choice_taz.h5</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt><strong>Trips_by_taz.h5</strong>: LbArray</dt><dd><p>TAZ trips by mode estimates for the 8 dimensions listed above. These estimates
+can be summarized for a true mode share estimate based on activities in each
+zone.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt><strong>Trips_by_block.h5</strong>: LbArray</dt><dd><p>A block-level version of Trips_by_taz.h5</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt><strong>Trips_by_mode_predist.csv</strong> csv</dt><dd><p>A table of trip productions and attractions by TAZ. Block-level trips-by-mode
+estimates for the window area are patched into TAZ-level trips-by-mode estimates
+for the region.</p>
+</dd>
+</dl>
+</li>
+</ul>
+</div></blockquote>
 <div class="section" id="functions">
 <h2>Functions<a class="headerlink" href="#functions" title="Permalink to this headline">¶</a></h2>
+<p>The following functions are referenced in this script, from the
+<cite>wsa.mode_choice</cite> (or <cite>mc</cite>) submodule:</p>
 <ul class="simple">
 <li><p><a class="reference internal" href="genindex.html"><span class="std std-ref">Index</span></a></p></li>
 <li><p><a class="reference internal" href="py-modindex.html"><span class="std std-ref">Module Index</span></a></p></li>
@@ -137,11 +191,16 @@ the probability of selecting each mode in the nest as follows:</p>
 <li class="toctree-l2"><a class="reference internal" href="#functions">Functions</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="Step6.html">Step 6 - Trip Distribution</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Step7.html">Step 7 - TNC Trips</a></li>
 </ul>
 
   <h4>Previous topic</h4>
   <p class="topless"><a href="Step4.html"
                         title="previous chapter">Step 4 - Trip Generation</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="Step6.html"
+                        title="next chapter">Step 6 - Trip Distribution</a></p>
   <div role="note" aria-label="source link">
     <h3>This Page</h3>
     <ul class="this-page-menu">
@@ -172,6 +231,9 @@ the probability of selecting each mode in the nest as follows:</p>
         <li class="right" >
           <a href="py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
+        <li class="right" >
+          <a href="Step6.html" title="Step 6 - Trip Distribution"
+             >next</a> |</li>
         <li class="right" >
           <a href="Step4.html" title="Step 4 - Trip Generation"
              >previous</a> |</li>

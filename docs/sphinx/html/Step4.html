@@ -50,12 +50,14 @@
 <p>Trip generation proceeds in two parts:</p>
 <div class="section" id="trips-by-zone">
 <h2>Trips by zone<a class="headerlink" href="#trips-by-zone" title="Permalink to this headline">¶</a></h2>
-<p>This script estimates trip generation for home-based trip productions and
-non-home-based trip attractions.</p>
+<p>This script estimates trip generation for home-based and non-home-based trip
+generators separately, combines the results, and stores trip generation
+estimates as well as household cross-classification results in HDF arrays
+that can be read using <cite>emma.lba.openLbArray_HDF</cite>.</p>
 <dl class="simple">
 <dt>Home-based productions are stratified by household type.</dt><dd><ul class="simple">
 <li><dl class="simple">
-<dt>Reads estimates of households in each zone across 4 dimensions</dt><dd><ul>
+<dt>Read estimates of households in each zone across 4 dimensions</dt><dd><ul>
 <li><p>HH size (1, 2, 3, 4+)</p></li>
 <li><p>Number of workers (0, 1, 2, 3+)</p></li>
 <li><p>Income group (1, 2, 3, 4)</p></li>
@@ -64,8 +66,9 @@ non-home-based trip attractions.</p>
 </dd>
 </dl>
 </li>
-<li><p>Reads trip generation rates and seed data for household cross-class</p></li>
-<li><p>Cross-classifies households into 256 HH types using IPF</p></li>
+<li><p>Read trip generation rates and seed data for household cross-classification</p></li>
+<li><p>Cross-classify households into 256 HH types using iterative proprtional
+fitting (see <cite>emma.ipf</cite>)</p></li>
 </ul>
 </dd>
 </dl>
@@ -96,13 +99,13 @@ inclusion.</p>
 </dl>
 </li>
 <li><dl class="simple">
-<dt><strong>HHs_by_type_taz.h5</strong>: LbArray</dt><dd><p>cross-classified households by type in each taz.</p>
+<dt><strong>HHs_by_type_taz.h5</strong>: LbArray</dt><dd><p>Cross-classified households by type in each TAZ.</p>
 </dd>
 </dl>
 </li>
 <li><dl class="simple">
-<dt><strong>trips_by_taz.h5</strong>: LbArray</dt><dd><p>trip productions and attractions by purpose and household type in
-each taz.</p>
+<dt><strong>trips_by_taz.h5</strong>: LbArray</dt><dd><p>Trip productions and attractions by purpose and household type in
+each TAZ.</p>
 </dd>
 </dl>
 </li>
@@ -112,60 +115,72 @@ each taz.</p>
 <div class="section" id="trips-by-block-in-window">
 <h2>Trips by block (in window)<a class="headerlink" href="#trips-by-block-in-window" title="Permalink to this headline">¶</a></h2>
 <p>This script estimates block-level trips by household type and non-home
-attractions based on TAZ-level trip estimates and block-level activity
-estimates. This is accomplished in 5 major steps:</p>
+activities based on TAZ-level trip estimates and block-level activity
+estimates. This is accomplished in 3 major steps:</p>
 <blockquote>
 <div><ol class="arabic">
 <li><dl>
-<dt>Estimate activity-based block trip gen propensity by purpose</dt><dd><ul>
+<dt>Estimate activity-based block trip generation propensity by purpose</dt><dd><ul>
 <li><p>Propensities are estimated such that every block has an extremely
 small starting propensity, and this grows based on block activities.
 This is to alleviate potential discontinuities between block-level
 and TAZ-level activity estimates.</p>
 <blockquote>
 <div><ul class="simple">
-<li><p>Production propensity is informed by HH types</p></li>
-<li><p>Attraction propensity is informed by job types and enrollments</p></li>
+<li><p>Home-based propensity is informed by HH types</p></li>
+<li><p>Non-home-based propensity is informed by job types and enrollments</p></li>
 </ul>
 </div></blockquote>
 </li>
-</ul>
-</dd>
-</dl>
-</li>
-<li><dl class="simple">
-<dt>Summarize total block trip-making propensity by purpose</dt><dd><ul class="simple">
-<li><p>Summarize the activity-based propensities to yield the total
-trip-making propensity for the block.The resultsing score is the
-total trip gen propensity (either for P’s or A’s) by purpose.</p></li>
-<li><p>Summarize the block-level totals to TAZs. This will be used to
-determine each block’s share of total trip-making propensity.</p></li>
 </ul>
 </dd>
 </dl>
 </li>
 <li><p>Normalize the activity-based propensities such that they sum to 1.0
-within each block.</p>
+within each TAZ.</p>
 <blockquote>
 <div><ul class="simple">
-<li><p>When each block’s trip total is estimated, these shares will
-determine trips by activity type.</p></li>
+<li><p>Summarize the activity-based propensities to yield the total
+trip-making propensity for each TAZ. The resultsing score is the
+total trip gen propensity (either for P’s or A’s) by purpose.</p></li>
+<li><p>Normalize block-level, activity-specific propensities based on its
+parent TAZ’s total trip-making propensity. When each block’s trip
+total is estimated, these normalized shares determine trips by
+activity type.</p></li>
 </ul>
 </div></blockquote>
-</li>
-<li><dl class="simple">
-<dt>Summarize block-level total trip propensity to TAZ and estimate block-</dt><dd><p>level shares of TAZ totals (by purpose and trip-end) by activity.</p>
-</dd>
-</dl>
 </li>
 <li><p>Multiply TAZ-level trip estimates by purpose and trip-end to block-
 level, activity-based normalized propensities. This yields activity-
 based trips by block.</p></li>
 </ol>
 </div></blockquote>
+<dl class="simple">
+<dt>Results generated include (for “window” area only):</dt><dd><ul class="simple">
+<li><dl class="simple">
+<dt><strong>trips_by_block.csv</strong>: csv</dt><dd><p>Block-level tabulation of trips by purpose and end.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt><strong>HHs_by_type_block.h5</strong>: LbArray</dt><dd><p>Cross-classified households by type in each block.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt><strong>trips_by_block.h5</strong>: LbArray</dt><dd><p>Trip productions and attractions by purpose and household type in
+each block.</p>
+</dd>
+</dl>
+</li>
+</ul>
+</dd>
+</dl>
 </div>
 <div class="section" id="functions">
 <h2>Functions<a class="headerlink" href="#functions" title="Permalink to this headline">¶</a></h2>
+<p>The following functions are referenced in this script, from the
+<cite>wsa.trip_gen</cite> (or <cite>tg</cite>) submodule:</p>
 <dl class="py function">
 <dt id="wsa.tg.readTAZs">
 <code class="sig-prename descclassname">wsa.tg.</code><code class="sig-name descname">readTAZs</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">lu_config</span></em>, <em class="sig-param"><span class="n">taz_table</span><span class="o">=</span><span class="default_value">'MAPC_TAZ_data.xlsx'</span></em>, <em class="sig-param"><span class="n">taz_sheet</span><span class="o">=</span><span class="default_value">'Zdata'</span></em>, <em class="sig-param"><span class="n">taz_id</span><span class="o">=</span><span class="default_value">'TAZ'</span></em>, <em class="sig-param"><span class="n">zones_in_model</span><span class="o">=</span><span class="default_value">'input\\model_area_zones.csv'</span></em>, <em class="sig-param"><span class="n">zim_id</span><span class="o">=</span><span class="default_value">'ID'</span></em><span class="sig-paren">)</span><a class="headerlink" href="#wsa.tg.readTAZs" title="Permalink to this definition">¶</a></dt>
@@ -353,6 +368,156 @@ labels align with those in <cite>ref_array</cite>.</p>
 </dl>
 </dd></dl>
 
+<dl class="py function">
+<dt id="wsa.tg.calcPropensity_HB">
+<code class="sig-prename descclassname">wsa.tg.</code><code class="sig-name descname">calcPropensity_HB</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">prop_array</span></em>, <em class="sig-param"><span class="n">hh_propensity_dict</span></em>, <em class="sig-param"><span class="n">end_axis</span><span class="o">=</span><span class="default_value">'End'</span></em>, <em class="sig-param"><span class="n">prod_label</span><span class="o">=</span><span class="default_value">'P'</span></em><span class="sig-paren">)</span><a class="headerlink" href="#wsa.tg.calcPropensity_HB" title="Permalink to this definition">¶</a></dt>
+<dd><p>A function to calculate trip-making propensities for home-based trip
+generators. Home-based trip-making propensity is estimated based on
+household types in each block and their respective generalized trip-making
+propensity factors.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>prop_array</strong> (<em>LbArray</em>) – A labeled array, assumed to be initialized to 1.0 and having axes
+with labels corresponding to those named in <cite>hh_propensity_dict</cite>.</p></li>
+<li><p><strong>hh_propensity_dict</strong> (<em>Dict</em>) – A nested dictionary whose keys correspond to axis names in
+<cite>prop_array</cite> and whose values are dictionaries of labels that are
+members of the named axis and propensity weights.</p></li>
+<li><p><strong>end_axis</strong> (<em>String</em><em>, </em><em>default=&quot;End&quot;</em>) – <cite>prop_array</cite> is assumed to cover all potential trips (home-based or
+otherwise) and both trip ends. This function only updates the</p></li>
+<li><p><strong>prod_label</strong> (<em>String</em><em>, </em><em>default=&quot;P&quot;</em>) – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>prods</strong> – An estimate of productions propensity for different household types.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>LbArray</p>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="#wsa.tg.calcPropensity_NH" title="wsa.tg.calcPropensity_NH"><code class="xref py py-func docutils literal notranslate"><span class="pre">calcPropensity_NH()</span></code></a>, <a class="reference internal" href="#wsa.tg.normalizePropensity" title="wsa.tg.normalizePropensity"><code class="xref py py-func docutils literal notranslate"><span class="pre">normalizePropensity()</span></code></a>, <a class="reference internal" href="#wsa.tg.applyTAZTrips" title="wsa.tg.applyTAZTrips"><code class="xref py py-func docutils literal notranslate"><span class="pre">applyTAZTrips()</span></code></a></p>
+</div>
+</dd></dl>
+
+<dl class="py function">
+<dt id="wsa.tg.calcPropensity_NH">
+<code class="sig-prename descclassname">wsa.tg.</code><code class="sig-name descname">calcPropensity_NH</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">nh_df</span></em>, <em class="sig-param"><span class="n">lbl_col</span></em>, <em class="sig-param"><span class="n">act_col</span></em>, <em class="sig-param"><span class="n">purposes</span></em>, <em class="sig-param"><span class="n">propensities</span></em>, <em class="sig-param"><span class="n">base_prop</span></em>, <em class="sig-param"><span class="n">wb_df</span></em>, <em class="sig-param"><span class="n">block_id</span><span class="o">=</span><span class="default_value">'block_id'</span></em>, <em class="sig-param"><span class="n">wb_block_id</span><span class="o">=</span><span class="default_value">'block_id'</span></em>, <em class="sig-param"><span class="n">levels</span><span class="o">=</span><span class="default_value">['block_id', 'TAZ', 'INFOCUS', 'INWINDOW']</span></em>, <em class="sig-param"><span class="n">logger</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#wsa.tg.calcPropensity_NH" title="Permalink to this definition">¶</a></dt>
+<dd><p>A function to calculate raw block-level trip-making propensities for
+non-home trip generators, by purpose. Non-home trip-making propensity
+is estimated based on various non-home activities in each block and their
+respective generalized trip-making propensity factors.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>nh_df</strong> (<em>pd.DataFrame</em>) – A data frame of non-home activities by block.</p></li>
+<li><p><strong>lbl_col</strong> (<em>String</em>) – The column in <cite>nh_df</cite> that identifies each block’s activity by type.</p></li>
+<li><p><strong>act_col</strong> (<em>String</em>) – The column in <cite>nh_df</cite> that stores the number of each activity.</p></li>
+<li><p><strong>purposes</strong> (<em>[</em><em>String</em><em>,</em><em>..</em><em>]</em>) – The purposes for which trip propensities are estimated.</p></li>
+<li><p><strong>propensities</strong> (<em>{String: {String: {String:</em><em> [</em><em>numeric</em><em>,</em><em>..</em><em>]</em><em>}}}</em>) – A nested dictionary of trip-making propensities. At the outer level,
+keys are trip purposes; at the middle level, keys are axis names;
+at the inner level, keys are axis labels and values are propensity
+weights.</p></li>
+<li><p><strong>base_prop</strong> (<em>numeric</em>) – A baseline trip-making propensity. This is a small value that ensures
+all blocks have a nominal trip-making potential. Blocks with
+activities will have significantly higher propensities based on the
+number of activities and the <cite>propensities</cite> dictionary.</p></li>
+<li><p><strong>block_id</strong> (<em>String</em><em>, </em><em>default=&quot;block_id&quot;</em>) – The column in <cite>nh_df</cite> that uniquely identifies each block.</p></li>
+<li><p><strong>wb_df</strong> (<em>pd.DataFrame</em>) – The data frame listing the blocks in the window area with their TAZ
+parentage.</p></li>
+<li><p><strong>wb_block_id</strong> (<em>String</em><em>, </em><em>default=&quot;block_id&quot;</em>) – The column in <cite>wb_df</cite> that uniquely identifies each block.</p></li>
+<li><p><strong>levels</strong> (<em>[</em><em>String</em><em>,</em><em>..</em><em>]</em><em>, </em><em>default=</em><em>[</em><em>&quot;block_id&quot;</em><em>, </em><em>&quot;TAZ&quot;</em><em>, </em><em>&quot;INFOCUS&quot;</em><em>, </em><em>&quot;INWINDOW&quot;</em><em>]</em>) – A list of column names in <cite>nh_df</cite> that defined indexing levels.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>nh_array</strong> – A labeled array with an axis storing block information (with <cite>levels</cite>
+recorded in a multi-index) and an axis differentiating trip
+propensities by purpose.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>LbArray</p>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="#wsa.tg.calcPropensity_HB" title="wsa.tg.calcPropensity_HB"><code class="xref py py-func docutils literal notranslate"><span class="pre">calcPropensity_HB()</span></code></a>, <a class="reference internal" href="#wsa.tg.normalizePropensity" title="wsa.tg.normalizePropensity"><code class="xref py py-func docutils literal notranslate"><span class="pre">normalizePropensity()</span></code></a>, <a class="reference internal" href="#wsa.tg.applyTAZTrips" title="wsa.tg.applyTAZTrips"><code class="xref py py-func docutils literal notranslate"><span class="pre">applyTAZTrips()</span></code></a></p>
+</div>
+</dd></dl>
+
+<dl class="py function">
+<dt id="wsa.tg.normalizePropensity">
+<code class="sig-prename descclassname">wsa.tg.</code><code class="sig-name descname">normalizePropensity</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">block_prop_array</span></em>, <em class="sig-param"><span class="n">block_axis</span></em>, <em class="sig-param"><span class="n">taz_level</span><span class="o">=</span><span class="default_value">'TAZ'</span></em>, <em class="sig-param"><span class="n">block_level</span><span class="o">=</span><span class="default_value">'block_id'</span></em>, <em class="sig-param"><span class="n">ends</span><span class="o">=</span><span class="default_value">['P', 'A']</span></em>, <em class="sig-param"><span class="n">purposes</span><span class="o">=</span><span class="default_value">['HBW', 'HBO', 'HBSch', 'NHB']</span></em><span class="sig-paren">)</span><a class="headerlink" href="#wsa.tg.normalizePropensity" title="Permalink to this definition">¶</a></dt>
+<dd><p>Estimate each block’s share of total TAZ trip-making by activty type.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>block_prop_array</strong> (<em>LbArray</em>) – An array of total estimated trip-making propensity by block and
+activity type. Assumed to have axes “Purpose” and “End”.</p></li>
+<li><p><strong>block_axis</strong> (<em>LbAxis</em>) – The axis in <cite>block_prop_array</cite> that identifies each block. Assumed
+to be a MultiIndex object with one level identifying blocks and the
+other identifying TAZs.</p></li>
+<li><p><strong>taz_level</strong> (<em>String</em><em>, </em><em>default=&quot;TAZ&quot;</em>) – The name of the level in <cite>block_axis</cite> that identifies the TAZ each
+block is in.</p></li>
+<li><p><strong>block_level</strong> (<em>String</em><em>, </em><em>default=&quot;block_id&quot;</em>) – The name of the level in <cite>block_axis</cite> that uniquely identifes each
+block.</p></li>
+<li><p><strong>ends</strong> (<em>[</em><em>String</em><em>,</em><em>..</em><em>]</em><em>, </em><em>default=</em><em>[</em><em>&quot;P&quot;</em><em>, </em><em>&quot;A&quot;</em><em>]</em>) – The names of values in the <cite>End</cite> axis of <cite>block_prop_array</cite>.</p></li>
+<li><p><strong>purposes</strong> (<em>[</em><em>String</em><em>,</em><em>..</em><em>]</em><em>, </em><em>default=</em><em>[</em><em>&quot;HBW&quot;</em><em>, </em><em>&quot;HBO&quot;</em><em>, </em><em>&quot;HBSch&quot;</em><em>, </em><em>&quot;NHB&quot;</em><em>]</em>) – The names of values in the <cite>Purpose</cite> axis of <cite>block_prop_array</cite>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><cite>block_prop_array</cite> is updated inplace, such that its raw propensity
+estimates are normalized into shares of total TAZ-level trip-making.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="#wsa.tg.calcPropensity_HB" title="wsa.tg.calcPropensity_HB"><code class="xref py py-func docutils literal notranslate"><span class="pre">calcPropensity_HB()</span></code></a>, <a class="reference internal" href="#wsa.tg.calcPropensity_NH" title="wsa.tg.calcPropensity_NH"><code class="xref py py-func docutils literal notranslate"><span class="pre">calcPropensity_NH()</span></code></a>, <a class="reference internal" href="#wsa.tg.applyTAZTrips" title="wsa.tg.applyTAZTrips"><code class="xref py py-func docutils literal notranslate"><span class="pre">applyTAZTrips()</span></code></a></p>
+</div>
+</dd></dl>
+
+<dl class="py function">
+<dt id="wsa.tg.applyTAZTrips">
+<code class="sig-prename descclassname">wsa.tg.</code><code class="sig-name descname">applyTAZTrips</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">taz_trips_array</span></em>, <em class="sig-param"><span class="n">taz_axis</span></em>, <em class="sig-param"><span class="n">taz_level</span></em>, <em class="sig-param"><span class="n">block_prop_array</span></em>, <em class="sig-param"><span class="n">block_axis</span></em>, <em class="sig-param"><span class="n">block_level</span></em>, <em class="sig-param"><span class="n">ends</span><span class="o">=</span><span class="default_value">['P', 'A']</span></em>, <em class="sig-param"><span class="n">purposes</span><span class="o">=</span><span class="default_value">['HBW', 'HBO', 'HBSch', 'NHB']</span></em><span class="sig-paren">)</span><a class="headerlink" href="#wsa.tg.applyTAZTrips" title="Permalink to this definition">¶</a></dt>
+<dd><p>Multiply normalized trip-making propensities at block level by total
+trip estimates (by purpose) at TAZ level.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>taz_trips_array</strong> (<em>LbArray</em>) – A labeled array with trip estimates by TAZ, purpose, and end
+(production vs. attraction)</p></li>
+<li><p><strong>taz_axis</strong> (<em>LbAxis</em>) – The axis in <cite>taz_trips_array</cite> that identifies each TAZ.</p></li>
+<li><p><strong>taz_level</strong> (<em>String</em>) – The name of the level in <cite>taz_axis</cite> that uniquely identifies each TAZ.</p></li>
+<li><p><strong>block_prop_array</strong> (<em>LbArray</em>) – A labeled array with normalized trip-making propensities by block,
+activity, purpose, and end.</p></li>
+<li><p><strong>block_axis</strong> (<em>LbAxis</em>) – The axis in <cite>block_prop-array</cite> that identifies each block by its TAZ
+perentage (assumed to use the same name as <cite>taz_level</cite>)</p></li>
+<li><p><strong>block_level</strong> (<em>String</em>) – The name of the level in <cite>block_axis</cite> that uniquely identifies each
+block.</p></li>
+<li><p><strong>ends</strong> (<em>[</em><em>String</em><em>,</em><em>..</em><em>]</em><em>, </em><em>default=</em><em>[</em><em>&quot;P&quot;</em><em>, </em><em>&quot;A&quot;</em><em>]</em>) – The values in the <cite>End</cite> axis of both <cite>taz_trips_array</cite> and
+<cite>block_prop_array</cite>.</p></li>
+<li><p><strong>purposes</strong> (<em>[</em><em>String</em><em>,</em><em>..</em><em>]</em><em>, </em><em>default=</em><em>[</em><em>&quot;HBW&quot;</em><em>, </em><em>&quot;HBO&quot;</em><em>, </em><em>&quot;HBSch&quot;</em><em>, </em><em>&quot;NHB&quot;</em><em>]</em>) – The values in the <cite>Purpose</cite> axis of both <cite>taz_trips_array</cite> and
+<cite>block_prop_array</cite>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><cite>block_prop_array</cite> is modified in place such that its normalized
+shares of TAZ-level trip-making are multiplied by total trips in each
+corresponding TAZ to yield total trips at the block level, by activity</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="#wsa.tg.calcPropensity_HB" title="wsa.tg.calcPropensity_HB"><code class="xref py py-func docutils literal notranslate"><span class="pre">calcPropensity_HB()</span></code></a>, <a class="reference internal" href="#wsa.tg.calcPropensity_NH" title="wsa.tg.calcPropensity_NH"><code class="xref py py-func docutils literal notranslate"><span class="pre">calcPropensity_NH()</span></code></a>, <a class="reference internal" href="#wsa.tg.normalizePropensity" title="wsa.tg.normalizePropensity"><code class="xref py py-func docutils literal notranslate"><span class="pre">normalizePropensity()</span></code></a></p>
+</div>
+</dd></dl>
+
 <ul class="simple">
 <li><p><a class="reference internal" href="genindex.html"><span class="std std-ref">Index</span></a></p></li>
 <li><p><a class="reference internal" href="py-modindex.html"><span class="std std-ref">Module Index</span></a></p></li>
@@ -381,6 +546,8 @@ labels align with those in <cite>ref_array</cite>.</p>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="Step5.html">Step 5 - Mode Choice</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Step6.html">Step 6 - Trip Distribution</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Step7.html">Step 7 - TNC Trips</a></li>
 </ul>
 
   <h4>Previous topic</h4>

@@ -1,0 +1,64 @@
+.. module:: wsa.TNC
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Contents:
+
+
+Step 7 - TNC Trips
+============================
+This script estimates the number of TNC trips by TAZ based on a trip table,
+modal skims (to understand costs by the estimated mode and estimate costs
+for a potential TNC trip), and *alpha* values. The probability for taking a
+TNC trip given its generalized cost must exceed the probability of taking the
+same trip by the original estimated mode by a factor that exceeds the alpha
+value set for that mode and travel purpose.
+
+This is a post-processing step that ingests ouptuts from previous steps to
+provide insight into the number of TNC trips made and what those trips
+imply for mode shifts.
+
+TNC trip cost parameters are specified as global parameters: `TNC_BASE_FARE`,
+`TNC_SERVICE_FEE`, `TNC_COST_PER_MILE`.
+
+Alpha values may be calculated when the script is run to calibrate them to
+targets for aggregate TNC trips by purpose and mode replaced. Once calibrated
+to a base condition, the same values should be run for alternative scenarios
+or alternative TNC cost constructions to gauge the impact on TNC utilization.
+
+The script summarizes TNC estimates in two csv tables:
+
+- **TNC_flow_summary_{period}.csv**: csv
+    Reports TNC trips by purpose and mode replaced for generalized reporting
+    geographies (focus, window, and remainder areas). Summarizes TNC trips,
+    total trips (in the original trip tables), and percent switchted to TNC.
+
+- **TNC_zone_summary_{period}.csv**: csv
+    Similar to `TNC_flow_summary`, but broken down on a TAZ-by-TAZ basis.
+
+Functions
+----------
+The following functions are referenced in this script, from the 
+`wsa.TNC` submodule:
+
+
+.. autofunction:: fetchTNCSeed
+
+.. autofunction:: fetchTNCModeTargets
+
+.. autofunction:: estimateAlphas
+
+.. autofunction:: initTNCCostArray
+
+.. autofunction:: initTNCRatioArray
+
+.. autofunction:: estimateTNCCosts
+
+.. autofunction:: estimateTNCProb
+
+.. autofunction:: applyTNCProbRatio
+
+
+* :ref:`genindex`
+* :ref:`modindex`
+* :ref:`search`

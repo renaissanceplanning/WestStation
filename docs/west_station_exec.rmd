@@ -1,5 +1,5 @@
 ---
-title: "WEST STATION AREA"
+title: "WEST STATION AREA ANALYSIS WALKTHROUGH"
 output: html_document
 editor_options: 
   chunk_output_type: console
@@ -14,9 +14,9 @@ library(tmap)
 library(tmaptools)
 library(shiny)
 library(rpgcolorsr)
-require("classInt")
-require("mapdeck")
-tmap_mode("view")
+library(classInt)
+library(mapdeck)
+library(rosm, quietly=TRUE)
 
 # Read shape data
 map_path = getwd()
@@ -91,6 +91,7 @@ The example maps below reflect access to all jobs by walking, biking, transit
 home-based work travel purpose.
 
 ```{r, eval = TRUE}
+tmap_mode("view")
 setwd(data_path)
 # Read tables
 zdata_a <- read_csv("./FinalData/Scen/Base/access_to_jobs_auto_HBW.csv")
@@ -231,38 +232,47 @@ zones_t <- st_sf(zones_t)
 zones_w <- st_sf(zones_w)
 zones_b <- st_sf(zones_b)
 
+# Bounding box for base map
+basemap_bbox <- st_bbox(
+  st_transform(zones_a, 26919) %>% 
+  st_buffer(41000.0) %>% 
+  st_transform(4326)) 
+basemap <- osm.raster(basemap_bbox, crop=TRUE, type = "cartolight", 
+                      quiet = TRUE, progress = "none")
+
 # Map
-a <- tm_shape(zones_a) + tm_polygons(col = "Trips",
-                                     palette = rpg_color_pal("rpg_rainbow")(9),
-                                     n = 9,
-                                     alpha=0.6,
-                                     style = "pretty",
-                                     lwd = 0.1,
-                                     title = "HBW Productions")
+a <- tm_shape(basemap) + tm_rgb() + tm_shape(zones_a, is.master = TRUE) + 
+        tm_fill(col = "Trips",
+                    palette = rpg_color_pal("rpg_rainbow")(9),
+                    n = 9,
+                    alpha=0.4,
+                    style = "pretty",
+                    title = "HBW Productions")
 
-t <- tm_shape(zones_t) + tm_polygons(col = "Trips",
-                                     palette = rpg_color_pal("rpg_rainbow")(9),
-                                     n = 9,
-                                     alpha=0.6,
-                                     style = "pretty",
-                                     lwd = 0.1,
-                                     title = "HBW Attractions")
+t <- tm_shape(basemap) + tm_rgb() + tm_shape(zones_t, is.master = TRUE) + 
+        tm_fill(col = "Trips",
+                    palette = rpg_color_pal("rpg_rainbow")(9),
+                    n = 9,
+                    alpha=0.4,
+                    style = "pretty",
+                    title = "HBW Attractions")
 
-w <- tm_shape(zones_w) + tm_polygons(col = "Trips",
-                                     palette = rpg_color_pal("rpg_rainbow")(9),
-                                     n = 9,
-                                     alpha=0.6,
-                                     style = "pretty",
-                                     lwd = 0.1,
-                                     title = "HBO Productions")
+w <- tm_shape(basemap) + tm_rgb() + tm_shape(zones_w, is.master = TRUE) + 
+        tm_fill(col = "Trips",
+                    palette = rpg_color_pal("rpg_rainbow")(9),
+                    n = 9,
+                    alpha=0.4,
+                    style = "pretty",
+                    title = "HBO Productions")
 
-b <- tm_shape(zones_b) + tm_polygons(col = "Trips",
-                                     palette = rpg_color_pal("rpg_rainbow")(9),
-                                     n = 9,
-                                     alpha=0.6, 
-                                     style = "pretty",
-                                     lwd = 0.1,
-                                     title = "HBO Attractions")
+b <- tm_shape(basemap) + tm_rgb() + tm_shape(zones_b, is.master = TRUE) + 
+        tm_fill(col = "Trips",
+                    palette = rpg_color_pal("rpg_rainbow")(9),
+                    n = 9,
+                    alpha=0.4,
+                    style = "pretty",
+                    title = "HBO Attractions")
+
 tmap_arrange(a, t, w, b, ncol=2, nrow=2, sync=TRUE)
 ```
 
@@ -441,38 +451,47 @@ attrs <- left_join(
 prods <- st_sf(prods)
 attrs <- st_sf(attrs)
 
+# Bounding box for base map
+basemap_bbox <- st_bbox(
+  st_transform(prods, 26919) %>% 
+  st_buffer(1400.0) %>% 
+  st_transform(4326)) 
+basemap <- osm.raster(basemap_bbox, crop=TRUE, type = "cartolight", 
+                      quiet = TRUE, progress = "none")
+
 # Map
-a <- tm_shape(prods) + tm_polygons(col = "tnc_trips",
-                                     palette = rpg_color_pal("rpg_rainbow")(9),
-                                     n = 9,
-                                     alpha=0.6,
-                                     style = "pretty",
-                                     lwd = 0.1,
-                                     title = "TNC productions")
+a <- tm_shape(basemap) + tm_rgb() + tm_shape(prods, is.master = TRUE) + 
+        tm_polygons(col = "tnc_trips",
+                palette = rpg_color_pal("rpg_rainbow")(9),
+                n = 9,
+                alpha=0.4,
+                style = "pretty",
+                title = "TNC Productions")
 
-t <- tm_shape(attrs) + tm_polygons(col = "tnc_trips",
-                                     palette = rpg_color_pal("rpg_rainbow")(9),
-                                     n = 9,
-                                     alpha=0.6,
-                                     style = "pretty",
-                                     lwd = 0.1,
-                                     title = "TNC attractions")
+t <- tm_shape(basemap) + tm_rgb() + tm_shape(attrs, is.master = TRUE) + 
+        tm_polygons(col = "tnc_trips",
+                palette = rpg_color_pal("rpg_rainbow")(9),
+                n = 9,
+                alpha=0.4,
+                style = "pretty",
+                title = "TNC Attractions")
 
-w <- tm_shape(prods) + tm_polygons(col = "pct",
-                                     palette = rpg_color_pal("rpg_rainbow")(9),
-                                     n = 9,
-                                     alpha=0.6,
-                                     style = "pretty",
-                                     lwd = 0.1,
-                                     title = "% TNC productions")
+w <- tm_shape(basemap) + tm_rgb() + tm_shape(prods, is.master = TRUE) + 
+        tm_polygons(col = "pct",
+                palette = rpg_color_pal("rpg_rainbow")(9),
+                n = 9,
+                alpha=0.4,
+                style = "pretty",
+                title = "% TNC Productions")
 
-b <- tm_shape(attrs) + tm_polygons(col = "pct",
-                                     palette = rpg_color_pal("rpg_rainbow")(9),
-                                     n = 9,
-                                     alpha=0.6, 
-                                     style = "pretty",
-                                     lwd = 0.1,
-                                     title = "% TNC attractions")
+b <- tm_shape(basemap) + tm_rgb() + tm_shape(attrs, is.master = TRUE) + 
+        tm_polygons(col = "pct",
+                palette = rpg_color_pal("rpg_rainbow")(9),
+                n = 9,
+                alpha=0.4,
+                style = "pretty",
+                title = "% TNC Attractions")
+
 tmap_arrange(a, t, w, b, ncol=2, nrow=2, sync=TRUE)
 ```
 

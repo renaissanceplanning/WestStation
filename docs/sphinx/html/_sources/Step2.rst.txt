@@ -8,7 +8,7 @@
 Step 2 - Import Skims
 ======================
 
-This script reads skim data from csv files into the emma.od.Skim format
+This script reads skim data from csv files into the `emma.od.Skim` format
 for use in accessibility and downstream travel modeling analyses.
 
 Modes of travel for which skim data are provided include:
@@ -26,10 +26,12 @@ Modes of travel for which skim data are provided include:
 The typical procedure for translating skim data from tables to Skim matrices
 includes:
     - Identifying the csv data source
-    - Defining the origin_id and destination_id columns in the csv
+    - Defining the `origin_id` and `destination_id` columns in the csv
     - Defining the Skim zones index and axis labels
     - Define how value columns in the csv relate to axes
-    - Initialize the skim object (pointing to an HDF store if desired)
+    - Initialize the skim object, pointing to an HDF store if desired. (This is
+      always done in the WSA workflow to ensure skims persist on disk for
+      downstream processing.)
     - Import data
 
 Workflow:
@@ -37,22 +39,24 @@ Workflow:
 - Specify the network configuration and lu configuration (for parking costs and terminal times, e.g.)
 - Specify global assumptions
 - Import auto travel costs from csv
-   - Calculate TAZ-level walking and biking costs 
+   - Calculate TAZ-level walking and biking costs
    - Add parking and terminal times
    - Estimate parking durations / typical charges
    - Calculate generalized cost by purpose
 - Import transit (WAT) costs from csv
-   - Calculate total travel time from IVTT + OVTT
+   - Calculate total travel time (IVTT + OVTT)
 - Import transit (DAT) costs from csv
-   - Calculate total times by submode
+   - Calculate total time (IVTT + OVTT) by submode
    - Generalize best available DAT costs
 - Import walk travel costs from csv (block level)
 - Import bike travel costs from csv (block level)
 
 
-
 Functions
 ----------
+The following functions are referenced in this script, from the 
+`wsa.import_skims` (or `impfuncs`) submodule:
+
 .. autofunction:: initImpSkim_wsa
 
 

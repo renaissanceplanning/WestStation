@@ -6,7 +6,23 @@
 West Station Area Multimodal Accessibility Analysis
 =======================================================
 
-There are 7 main steps executed in 8 scripts:
+Welcome to the documentation for the West Station Area accessibility analysis
+workflow. The procedures outlined here are written in Python (v. 3.8) and use
+the Enhanced Multi-modal Accessibility (`emma <https://renaissanceplanning.github.io/emma-docs/>`_)
+module and its dependencies to analyze trip generation, mode choice, and trip
+distribution at a local (census block-level) and regional (TAZ-level) scale.
+
+While this workflow has been developed for analyzing multimodal travel behavior
+under various scenarios for the West Station Area, the local "window" of
+analysis can be transfered to any location in the greater Boston region to 
+generate the same outputs and insights.
+
+The WSA Accessibility workflow consists of 7 steps executed in 8 scripts. The
+steps and associated python scripts are enumerated below. Each script file
+is configured to be run either as a standalone script (`__name__ == "__main__"`)
+or in interactive chunks. Each contains detailed annotations describing the 
+processing done in each chunk and references functions defined in the `wsa`
+module available from the `West Station git repo <https://renaissanceplanning.github.io/WestStation/>`_
 
 1. **Clean skims** (`Step1_CleanSkims.py`) - process csv OD tables to ensure
    column names are consistent across scenarios and extraneous rows are 

@@ -41,7 +41,21 @@
             
   <div class="section" id="west-station-area-multimodal-accessibility-analysis">
 <h1>West Station Area Multimodal Accessibility Analysis<a class="headerlink" href="#west-station-area-multimodal-accessibility-analysis" title="Permalink to this headline">¶</a></h1>
-<p>There are 7 main steps executed in 8 scripts:</p>
+<p>Welcome to the documentation for the West Station Area accessibility analysis
+workflow. The procedures outlined here are written in Python (v. 3.8) and use
+the Enhanced Multi-modal Accessibility (<a class="reference external" href="https://renaissanceplanning.github.io/emma-docs/">emma</a>)
+module and its dependencies to analyze trip generation, mode choice, and trip
+distribution at a local (census block-level) and regional (TAZ-level) scale.</p>
+<p>While this workflow has been developed for analyzing multimodal travel behavior
+under various scenarios for the West Station Area, the local “window” of
+analysis can be transfered to any location in the greater Boston region to
+generate the same outputs and insights.</p>
+<p>The WSA Accessibility workflow consists of 7 steps executed in 8 scripts. The
+steps and associated python scripts are enumerated below. Each script file
+is configured to be run either as a standalone script (<cite>__name__ == “__main__”</cite>)
+or in interactive chunks. Each contains detailed annotations describing the
+processing done in each chunk and references functions defined in the <cite>wsa</cite>
+module available from the <a class="reference external" href="https://renaissanceplanning.github.io/WestStation/">West Station git repo</a></p>
 <ol class="arabic">
 <li><p><strong>Clean skims</strong> (<cite>Step1_CleanSkims.py</cite>) - process csv OD tables to ensure
 column names are consistent across scenarios and extraneous rows are
@@ -99,6 +113,14 @@ mode for TNC trips.</p></li>
 <li class="toctree-l2"><a class="reference internal" href="Step5.html#functions">Functions</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="Step6.html">Step 6 - Trip Distribution</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="Step6.html#functions">Functions</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="Step7.html">Step 7 - TNC Trips</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="Step7.html#functions">Functions</a></li>
+</ul>
+</li>
 </ul>
 </div>
 </div>
@@ -126,6 +148,8 @@ mode for TNC trips.</p></li>
 <li class="toctree-l1"><a class="reference internal" href="Step3.html">Step 3 - Summarize Access</a></li>
 <li class="toctree-l1"><a class="reference internal" href="Step4.html">Step 4 - Trip Generation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="Step5.html">Step 5 - Mode Choice</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Step6.html">Step 6 - Trip Distribution</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Step7.html">Step 7 - TNC Trips</a></li>
 </ul>
 
   <h4>Next topic</h4>

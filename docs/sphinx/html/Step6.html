@@ -1,0 +1,381 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Step 6 - Trip Distribution &#8212; wsa October 2020 documentation</title>
+    <link rel="stylesheet" href="_static/nature.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Step 7 - TNC Trips" href="Step7.html" />
+    <link rel="prev" title="Step 5 - Mode Choice" href="Step5.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="Step7.html" title="Step 7 - TNC Trips"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="Step5.html" title="Step 5 - Mode Choice"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">wsa October 2020 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Step 6 - Trip Distribution</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <span class="target" id="module-wsa.distribution"></span><div class="toctree-wrapper compound">
+</div>
+<div class="section" id="step-6-trip-distribution">
+<h1>Step 6 - Trip Distribution<a class="headerlink" href="#step-6-trip-distribution" title="Permalink to this headline">¶</a></h1>
+<p>This script models trip distribution in five steps:</p>
+<ol class="arabic simple">
+<li><p>Creates empty trip tables for each trip purpose. Each table has an axis
+for each travel mode in addition to <cite>From</cite> and <cite>To</cite> axes.</p></li>
+<li><p>Seeds each purpose’s trip tables using production and attraction
+estimates produced for each mode by the mode choice model and the
+<cite>weightedInteractions</cite> method in emma. In this step, period factors
+are applied to adjust daily trip estimates down to period estimates.</p></li>
+<li><p>Setup shadowing - this forges a relationship between the block-level
+trip table and the TAZ-level trip table. Factors applied to trips at
+TAZ level are mimicked at the block level. This allows block-level
+detail to influence mode shares and distribution to reflect travel
+opportunities beyond the window area.</p></li>
+<li><p>Apply k factors - these factors adjust the raw mode choice estimates
+to better match an observed or modeled condition in a specific scenario.
+A preferred set of factors should be establsihed and used for all
+other scenarios for meaningful cross-scenario comparisons.</p></li>
+<li><p>Balance the trip tables using iterative proporational fitting (IPF).
+The balancing process focuses on total person trip productions and
+attractions in the selected travel period. Trips by mode can fluctuate
+during the balancing process.</p></li>
+</ol>
+<p>After the balancing step is complete, results are reported in csv files.</p>
+<blockquote>
+<div><ul class="simple">
+<li><dl class="simple">
+<dt><strong>trips_by_mode_and_purpose_dist_{period}.csv</strong>: csv</dt><dd><p>Summarizes trips by mode and pupose to and from the key broad reporting
+geographies: focus area, window area, remainder area.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt><strong>trip_len_dist_{period}.csv</strong>: csv</dt><dd><p>A summary of trips, person miles of travel, and average trip length to
+and from each TAZ. Can be summarized for arbitray collections of TAZs,
+including built-in groupings for zones in the focus and window areas.
+When summarizing, average trip length should be calculated based on the
+sum of person miles of travel divided by the sum of trips.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt><strong>trip_dur_dist_{period}.csv</strong>: csv</dt><dd><p>Same as <cite>trip_len_dist.csv</cite>, but focused on trip duration (in minutes).</p>
+</dd>
+</dl>
+</li>
+</ul>
+<blockquote>
+<div><dl class="simple">
+<dt><strong>trip_cost_dist_{period}.csv</strong>: csv</dt><dd><p>Same as <cite>trip_len_dist.csv</cite>, but focused on trip generalized costs
+(in dollars).</p>
+</dd>
+</dl>
+</div></blockquote>
+</div></blockquote>
+<div class="section" id="functions">
+<h2>Functions<a class="headerlink" href="#functions" title="Permalink to this headline">¶</a></h2>
+<p>The following functions are referenced in this script, from the
+<cite>wsa.distribution</cite> submodule:</p>
+<dl class="py function">
+<dt id="wsa.distribution.initTripTable">
+<code class="sig-prename descclassname">wsa.distribution.</code><code class="sig-name descname">initTripTable</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">scen</span></em>, <em class="sig-param"><span class="n">purpose</span></em>, <em class="sig-param"><span class="n">period</span></em>, <em class="sig-param"><span class="n">logger</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#wsa.distribution.initTripTable" title="Permalink to this definition">¶</a></dt>
+<dd><p>Intialize a trip table for this scenario, purpose, and period. All trip
+interchanges are intialized to zero (0.0).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>scen</strong> (<em>String</em>) – </p></li>
+<li><p><strong>purpose</strong> (<em>String</em>) – </p></li>
+<li><p><strong>period</strong> (<em>String</em>) – </p></li>
+<li><p><strong>logger</strong> (<em>Logger</em>) – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>taz_trip_table, block_trip_table</strong></p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>(emma.od.Skim, emma.od.Skim)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="wsa.distribution.applyKFactors">
+<code class="sig-prename descclassname">wsa.distribution.</code><code class="sig-name descname">applyKFactors</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">trip_table</span></em>, <em class="sig-param"><span class="n">factors</span></em>, <em class="sig-param"><span class="n">mode_axis</span><span class="o">=</span><span class="default_value">'Mode'</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">crit</span></em><span class="sig-paren">)</span><a class="headerlink" href="#wsa.distribution.applyKFactors" title="Permalink to this definition">¶</a></dt>
+<dd><p>Expand or contract trips in each mode based on factors that would
+bring modal estimates in closer alignment with an authoritative validation
+source (CTPS model, e.g.). Factors should not be scenario-specific but
+applied consistently across all scenarios.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>trip_table</strong> (<em>emma.od.Skim</em>) – Trips in this Skim will be factored by mode.</p></li>
+<li><p><strong>factors</strong> (<em>array-like 1d</em>) – Factor values to apply. The number and order of factors must
+correspond to the modes listed in the <cite>trip_table</cite>’s <cite>mode_axis</cite>.</p></li>
+<li><p><strong>mode_axis</strong> (<em>String</em><em>, </em><em>default=&quot;Mode&quot;</em>) – The name of the axis in <cite>trip_table</cite> that identifies each mode.</p></li>
+<li><p><strong>**crit</strong> (<em>keyword arguments</em>) – Criteria for applying the factors only to specific portions of the
+<cite>trip_table</cite> (apply only to zone in the window area, e.g.)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>factor_table</strong></p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>emma.od.Skim</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="wsa.distribution.tripEndsByMode">
+<code class="sig-prename descclassname">wsa.distribution.</code><code class="sig-name descname">tripEndsByMode</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">scen</span></em>, <em class="sig-param"><span class="n">purpose</span></em>, <em class="sig-param"><span class="n">period_factor</span></em>, <em class="sig-param"><span class="n">taz_zone_dim</span><span class="o">=</span><span class="default_value">'TAZ'</span></em>, <em class="sig-param"><span class="n">block_zone_dim</span><span class="o">=</span><span class="default_value">'block_id'</span></em>, <em class="sig-param"><span class="n">mode_dim</span><span class="o">=</span><span class="default_value">'Mode'</span></em>, <em class="sig-param"><span class="n">purp_dim</span><span class="o">=</span><span class="default_value">'Purpose'</span></em>, <em class="sig-param"><span class="n">end_dim</span><span class="o">=</span><span class="default_value">'End'</span></em>, <em class="sig-param"><span class="n">block_taz_level</span><span class="o">=</span><span class="default_value">'TAZ'</span></em>, <em class="sig-param"><span class="n">logger</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#wsa.distribution.tripEndsByMode" title="Permalink to this definition">¶</a></dt>
+<dd><p>Summarize trips by mode by zone for this purpose (factored into the
+specified travel period) and return data frames of trips at TAZ and
+block level for use in distribtion.</p>
+<p>TAZ-level trip estimates in the “window” area are patched in from the
+block-level estimates, over-riding the original TAZ-level estimates for
+those zones.</p>
+<p>Parameters are mostly focused on identifying axis names for trips_by_mode
+labeled arrays.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>scen</strong> (<em>String</em>) – </p></li>
+<li><p><strong>purpose</strong> (<em>String</em>) – </p></li>
+<li><p><strong>period_factor</strong> (<em>numeric</em>) – A factor for this period and purpose by which trip estimates are
+scaled (for all modes) from daily trips to period trips</p></li>
+<li><p><strong>taz_zone_dim</strong> (<em>String</em><em>, </em><em>default=&quot;TAZ&quot;</em>) – </p></li>
+<li><p><strong>block_zone_dim</strong> (<em>String</em><em>, </em><em>default=&quot;block_id&quot;</em>) – </p></li>
+<li><p><strong>mode_dim</strong> (<em>String</em><em>, </em><em>default=&quot;Mode&quot;</em>) – </p></li>
+<li><p><strong>purp_dim</strong> (<em>String</em><em>, </em><em>default=&quot;Purpose&quot;</em>) – </p></li>
+<li><p><strong>end_dim</strong> (<em>String</em><em>, </em><em>default=&quot;End&quot;</em>) – </p></li>
+<li><p><strong>block_taz_level</strong> (<em>String</em><em>, </em><em>default = &quot;TAZ&quot;</em>) – </p></li>
+<li><p><strong>logger</strong> (<em>Logger</em><em>, </em><em>default=None</em>) – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>trips_df_taz</strong> (<em>pd.DataFrame</em>) – For this scenario, purpose, and travel period, these are the estimates
+of trips by mode (productions and attractions listed separately) at
+the TAZ level</p></li>
+<li><p><strong>trips_df_block</strong> (<em>pd.DataFrame</em>) – Same as above, with trips summarized at block level.</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="wsa.distribution.seedTripTable">
+<code class="sig-prename descclassname">wsa.distribution.</code><code class="sig-name descname">seedTripTable</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">net_config</span></em>, <em class="sig-param"><span class="n">purpose</span></em>, <em class="sig-param"><span class="n">trip_table</span></em>, <em class="sig-param"><span class="n">trips_df</span></em>, <em class="sig-param"><span class="n">decay_refs</span></em>, <em class="sig-param"><span class="n">mode_col</span><span class="o">=</span><span class="default_value">'Mode'</span></em>, <em class="sig-param"><span class="n">trips_col</span><span class="o">=</span><span class="default_value">'trips'</span></em>, <em class="sig-param"><span class="n">end_col</span><span class="o">=</span><span class="default_value">'End'</span></em>, <em class="sig-param"><span class="n">id_col</span><span class="o">=</span><span class="default_value">'TAZ'</span></em>, <em class="sig-param"><span class="n">level</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">scale</span><span class="o">=</span><span class="default_value">'TAZ'</span></em>, <em class="sig-param"><span class="n">modes</span><span class="o">=</span><span class="default_value">['walk', 'bike', 'driver', 'passenger', 'WAT', 'DAT']</span></em>, <em class="sig-param"><span class="n">nonmotor_modes</span><span class="o">=</span><span class="default_value">['walk', 'bike']</span></em>, <em class="sig-param"><span class="n">decay_node</span><span class="o">=</span><span class="default_value">'/pdf'</span></em>, <em class="sig-param"><span class="n">logger</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#wsa.distribution.seedTripTable" title="Permalink to this definition">¶</a></dt>
+<dd><p>Uses origin and destination trip estimates and emma’s
+<cite>weightedInteractions</cite> method to seed a trip distribution matrix. Trip
+estimates are filtered by mode and the resulting seed is scaled such that
+total trips sum to productions.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>net_config</strong> (<em>String</em>) – The net config from which to pull decay skim factors.</p></li>
+<li><p><strong>purpose</strong> (<em>String</em>) – </p></li>
+<li><p><strong>trip_table</strong> (<em>emma.od.Skim</em>) – An empty H5 file where the trip table is stored. This file’s values
+will be updated, such that trips by each mode are seeded with values
+based on the <cite>weightedInteractions</cite> output.</p></li>
+<li><p><strong>trips_df</strong> (<em>pd.DataFrame</em>) – A data frame containing trips by mode and end for this purpose. The
+trip estimates are used in the <cite>weightedInteractions</cite> procedure to
+define modal productions and attractions.</p></li>
+<li><p><strong>decay_refs</strong> (<em>dict</em>) – A dictionary with keys reflecting mode names in <cite>modes</cite> and values
+relating each node to an hdf skim file in the <cite>net_config</cite> folder
+where OD decay factors are stored.</p></li>
+<li><p><strong>mode_col</strong> (<em>String</em><em>, </em><em>default=&quot;Mode&quot;</em>) – The column in <cite>trips_df</cite> that identifies each trip estimate’s mode.</p></li>
+<li><p><strong>trips_col</strong> (<em>String</em><em>, </em><em>default=&quot;trips&quot;</em>) – The column in <cite>trips_df</cite> that identifies the trip estimate.</p></li>
+<li><p><strong>end_col</strong> (<em>String</em><em>, </em><em>default=&quot;End&quot;</em>) – The column in <cite>trips_df</cite> that identifies each trip estimate’s end
+(production or attraction).</p></li>
+<li><p><strong>id_col</strong> (<em>String</em><em>, </em><em>default=&quot;TAZ&quot;</em>) – The column in`trips_df` that identifies the zone for each trip
+estimate.</p></li>
+<li><p><strong>level</strong> (<em>String</em><em>, </em><em>default=None</em>) – If a decay skim uses a mult-level index for its <cite>zone</cite> attribute,
+specify the level in the index to be used for indexing <cite>trips_df</cite>
+when running <cite>weightedInteractions</cite>.</p></li>
+<li><p><strong>scale</strong> (<em>String</em><em>, </em><em>default=&quot;TAZ&quot;</em>) – Some steps vary depending on the current analysis scale (“TAZ” or
+“block”), so the scale is specified here.</p></li>
+<li><p><strong>modes</strong> (<em>[</em><em>String</em><em>,</em><em>..</em><em>]</em><em>, </em><em>default=</em><em>[</em><em>&quot;walk&quot;</em><em>, </em><em>&quot;bike&quot;</em><em>, </em><em>&quot;driver&quot;</em><em>, </em><em>&quot;passenger&quot;</em><em>, </em><em>&quot;WAT&quot;</em><em>, </em><em>&quot;DAT&quot;</em><em>]</em>) – </p></li>
+<li><p><strong>nonmotor_modes</strong> (<em>[</em><em>String</em><em>,</em><em>..</em><em>]</em><em>, </em><em>default=</em><em>[</em><em>&quot;walk&quot;</em><em>, </em><em>&quot;bike&quot;</em><em>]</em>) – Which modes in <cite>modes</cite> are nonmotorized modes.</p></li>
+<li><p><strong>decay_node</strong> (<em>String</em><em>, </em><em>default=&quot;/pdf&quot;</em>) – Name of the node in <cite>decay_ref</cite> skim file where decay rates are stored.</p></li>
+<li><p><strong>logger</strong> (<em>Logger</em><em>, </em><em>default=None</em>) – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Nothing is returned by the function. Rather, values in <cite>trip_table</cite>
+are updated based on the outcomes of the <cite>weightedInteractions</cite>
+function.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="wsa.distribution.tripTargetsByZone">
+<code class="sig-prename descclassname">wsa.distribution.</code><code class="sig-name descname">tripTargetsByZone</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">trips_df</span></em>, <em class="sig-param"><span class="n">zone_col</span><span class="o">=</span><span class="default_value">'TAZ'</span></em>, <em class="sig-param"><span class="n">trips_col</span><span class="o">=</span><span class="default_value">'trips'</span></em>, <em class="sig-param"><span class="n">end_col</span><span class="o">=</span><span class="default_value">'End'</span></em>, <em class="sig-param"><span class="n">logger</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#wsa.distribution.tripTargetsByZone" title="Permalink to this definition">¶</a></dt>
+<dd><p>From a data frame of trips by zone, mode, and end, summarize trips by
+zone for each trip end.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>trips_df</strong> (<em>pd.DataFrame</em>) – </p></li>
+<li><p><strong>zone_col</strong> (<em>String</em><em>, </em><em>default=&quot;TAZ&quot;</em>) – </p></li>
+<li><p><strong>trips_col</strong> (<em>String</em><em>, </em><em>default=&quot;trips&quot;</em>) – </p></li>
+<li><p><strong>end_col</strong> (<em>String</em><em>, </em><em>default=&quot;End&quot;</em>) – </p></li>
+<li><p><strong>logger</strong> (<em>Logger</em><em>, </em><em>default=None</em>) – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>targets_p, targets_a</strong></p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>1d arrays</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="wsa.distribution.summarizeTripAttributes">
+<code class="sig-prename descclassname">wsa.distribution.</code><code class="sig-name descname">summarizeTripAttributes</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">trips</span></em>, <em class="sig-param"><span class="n">mode</span></em>, <em class="sig-param"><span class="n">net_config</span></em>, <em class="sig-param"><span class="n">skim_ref</span></em>, <em class="sig-param"><span class="n">unit</span></em>, <em class="sig-param"><span class="n">sum_dims</span><span class="o">=</span><span class="default_value">['From', 'To']</span></em>, <em class="sig-param"><span class="n">factor</span><span class="o">=</span><span class="default_value">1.0</span></em><span class="sig-paren">)</span><a class="headerlink" href="#wsa.distribution.summarizeTripAttributes" title="Permalink to this definition">¶</a></dt>
+<dd><p>A helper function to facilitate summarization of trip table data, such
+as person miles of travel, average trip length, etc.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>trips</strong> (<em>emma.od.Skim</em>) – A matrix of trips by mode for a given travel purpose</p></li>
+<li><p><strong>mode</strong> (<em>String</em>) – The mode in the <cite>Mode</cite> axis of <cite>trips</cite> to summarize</p></li>
+<li><p><strong>net_config</strong> (<em>String</em>) – Sets the source directory from which to pull OD cost data</p></li>
+<li><p><strong>skim_ref</strong> (<em>Dict</em>) – A dictionary with mode names as keys and skim file parameters
+(file, node, axis, label) as values to look up key impedance values
+(distance, time, e.g.) for trip summarization.</p></li>
+<li><p><strong>unit</strong> (<em>String</em>) – The trip units being summarized (“miles”, “minutes”, etc.). The units
+appear in output column headings.</p></li>
+<li><p><strong>sum_dims</strong> (<em>[</em><em>String</em><em>,</em><em>..</em><em>]</em><em>, </em><em>default=</em><em>[</em><em>&quot;From&quot;</em><em>, </em><em>&quot;To&quot;</em><em>]</em>) – The dimensions over which to summarize trip data.</p></li>
+<li><p><strong>factor</strong> (<em>numeric</em><em>, </em><em>default=1.0</em>) – Trip sums may be factored for unit conversion if desired (meters to
+minutes, time to cost, e.g.).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>trip_sum</strong> – A data frame with row for each zone</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>DataFrome</p>
+</dd>
+</dl>
+</dd></dl>
+
+<ul class="simple">
+<li><p><a class="reference internal" href="genindex.html"><span class="std std-ref">Index</span></a></p></li>
+<li><p><a class="reference internal" href="py-modindex.html"><span class="std std-ref">Module Index</span></a></p></li>
+<li><p><a class="reference internal" href="search.html"><span class="std std-ref">Search Page</span></a></p></li>
+</ul>
+</div>
+</div>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h3><a href="index.html">Table of Contents</a></h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="Step1.html">Step 1 - Clean Skims</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Step2.html">Step 2 - Import Skims</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Step3.html">Step 3 - Summarize Access</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Step4.html">Step 4 - Trip Generation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Step5.html">Step 5 - Mode Choice</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Step 6 - Trip Distribution</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#functions">Functions</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="Step7.html">Step 7 - TNC Trips</a></li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="Step5.html"
+                        title="previous chapter">Step 5 - Mode Choice</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="Step7.html"
+                        title="next chapter">Step 7 - TNC Trips</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/Step6.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="Step7.html" title="Step 7 - TNC Trips"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="Step5.html" title="Step 5 - Mode Choice"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">wsa October 2020 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Step 6 - Trip Distribution</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2020, Alex Bell.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 3.1.1.
+    </div>
+  </body>
+</html>

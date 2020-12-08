@@ -379,24 +379,47 @@ div.tocify {
     <span class="caret"></span>
   </a>
   <ul class="dropdown-menu" role="menu">
-    <li class="dropdown-header">Overview</li>
     <li>
-      <a href="ModelOverview.html"></a>
-    </li>
-    <li>
-      <a href="WhitePaper_TripGenAndBuiltEnviron.pdf">Trip Generation</a>
+      <a href="overview.html">Overview</a>
     </li>
     <li>
       <a href="NaiveEstimatorsV1.html">Decay Rate Estimation</a>
     </li>
-    <li>
-      <a href="Model_Sensitivities_Report.html">Model Sensitivities</a>
+    <li class="dropdown-submenu">
+      <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">Trip Generation</a>
+      <ul class="dropdown-menu" role="menu">
+        <li>
+          <a href="TripGen.html">Trip generation rates</a>
+        </li>
+        <li>
+          <a href="WhitePaper_TripGenAndBuiltEnviron.pdf">Literature review</a>
+        </li>
+      </ul>
+    </li>
+    <li class="dropdown-submenu">
+      <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">Mode choice</a>
+      <ul class="dropdown-menu" role="menu">
+        <li>
+          <a href="Model_Sensitivities_Report.html">Model Sensitivities</a>
+        </li>
+        <li>
+          <a href="Mode_Choice_Report.html">Mode choice model</a>
+        </li>
+      </ul>
+    </li>
+    <li class="dropdown-submenu">
+      <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">Distribution</a>
+      <ul class="dropdown-menu" role="menu">
+        <li>
+          <a href="Kfactors.html">K Factors</a>
+        </li>
+        <li>
+          <a href="TripDecayV2.html">Survival Decay Concept</a>
+        </li>
+      </ul>
     </li>
     <li>
-      <a href="Mode_Choice_Report.html">Mode choice model</a>
-    </li>
-    <li>
-      <a href="TripDecayV2.html">Survival Decay Concept</a>
+      <a href="TNC_Report.html">TNC Trip Estimation</a>
     </li>
   </ul>
 </li>

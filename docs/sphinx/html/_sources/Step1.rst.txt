@@ -23,6 +23,9 @@ Workflow:
 
 Functions
 ----------
+The following functions are referenced in this script, from the 
+`wsa.clean_skims` (or `cs`) submodule:
+
 .. autofunction:: previewSkim
 
 

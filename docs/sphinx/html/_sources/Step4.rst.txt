@@ -12,17 +12,20 @@ Trip generation proceeds in two parts:
 
 Trips by zone
 ----------------
-This script estimates trip generation for home-based trip productions and
-non-home-based trip attractions.
+This script estimates trip generation for home-based and non-home-based trip
+generators separately, combines the results, and stores trip generation
+estimates as well as household cross-classification results in HDF arrays
+that can be read using `emma.lba.openLbArray_HDF`.
 
-Home-based productions are stratified by household type. 
-  - Reads estimates of households in each zone across 4 dimensions
+Home-based productions are stratified by household type.
+  - Read estimates of households in each zone across 4 dimensions
       - HH size (1, 2, 3, 4+)
       - Number of workers (0, 1, 2, 3+)
       - Income group (1, 2, 3, 4)
       - Vehicle ownership (0, 1, 2, 3+)
-  - Reads trip generation rates and seed data for household cross-class
-  - Cross-classifies households into 256 HH types using IPF
+  - Read trip generation rates and seed data for household cross-classification
+  - Cross-classify households into 256 HH types using iterative proprtional
+    fitting (see `emma.ipf`)
 
 Attractions are estimated based on destination activities (jobs by type,
 school enrollments, etc.)
@@ -32,7 +35,7 @@ redistributed to match the spatial allocation implied by non-home generators.
 
 This script needs to be run for each land use configuration. Results are
 stored in the "lu" folder corresponding to each land use configuration.
-Results generated include: 
+Results generated include:
     
     - **hh_by_type_sum.csv**: csv
         Summary table of households by type by focus and window area 
@@ -46,48 +49,61 @@ Results generated include:
         TAZ-level tabulation of trips by purpose and end.
     
     - **HHs_by_type_taz.h5**: LbArray
-        cross-classified households by type in each taz.
+        Cross-classified households by type in each TAZ.
     
     - **trips_by_taz.h5**: LbArray
-        trip productions and attractions by purpose and household type in
-        each taz.
+        Trip productions and attractions by purpose and household type in
+        each TAZ.
 
 Trips by block (in window)
 ---------------------------
 This script estimates block-level trips by household type and non-home 
-attractions based on TAZ-level trip estimates and block-level activity
-estimates. This is accomplished in 5 major steps:
+activities based on TAZ-level trip estimates and block-level activity
+estimates. This is accomplished in 3 major steps:
     
-    1. Estimate activity-based block trip gen propensity by purpose
+    1. Estimate activity-based block trip generation propensity by purpose
         - Propensities are estimated such that every block has an extremely
           small starting propensity, and this grows based on block activities.
           This is to alleviate potential discontinuities between block-level
           and TAZ-level activity estimates.
-           - Production propensity is informed by HH types
-           - Attraction propensity is informed by job types and enrollments
-        
-    2. Summarize total block trip-making propensity by purpose
-        - Summarize the activity-based propensities to yield the total
-          trip-making propensity for the block.The resultsing score is the
-          total trip gen propensity (either for P's or A's) by purpose.
-        - Summarize the block-level totals to TAZs. This will be used to
-          determine each block's share of total trip-making propensity.
           
-    3. Normalize the activity-based propensities such that they sum to 1.0
-       within each block.
-        - When each block's trip total is estimated, these shares will
-          determine trips by activity type.
-    
-    4. Summarize block-level total trip propensity to TAZ and estimate block-
-        level shares of TAZ totals (by purpose and trip-end) by activity.
+           - Home-based propensity is informed by HH types
+           
+           - Non-home-based propensity is informed by job types and enrollments
+           
+    2. Normalize the activity-based propensities such that they sum to 1.0
+       within each TAZ.
+       
+        - Summarize the activity-based propensities to yield the total
+          trip-making propensity for each TAZ. The resultsing score is the
+          total trip gen propensity (either for P's or A's) by purpose.
+          
+        - Normalize block-level, activity-specific propensities based on its
+          parent TAZ's total trip-making propensity. When each block's trip
+          total is estimated, these normalized shares determine trips by
+          activity type.
         
-    5. Multiply TAZ-level trip estimates by purpose and trip-end to block-
+    3. Multiply TAZ-level trip estimates by purpose and trip-end to block-
        level, activity-based normalized propensities. This yields activity-
        based trips by block.
+
+Results generated include (for "window" area only):
+    - **trips_by_block.csv**: csv
+        Block-level tabulation of trips by purpose and end.
+    
+    - **HHs_by_type_block.h5**: LbArray
+        Cross-classified households by type in each block.
+    
+    - **trips_by_block.h5**: LbArray
+        Trip productions and attractions by purpose and household type in
+        each block.
 
 
 Functions
 ----------
+The following functions are referenced in this script, from the 
+`wsa.trip_gen` (or `tg`) submodule:
+
 .. autofunction:: readTAZs
 
 .. autofunction:: readBlocks
@@ -102,9 +118,13 @@ Functions
 
 .. autofunction:: dfToLabeledArray_tg
 
-.. autofunction:: disaggregateTrips_hb
+.. autofunction:: calcPropensity_HB
 
-.. autofunction:: disaggregateTrips_nh
+.. autofunction:: calcPropensity_NH
+
+.. autofunction:: normalizePropensity
+
+.. autofunction:: applyTAZTrips
 
 
 

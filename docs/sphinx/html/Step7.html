@@ -1,0 +1,412 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Step 7 - TNC Trips &#8212; wsa October 2020 documentation</title>
+    <link rel="stylesheet" href="_static/nature.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="Step 6 - Trip Distribution" href="Step6.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="Step6.html" title="Step 6 - Trip Distribution"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">wsa October 2020 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Step 7 - TNC Trips</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <span class="target" id="module-wsa.TNC"></span><div class="toctree-wrapper compound">
+</div>
+<div class="section" id="step-7-tnc-trips">
+<h1>Step 7 - TNC Trips<a class="headerlink" href="#step-7-tnc-trips" title="Permalink to this headline">¶</a></h1>
+<p>This script estimates the number of TNC trips by TAZ based on a trip table,
+modal skims (to understand costs by the estimated mode and estimate costs
+for a potential TNC trip), and <em>alpha</em> values. The probability for taking a
+TNC trip given its generalized cost must exceed the probability of taking the
+same trip by the original estimated mode by a factor that exceeds the alpha
+value set for that mode and travel purpose.</p>
+<p>This is a post-processing step that ingests ouptuts from previous steps to
+provide insight into the number of TNC trips made and what those trips
+imply for mode shifts.</p>
+<p>TNC trip cost parameters are specified as global parameters: <cite>TNC_BASE_FARE</cite>,
+<cite>TNC_SERVICE_FEE</cite>, <cite>TNC_COST_PER_MILE</cite>.</p>
+<p>Alpha values may be calculated when the script is run to calibrate them to
+targets for aggregate TNC trips by purpose and mode replaced. Once calibrated
+to a base condition, the same values should be run for alternative scenarios
+or alternative TNC cost constructions to gauge the impact on TNC utilization.</p>
+<p>The script summarizes TNC estimates in two csv tables:</p>
+<ul class="simple">
+<li><dl class="simple">
+<dt><strong>TNC_flow_summary_{period}.csv</strong>: csv</dt><dd><p>Reports TNC trips by purpose and mode replaced for generalized reporting
+geographies (focus, window, and remainder areas). Summarizes TNC trips,
+total trips (in the original trip tables), and percent switchted to TNC.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt><strong>TNC_zone_summary_{period}.csv</strong>: csv</dt><dd><p>Similar to <cite>TNC_flow_summary</cite>, but broken down on a TAZ-by-TAZ basis.</p>
+</dd>
+</dl>
+</li>
+</ul>
+<div class="section" id="functions">
+<h2>Functions<a class="headerlink" href="#functions" title="Permalink to this headline">¶</a></h2>
+<p>The following functions are referenced in this script, from the
+<cite>wsa.TNC</cite> submodule:</p>
+<dl class="py function">
+<dt id="wsa.TNC.fetchTNCSeed">
+<code class="sig-prename descclassname">wsa.TNC.</code><code class="sig-name descname">fetchTNCSeed</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">excel_file</span></em>, <em class="sig-param"><span class="n">named_range</span><span class="o">=</span><span class="default_value">'ipf_seed'</span></em>, <em class="sig-param"><span class="n">purp_col</span><span class="o">=</span><span class="default_value">'Purpose'</span></em>, <em class="sig-param"><span class="n">modes</span><span class="o">=</span><span class="default_value">['Walk', 'Bike', 'Transit', 'Driver', 'Passenger']</span></em><span class="sig-paren">)</span><a class="headerlink" href="#wsa.TNC.fetchTNCSeed" title="Permalink to this definition">¶</a></dt>
+<dd><p>Read an IPF seed for estimating regional TNC trips by mode and purpose
+targets from an excel file. Return the seed as a labeled array.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>excel_file</strong> (<em>String</em>) – Path to the excel file with the IPF seed information</p></li>
+<li><p><strong>named_range</strong> (<em>String</em><em>, </em><em>default=&quot;ipf_seed&quot;</em>) – A named range in <cite>excel_file</cite> where seed data may be found.</p></li>
+<li><p><strong>purp_col</strong> (<em>String</em><em>, </em><em>default=&quot;Purpose&quot;</em>) – The column heading in the ipf seed range that identifies trip purpose</p></li>
+<li><p><strong>modes</strong> (<em>[</em><em>Syring</em><em>,</em><em>..</em><em>]</em><em>, </em><em>default=</em><em>[</em><em>&quot;Walk&quot;</em><em>, </em><em>&quot;Bike&quot;</em><em>, </em><em>&quot;Transit&quot;</em><em>, </em><em>&quot;Driver&quot;</em><em>, </em><em>&quot;Passenger&quot;</em><em>]</em>) – The column headings in the ipf seed range that identify travel modes</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>seed_array</strong> – A labeled array with seeds in two dimensions: Purpose and Mode</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>LbArray</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="wsa.TNC.fetchTNCModeTargets">
+<code class="sig-prename descclassname">wsa.TNC.</code><code class="sig-name descname">fetchTNCModeTargets</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">excel_file</span></em>, <em class="sig-param"><span class="n">named_range</span><span class="o">=</span><span class="default_value">'mode_targets'</span></em>, <em class="sig-param"><span class="n">modes</span><span class="o">=</span><span class="default_value">['Walk', 'Bike', 'Transit', 'Driver', 'Passenger']</span></em><span class="sig-paren">)</span><a class="headerlink" href="#wsa.TNC.fetchTNCModeTargets" title="Permalink to this definition">¶</a></dt>
+<dd><p>Read a set of modal targets from an excel file reflecting the total TNC
+trips switched from various modes. These are used in an IPF process to
+set mode and purpose-specific control totals and setting TNC probability
+alpha values.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>excel_file</strong> (<em>String</em>) – Path to the excel file with the modal target information</p></li>
+<li><p><strong>named_range</strong> (<em>String</em><em>, </em><em>default=&quot;mode_targets&quot;</em>) – A named range in <cite>excel_file</cite> where the targets are found. The range
+is assumed to consist of a single row, with values ordered in direct
+correspondence to <cite>modes</cite></p></li>
+<li><p><strong>modes</strong> (<em>[</em><em>String</em><em>,</em><em>..</em><em>]</em><em>, </em><em>default=</em><em>[</em><em>&quot;Walk&quot;</em><em>, </em><em>&quot;Bike&quot;</em><em>, </em><em>&quot;Transit&quot;</em><em>, </em><em>&quot;Driver&quot;</em><em>, </em><em>&quot;Passenger&quot;</em><em>]</em>) – The modes included in the <cite>named_range</cite> value set. Listed in order
+shown in the excel file.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>targets</strong> – A series of modal targets with mode names as the index.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>pd.Series</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="wsa.TNC.estimateAlphas">
+<code class="sig-prename descclassname">wsa.TNC.</code><code class="sig-name descname">estimateAlphas</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">trip_table</span></em>, <em class="sig-param"><span class="n">tnc_ratio_skim</span></em>, <em class="sig-param"><span class="n">targets_array</span></em>, <em class="sig-param"><span class="n">mode</span></em>, <em class="sig-param"><span class="n">purpose</span></em><span class="sig-paren">)</span><a class="headerlink" href="#wsa.TNC.estimateAlphas" title="Permalink to this definition">¶</a></dt>
+<dd><p>Given labeled arrays with trip estimates and TNC probability ratios, determine
+the probability ratio needed to attain a targeted number of trips for a
+given mode and purpose.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>trip_table</strong> (<em>LbArray</em>) – A labeled array with trips estimated for each OD pair for this <cite>mode</cite>
+and <cite>purpose</cite>.</p></li>
+<li><p><strong>tnc_ratio_skim</strong> (<em>LbArray</em>) – A labeled array with TNC probabilty estimates for each OD pair for
+this <cite>mode</cite> and <cite>purpose</cite>.</p></li>
+<li><p><strong>targets_array</strong> (<em>LbArray</em>) – A labeled array with targets for TNC trip substitutions given this
+<cite>mode</cite> and <cite>purpose</cite>.</p></li>
+<li><p><strong>mode</strong> (<em>String</em>) – The current travel mode whose trips could be candidates for TNC
+substituation.</p></li>
+<li><p><strong>purpose</strong> (<em>String</em>) – The purpose of travel.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>alpha</strong> – The TNC probability ratio needed to substitute the targeted number
+of trips for this <cite>mode</cite> and <cite>purpose</cite>. Once established, it should
+remain the same for other scenarios for cross-scenario comparisons.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>Float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="wsa.TNC.initTNCCostArray">
+<code class="sig-prename descclassname">wsa.TNC.</code><code class="sig-name descname">initTNCCostArray</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">scen</span></em>, <em class="sig-param"><span class="n">purpose</span></em>, <em class="sig-param"><span class="n">period</span></em>, <em class="sig-param"><span class="n">hdf_store</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">node_path</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">name</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">overwrite</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">logger</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#wsa.TNC.initTNCCostArray" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initialize a new Skim object to record TNC cost components and estimated
+TNC total costs and trip probabilities.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>scen</strong> (<em>String</em>) – </p></li>
+<li><p><strong>purpose</strong> (<em>String</em>) – </p></li>
+<li><p><strong>period</strong> (<em>String</em>) – </p></li>
+<li><p><strong>hdf_store</strong> (<em>String</em><em>, </em><em>default=None</em>) – </p></li>
+<li><p><strong>node_path</strong> (<em>String</em><em>, </em><em>default=None</em>) – </p></li>
+<li><p><strong>name</strong> (<em>String</em><em>, </em><em>default=None</em>) – </p></li>
+<li><p><strong>Boolean</strong><strong>, </strong><strong>default=False</strong> (<em>overwrite;</em>) – </p></li>
+<li><p><strong>logger</strong> (<em>Logger</em><em>, </em><em>default=None</em>) – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p></p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>Skim</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="wsa.TNC.initTNCRatioArray">
+<code class="sig-prename descclassname">wsa.TNC.</code><code class="sig-name descname">initTNCRatioArray</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">scen</span></em>, <em class="sig-param"><span class="n">purpose</span></em>, <em class="sig-param"><span class="n">period</span></em>, <em class="sig-param"><span class="n">hdf_store</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">node_path</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">name</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">overwrite</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">logger</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#wsa.TNC.initTNCRatioArray" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initialize a new Skim object to record modal trip probabilities and TNC
+trip probability ratios.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>scen</strong> (<em>String</em>) – </p></li>
+<li><p><strong>purpose</strong> (<em>String</em>) – </p></li>
+<li><p><strong>period</strong> (<em>String</em>) – </p></li>
+<li><p><strong>hdf_store</strong> (<em>String</em><em>, </em><em>default=None</em>) – </p></li>
+<li><p><strong>node_path</strong> (<em>String</em><em>, </em><em>default=None</em>) – </p></li>
+<li><p><strong>name</strong> (<em>String</em><em>, </em><em>default=None</em>) – </p></li>
+<li><p><strong>Boolean</strong><strong>, </strong><strong>default=False</strong> (<em>overwrite;</em>) – </p></li>
+<li><p><strong>logger</strong> (<em>Logger</em><em>, </em><em>default=None</em>) – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p></p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>Skim</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="wsa.TNC.estimateTNCCosts">
+<code class="sig-prename descclassname">wsa.TNC.</code><code class="sig-name descname">estimateTNCCosts</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">auto_skim</span></em>, <em class="sig-param"><span class="n">purpose</span></em>, <em class="sig-param"><span class="n">tnc_cost_skim</span></em>, <em class="sig-param"><span class="n">value_of_time</span></em>, <em class="sig-param"><span class="n">tnc_base_fare</span></em>, <em class="sig-param"><span class="n">tnc_service_fee</span></em>, <em class="sig-param"><span class="n">tnc_cost_per_mile</span></em>, <em class="sig-param"><span class="n">tnc_decay_mu</span></em>, <em class="sig-param"><span class="n">tnc_decay_sigma</span></em>, <em class="sig-param"><span class="n">imp_axis</span><span class="o">=</span><span class="default_value">'Impedance'</span></em>, <em class="sig-param"><span class="n">time_label</span><span class="o">=</span><span class="default_value">'TravelTime'</span></em>, <em class="sig-param"><span class="n">dist_label</span><span class="o">=</span><span class="default_value">'Distance'</span></em>, <em class="sig-param"><span class="n">logger</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#wsa.TNC.estimateTNCCosts" title="Permalink to this definition">¶</a></dt>
+<dd><p>Estimate TNC cost components. Pulls data for estimates of auto trip
+durations and distances, calculates TNC estimated costs (time and money)
+using global cost params. Estimates TNC decay factors for each potential
+OD pair.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>auto_skim</strong> (<em>Skim</em>) – A skim with time and distance impedances for traveling by car. These
+are used to estimate TNC travel costs.</p></li>
+<li><p><strong>purpose</strong> (<em>String</em>) – </p></li>
+<li><p><strong>tnc_cost_skim</strong> (<em>String</em>) – A labeled array that will holds the dimensions of TNC costs and the
+final generalized cost estimate for TNCs for all OD pairs.</p></li>
+<li><p><strong>value_of_time</strong> (<em>Numeric</em>) – A factor to convert between time and monetary units, expressed as
+dollars per hour.</p></li>
+<li><p><strong>tnc_base_fare</strong> (<em>Numeric</em>) – </p></li>
+<li><p><strong>tnc_service_fee</strong> (<em>Numeric</em>) – </p></li>
+<li><p><strong>tnc_cost_per_mile</strong> (<em>Numeric</em>) – </p></li>
+<li><p><strong>tnc_decay_mu</strong> (<em>{&quot;minutes&quot;: Numeric</em><em>, </em><em>&quot;dollars&quot;: Numeric}</em>) – A parameter in the lognormal decay expression used to estimate TNC
+trip propensities, <cite>mu</cite> varies for cost-based or time-based analyses.
+The <cite>mu</cite> values are therefor provided in a dictionary.</p></li>
+<li><p><strong>tnc_decay_sigma</strong> (<em>Numeric</em>) – A parameter in the lognormal decay expression used to estimate TNC
+trip propensities, <cite>sigma</cite> varies for cost-based or time-based
+analyses. The <cite>sigma</cite> values are therefor provided in a dictionary.</p></li>
+<li><p><strong>imp_axis</strong> (<em>String</em><em>, </em><em>default=&quot;Impedance&quot;</em>) – The name of the axis in <cite>auto_skim</cite> along which to find various
+impedances</p></li>
+<li><p><strong>time_label</strong> (<em>String</em><em>, </em><em>default=&quot;TravelTime&quot;</em>) – The impedance axis label where OD travel time estimates are stored.</p></li>
+<li><p><strong>dist_label</strong> (<em>String</em><em>, </em><em>default=&quot;Distance&quot;</em>) – The impedance axis label where OD distance estimates are stored.</p></li>
+<li><p><strong>logger</strong> (<em>Logger</em>) – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p></p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>None - the <cite>tnc_cost_skim</cite> is modified in place.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="wsa.TNC.estimateTNCProb">
+<code class="sig-prename descclassname">wsa.TNC.</code><code class="sig-name descname">estimateTNCProb</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">net_config</span></em>, <em class="sig-param"><span class="n">purpose</span></em>, <em class="sig-param"><span class="n">tnc_ratio_skim</span></em>, <em class="sig-param"><span class="n">tnc_cost_skim</span></em>, <em class="sig-param"><span class="n">decay_refs</span></em>, <em class="sig-param"><span class="n">mode_dict</span></em>, <em class="sig-param"><span class="n">mode_impedances</span></em>, <em class="sig-param"><span class="n">use_units</span><span class="o">=</span><span class="default_value">'Dollars'</span></em>, <em class="sig-param"><span class="n">all_purposes</span><span class="o">=</span><span class="default_value">['HBW', 'HBO', 'HBSch', 'NHB']</span></em>, <em class="sig-param"><span class="n">logger</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#wsa.TNC.estimateTNCProb" title="Permalink to this definition">¶</a></dt>
+<dd><p>Estimate probability ratios for TNC trips. Pulls data for mode- and
+purpose-specific decay, calculates modal cdf, and creates probability
+ratio of modal cdf over tnc cdf.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>net_config</strong> (<em>String</em>) – </p></li>
+<li><p><strong>purpose</strong> (<em>String</em>) – </p></li>
+<li><p><strong>tnc_ratio_skim</strong> (<em>Skim</em>) – </p></li>
+<li><p><strong>tnc_cost_skim</strong> (<em>Skim</em>) – </p></li>
+<li><p><strong>decay_refs</strong> (<em>dict</em>) – A dictionary whose keys corespond to mode names in the emma analysis
+and whose values are strings identifying the name of the hdf file
+containing OD decay factor estimates for that mode.</p></li>
+<li><p><strong>mode_dict</strong> (<em>dict</em>) – A dictionary whose keys corespond to mode names in the emma analysis
+and whose values are strings identifying the general mode referred to
+in the <cite>decay_specs</cite> input file.</p></li>
+<li><p><strong>mode_impedances</strong> (<em>dict</em>) – A dictionary whose keys correspond to mode names in the emma analysis
+and whose values are tuples of strings. Each tuple specifies details
+for obtaining mode-specific costs from a skim file, providing the
+hdf node path, axis, label, and units of analysis.</p></li>
+<li><p><strong>use_units</strong> (<em>String</em><em>, </em><em>default=&quot;Dollars&quot;</em>) – If “Dollars”, the TNC decay in dollars is always referenced;
+if “Minutes”, the TNC decay in minutes is always referenced;
+if “align”, the TNC decay referened varies based on the units used
+for each mode’s generalized costs.</p></li>
+<li><p><strong>all_purposes</strong> (<em>[</em><em>String</em><em>,</em><em>..</em><em>]</em><em>, </em><em>default=</em><em>[</em><em>&quot;HBW&quot;</em><em>, </em><em>&quot;HBO&quot;</em><em>, </em><em>&quot;HBSch&quot;</em><em>, </em><em>&quot;NHB&quot;</em><em>]</em>) – </p></li>
+<li><p><strong>logger</strong> (<em>Logger</em>) – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises</dt>
+<dd class="field-even"><p><strong>ValueError</strong> – If <cite>use_units</cite> is not recognized - use “Dollars”, “Minutes”, or “Align”</p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p></p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>None - the <cite>tnc_ratio_skim</cite> is modified in place.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="wsa.TNC.applyTNCProbRatio">
+<code class="sig-prename descclassname">wsa.TNC.</code><code class="sig-name descname">applyTNCProbRatio</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">trip_table</span></em>, <em class="sig-param"><span class="n">tnc_ratio_skim</span></em>, <em class="sig-param"><span class="n">alpha</span></em>, <em class="sig-param"><span class="n">hdf_store</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">node_path</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">name</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">overwrite</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">logger</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#wsa.TNC.applyTNCProbRatio" title="Permalink to this definition">¶</a></dt>
+<dd><p>Estimate which trips in a trip table would switch from the estimated mode
+to TNC, based on the TNC probability ratio (TNC utility relative to the
+estimated mode). Trips between OD pairs with TNC probability ratios above
+a set target (alpha) are assumed to switch to TNC.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>trip_table</strong> (<em>emma.od.Skim</em>) – A skim with trips by mode distributed from origin to destination
+zones.</p></li>
+<li><p><strong>tnc_ratio_skim</strong> (<em>emma.od.Skim</em>) – A skim with TNC probability ratios</p></li>
+<li><p><strong>alpha</strong> (<em>Numeric</em><em> or </em><em>[</em><em>Numeric</em><em>, </em><em>..</em><em>]</em><em>, </em><em>default=2.0</em>) – OD pairs with TNC probability ratios above this value are assumed to
+swith to TNC. A single alpha may be provided or a list of alphas
+corresponding to the number of modes in the <cite>Mode</cite> axis of
+<cite>trip_table</cite> to allows thresholds to vary by mode.</p></li>
+<li><p><strong>hdf_store</strong> (<em>String</em><em>, </em><em>default=None</em>) – </p></li>
+<li><p><strong>node_path</strong> (<em>String</em><em>, </em><em>default=None</em>) – </p></li>
+<li><p><strong>name</strong> (<em>String</em><em>, </em><em>default=None</em>) – </p></li>
+<li><p><strong>overwrite</strong> (<em>Boolean</em><em>, </em><em>default=False</em>) – </p></li>
+<li><p><strong>logger</strong> (<em>Logger</em><em>, </em><em>default=None</em>) – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>tnc_table</strong></p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>Skim</p>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="#wsa.TNC.estimateTNCProb" title="wsa.TNC.estimateTNCProb"><code class="xref py py-func docutils literal notranslate"><span class="pre">estimateTNCProb()</span></code></a></p>
+</div>
+</dd></dl>
+
+<ul class="simple">
+<li><p><a class="reference internal" href="genindex.html"><span class="std std-ref">Index</span></a></p></li>
+<li><p><a class="reference internal" href="py-modindex.html"><span class="std std-ref">Module Index</span></a></p></li>
+<li><p><a class="reference internal" href="search.html"><span class="std std-ref">Search Page</span></a></p></li>
+</ul>
+</div>
+</div>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h3><a href="index.html">Table of Contents</a></h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="Step1.html">Step 1 - Clean Skims</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Step2.html">Step 2 - Import Skims</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Step3.html">Step 3 - Summarize Access</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Step4.html">Step 4 - Trip Generation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Step5.html">Step 5 - Mode Choice</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Step6.html">Step 6 - Trip Distribution</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Step 7 - TNC Trips</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#functions">Functions</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="Step6.html"
+                        title="previous chapter">Step 6 - Trip Distribution</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/Step7.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="Step6.html" title="Step 6 - Trip Distribution"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">wsa October 2020 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Step 7 - TNC Trips</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2020, Alex Bell.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 3.1.1.
+    </div>
+  </body>
+</html>

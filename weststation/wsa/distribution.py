@@ -398,12 +398,3 @@ def summarizeTripAttributes(trips, mode, net_config, skim_ref, unit,
         merge_df.set_index(names, inplace=True)   
         stack.append(merge_df)
     return pd.concat(stack, axis=1)
-    
-        
-        
-        
-        
-        
-        
-        
-        

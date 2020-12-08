@@ -4,7 +4,7 @@ Created on Thu Aug 20 13:20:47 2020
 
 @author: Alex Bell
 
-This script models trips distribution in five steps:
+This script models trip distribution in five steps:
 
 1. Creates empty trip tables for each purpose. Each table has an axis
    for each travel mode in addition to `From` and `To` axes.
@@ -32,11 +32,22 @@ This script models trips distribution in five steps:
 
 After the balancing step is complete, results are reported in csv files.
 
-  - **trips_by_mode_and_purpose_dist.csv**: 
-      ...
-      
-  - **trip_len_and_duration_dist.csv**:
-      ...
+  - **trips_by_mode_and_purpose_dist_{period}.csv**: Summarizes trips by mode
+  and pupose to and from the key broad reporting geographies: focus area,
+  window area, remainder area.
+
+  - **trip_len_dist_{period}.csv**: A summary of trips, person miles of
+  travel, and average trip length to and from each TAZ. Can be summarized
+  for arbitray collections of TAZs, including built-in groupings for zones
+  in the focus and window areas. When summarizing, average trip length should
+  be calculated based on the sum of person miles of travel divided by the
+  sum of trips.
+
+  -  **trip_dur_dist_{period}.csv**: Same as `trip_len_dist.csv`, but focused on
+  trip duration (in minutes).
+
+   **trip_cost_dist_{period}.csv**: Same as `trip_len_dist.csv`, but focused on
+  trip generalized costs (in dollars).
 """
 
 #%% IMPORTS

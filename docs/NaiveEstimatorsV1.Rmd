@@ -363,8 +363,8 @@ noskim_models = lapply(noskim, function(x){
   }) %>% bind_rows
 }) %>% 
   bind_rows %>%
-  add_column(model = rep(c("Walk-bike","HOV"), each=3), .before = 1) %>%
-  add_column(measure = rep("time",6), .before = 2)
+  tibble::add_column(model = rep(c("Walk-bike","HOV"), each=3), .before = 1) %>%
+  tibble::add_column(measure = rep("time",6), .before = 2)
 
 # For the ones with skim but no generalized cost: SOV
 # -----------------------------------------------------------------------------
@@ -388,8 +388,8 @@ sov_models = lapply(c("HBW","HBNW","NHB"), function(y){
              aic=NA)
 }) %>% 
   bind_rows %>%
-  add_column(model = rep("SOV",3), .before = 1) %>%
-  add_column(measure = rep("time",3), .before = 2)
+  tibble::add_column(model = rep("SOV",3), .before = 1) %>%
+  tibble::add_column(measure = rep("time",3), .before = 2)
 
 # For the ones with skim and generalized cost, needing no edits: WAT
 # -----------------------------------------------------------------------------
@@ -414,8 +414,8 @@ wat_models_time = lapply(c("HBW","HBNW","NHB"), function(y){
              aic = aic)
 }) %>% 
   bind_rows %>%
-  add_column(model = rep("WAT",3), .before = 1) %>%
-  add_column(measure = rep("time",3), .before = 2)
+  tibble::add_column(model = rep("WAT",3), .before = 1) %>%
+  tibble::add_column(measure = rep("time",3), .before = 2)
 
 wat_models_gc = lapply(c("HBW","HBNW","NHB"), function(y){
   m = wat %>% filter(Purpose == y) %>% filter(GeneralizedCost != 9999999)
@@ -437,8 +437,8 @@ wat_models_gc = lapply(c("HBW","HBNW","NHB"), function(y){
              aic = aic)
 }) %>% 
   bind_rows %>%
-  add_column(model = rep("WAT", 3), .before = 1) %>%
-  add_column(measure = rep("gc",3), .before = 2)
+  tibble::add_column(model = rep("WAT", 3), .before = 1) %>%
+  tibble::add_column(measure = rep("gc",3), .before = 2)
 
 # For the ones with skim and generalized cost, needing edits: the 3 DATs
 # -----------------------------------------------------------------------------
@@ -463,8 +463,8 @@ dat_models_time = lapply(c("HBW","HBNW","NHB"), function(y){
              aic = aic)
 }) %>% 
   bind_rows %>%
-  add_column(model = rep("DAT",3), .before = 1) %>%
-  add_column(measure = rep("time",3), .before = 2)
+  tibble::add_column(model = rep("DAT",3), .before = 1) %>%
+  tibble::add_column(measure = rep("time",3), .before = 2)
 
 dat_models_gc = lapply(c("HBW","HBNW","NHB"), function(y){
   m = dat %>% filter(Purpose == y) %>% filter(GeneralizedCost != 9999999)
@@ -486,8 +486,8 @@ dat_models_gc = lapply(c("HBW","HBNW","NHB"), function(y){
              aic = aic)
 }) %>% 
   bind_rows %>%
-  add_column(model = rep("DAT", 3), .before = 1) %>%
-  add_column(measure = rep("gc",3), .before = 2)
+  tibble::add_column(model = rep("DAT", 3), .before = 1) %>%
+  tibble::add_column(measure = rep("gc",3), .before = 2)
 
 # Bind em all up
 # -----------------------------------------------------------------------------

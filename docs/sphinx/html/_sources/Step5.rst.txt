@@ -7,7 +7,6 @@
 
 Step 5 - Mode Choice
 ======================
-
 This script applies mode choice models to zone data, including accessibility
 and demographic characteristics. The model series utilizes a consistent
 structure, analyzing the following modal nests:
@@ -31,38 +30,68 @@ The application steps rely on two primary types of input:
       during the trip gen process that contain cross-classified households.
 
 A mode choice labeled array is generated with the following dimensions:
-    - Zones (TAZs or blocks depending on the scale of anlysis)
-    - HH Size ("-", "HHSize1", "HHSize2", "HHSize3", "HHSize4p")
-    - Vehicle Ownership ("-", "Veh0", "Veh1", "Veh2", "Veh3p")
-    - Income ("-", "Inc1", "Inc2", "Inc3", "Inc4")
-    - Workers ("-", "worker0", "worker1", "worker2", "worker3p")
-    - Purpose ("-", "HBW", "HBSch", "HBO", "NHB")
-    - End ("P", "A")
-    - Mode ("Walk", "Bike", "Drive", "Passenger", "Transit WAT", "Transit DAT")
+    - **Zones** (TAZs or blocks depending on the scale of anlysis)
+    - **HH Size** ("-", "HHSize1", "HHSize2", "HHSize3", "HHSize4p")
+    - **Vehicle Ownership** ("-", "Veh0", "Veh1", "Veh2", "Veh3p")
+    - **Income** ("-", "Inc1", "Inc2", "Inc3", "Inc4")
+    - **Workers** ("-", "worker0", "worker1", "worker2", "worker3p")
+    - **Purpose** ("-", "HBW", "HBSch", "HBO", "NHB")
+    - **End** ("P", "A")
+    - **Mode** ("Walk", "Bike", "Drive", "Passenger", "Transit WAT", "Transit DAT")
 
 This means mode shares are estimated by zone, household type ("-" for most
 attractions or NHB productions since these are non-home generators), purpose,
 and trip end. These shares can then be applied to yet another labeled array:
 trips-by-mode, which is the product of the mode choice and trip gen arrays.
 
-Model application entails fetching appropriate sections of the demographic
-array (HH by type); vectorizing, reindexing, and broadcasting accessibility
-arrays; transforming values based on model coefficients as needed; and
-adding model intercept constants.  All of this occurs in an in-memory array
-dimensioned to match the targeted section of the on-disk mode choice array.
-The accumulated values effectively apply a linear regression formula by adding
-coefficient-adjusted factors together. The mode choice models are, however,
-binomial logistic equations, and the linear results are used to determine
-the probability of selecting each mode in the nest as follows:
+Model application entails...
+    - fetching appropriate sections of the demographic array (HH by type);
+    - vectorizing, reindexing, and broadcasting accessibility arrays;
+    - transforming values based on model coefficients as needed; and
+    - adding model intercept constants.
+    
+All of this occurs in an in-memory array dimensioned to match the targeted
+section of the on-disk mode choice array. The accumulated values effectively
+apply a linear regression formula by adding coefficient-adjusted factors
+together. The mode choice models are, however, binomial logistic equations,
+and the linear results are used to determine the probability of selecting each
+mode in the nest as follows:
 
     - choice1 = exp(linear_result)/(1 + exp(linear_result))
 
     - choice0 = 1 - choice1
 
+The script produces the output files listed below. Note that TAZ- and block-level
+analyses are run and stored independently. Block-level mode choice estimates are
+"patched" into the TAZ-level estimates when generating the `Trips_by_mode_predist.csv`
+table, but the H5 outputs are unadulterated results from each scale of analysis.
+In the `distribution <Step6>`_ phase, block-level trip details are again patched into the
+regional trips by mode estimates for the window area, prior to distributing trips.
+
+    - **Mode_choice_taz.h5**: LbArray
+        TAZ mode choice estimates by the 8 dimensions listed above. These estimates
+        do not account for the number of activities by type in each zone. Rather, they
+        provide estimates of mode shares for a given activity type. These are then
+        applied to trip generation estimates to make trips by mode tables (see below).
+    - **Mode_choice_block.h5**: LbArray
+        A block-level version of Mode_choice_taz.h5
+    - **Trips_by_taz.h5**: LbArray
+        TAZ trips by mode estimates for the 8 dimensions listed above. These estimates
+        can be summarized for a true mode share estimate based on activities in each
+        zone.
+    - **Trips_by_block.h5**: LbArray
+        A block-level version of Trips_by_taz.h5
+    - **Trips_by_mode_predist.csv** csv
+        A table of trip productions and attractions by TAZ. Block-level trips-by-mode
+        estimates for the window area are patched into TAZ-level trips-by-mode estimates
+        for the region.
 
 
 Functions
 ----------
+The following functions are referenced in this script, from the 
+`wsa.mode_choice` (or `mc`) submodule:
+
 .. autofunction:: initImpSkim_wsa
 
 

@@ -17,13 +17,16 @@ Workflow:
     - Travel cost skims
     - Zonal activity data
   - Specify decay rates
-  - Calculate decay factors (using emma.Decay methods)
+  - Calculate decay factors (using `emma.Decay` methods)
   - Summarize access scores (using `emma.od.summarizeAccess`)
   - Export results
 
 
 Functions
 ----------
+The following functions are referenced in this script, from the 
+`wsa.summarize_access` (or `access`) submodule:
+
 .. autofunction:: loadInputZones
 
 

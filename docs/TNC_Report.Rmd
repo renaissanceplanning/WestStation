@@ -1,7 +1,5 @@
 ---
-title: "POST MODE-CHOICE ESTIMATION OF TNC TRIP LIKELIHOOD"
-author: "Renaissance Planning"
-date: "August 2020"
+title: "POST PROCESSING: ESTIMATION OF TNC TRIP LIKELIHOOD"
 output: 
   html_document:
     toc: true
@@ -40,7 +38,7 @@ library(kableExtra)
 
 # Introduction
 
-The rise of travel using transportation network companies (TNCs), especially in urban areas, necessitates an understanding of how TNCs factor into a mode choice decision. Unfortunately, many trip record surveys (including the one used for this analysis), do not reflect TNC trips. Thus, a methodology must be developed to estimate TNC trip likelihood as a post-processing step to mode choice estimation. This paper will detail the process for performing this estimation.
+The rise of travel using transportation network companies (TNCs), especially in urban areas, necessitates an understanding of how TNCs factor into a mode choice decision. Unfortunately, many trip record surveys (including the one used for the accessibility-based model analysis), do not reflect TNC trips. Thus, a methodology was developed to estimate TNC trip likelihood as a post-processing step to mode choice estimation. This page details the process for performing this estimation.
 
 # Methods
 

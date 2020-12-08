@@ -9,10 +9,9 @@
 <meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
 
 
-<meta name="author" content="Renaissance Planning" />
 
 
-<title>POST MODE-CHOICE ESTIMATION OF TNC TRIP LIKELIHOOD</title>
+<title>POST PROCESSING: ESTIMATION OF TNC TRIP LIKELIHOOD</title>
 
 <script src="site_libs/jquery-1.11.3/jquery.min.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -376,24 +375,47 @@ div.tocify {
     <span class="caret"></span>
   </a>
   <ul class="dropdown-menu" role="menu">
-    <li class="dropdown-header">Overview</li>
     <li>
-      <a href="ModelOverview.html"></a>
-    </li>
-    <li>
-      <a href="WhitePaper_TripGenAndBuiltEnviron.pdf">Trip Generation</a>
+      <a href="overview.html">Overview</a>
     </li>
     <li>
       <a href="NaiveEstimatorsV1.html">Decay Rate Estimation</a>
     </li>
-    <li>
-      <a href="Model_Sensitivities_Report.html">Model Sensitivities</a>
+    <li class="dropdown-submenu">
+      <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">Trip Generation</a>
+      <ul class="dropdown-menu" role="menu">
+        <li>
+          <a href="TripGen.html">Trip generation rates</a>
+        </li>
+        <li>
+          <a href="WhitePaper_TripGenAndBuiltEnviron.pdf">Literature review</a>
+        </li>
+      </ul>
+    </li>
+    <li class="dropdown-submenu">
+      <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">Mode choice</a>
+      <ul class="dropdown-menu" role="menu">
+        <li>
+          <a href="Model_Sensitivities_Report.html">Model Sensitivities</a>
+        </li>
+        <li>
+          <a href="Mode_Choice_Report.html">Mode choice model</a>
+        </li>
+      </ul>
+    </li>
+    <li class="dropdown-submenu">
+      <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">Distribution</a>
+      <ul class="dropdown-menu" role="menu">
+        <li>
+          <a href="Kfactors.html">K Factors</a>
+        </li>
+        <li>
+          <a href="TripDecayV2.html">Survival Decay Concept</a>
+        </li>
+      </ul>
     </li>
     <li>
-      <a href="Mode_Choice_Report.html">Mode choice model</a>
-    </li>
-    <li>
-      <a href="TripDecayV2.html">Survival Decay Concept</a>
+      <a href="TNC_Report.html">TNC Trip Estimation</a>
     </li>
   </ul>
 </li>
@@ -424,9 +446,7 @@ div.tocify {
 
 
 
-<h1 class="title toc-ignore">POST MODE-CHOICE ESTIMATION OF TNC TRIP LIKELIHOOD</h1>
-<h4 class="author">Renaissance Planning</h4>
-<h4 class="date">August 2020</h4>
+<h1 class="title toc-ignore">POST PROCESSING: ESTIMATION OF TNC TRIP LIKELIHOOD</h1>
 
 </div>
 
@@ -448,7 +468,7 @@ p.caption {
 </style>
 <div id="introduction" class="section level1">
 <h1><span class="header-section-number">1</span> Introduction</h1>
-<p>The rise of travel using transportation network companies (TNCs), especially in urban areas, necessitates an understanding of how TNCs factor into a mode choice decision. Unfortunately, many trip record surveys (including the one used for this analysis), do not reflect TNC trips. Thus, a methodology must be developed to estimate TNC trip likelihood as a post-processing step to mode choice estimation. This paper will detail the process for performing this estimation.</p>
+<p>The rise of travel using transportation network companies (TNCs), especially in urban areas, necessitates an understanding of how TNCs factor into a mode choice decision. Unfortunately, many trip record surveys (including the one used for the accessibility-based model analysis), do not reflect TNC trips. Thus, a methodology was developed to estimate TNC trip likelihood as a post-processing step to mode choice estimation. This page details the process for performing this estimation.</p>
 </div>
 <div id="methods" class="section level1">
 <h1><span class="header-section-number">2</span> Methods</h1>

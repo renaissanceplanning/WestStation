@@ -28,24 +28,41 @@ shopping.
 
 The sketch accessibility model was developed and piloted as part of MAPC's
 analysis of the [West Station Area Transit Study](https://www.mapc.org/resource-library/west-station-area-transit-study/).
-The map below shows the West Station study area. A [basic walkthrough](./west_station_exec.html)
-of the West Station area existing conditions analysis, demonstrating
-accessibility's relationship to travel behavior is available [here](./west_station_exec.html).
-A summary of findings for several alternative future scenarios for the West
-Station Area is available [here](.west_station_exec.html).
+This site provides an overview of the core components of multimodal
+accessibility analysis, a [walkthrough of the modeling steps piloted in the West Station area](./west_station_exec.html), [examples of model outputs](./west_station_scen.html) 
+for comparison across hypothetical land use and transportation scenarios, 
+[detailed model documents](./overview.html), and links to toolkit
+support.
+
+The map below shows the West Station study area and model extents. The "focus
+area" is the local area where land use and network changes are envisioned. The
+"window area" is a buffer around the focus area approximating the limits for
+walking and biking trips coming from or going to the focus area. Non-motorized
+trips are modeled using fine-grained land use (blocks) and network (all streets)
+data in the focus and window areas. The "remainder area," all modes are modeled
+using coarser geographic resolution (regional TAZs and travel newtorks).
 
 
 ```{r, eval = TRUE}
-zones <- read_sf("./data/mapping/window_blocks_simp.shp") %>% 
+zones <- read_sf("./data/mapping/window_blocks_simp.shp")
+tazs <- read_sf("./data/mapping/MAPC_Zones_simp.shp")
+infocus <- zones %>% 
   filter(INFOCUS==1 & Base==1)
-# Orange polys
-    tm_shape(zones) + 
-    tm_polygons(col=rpg_cols("orange"), alpha=0.5) +
-# White borders
-      tm_shape(zones) +
-    tm_borders(col="#FFFFFF", lwd=2) +
-    tm_basemap(leaflet::providers$Esri.WorldImagery)
+inwindow <- zones %>% 
+  filter(INFOCUS==0 & INWINDOW==1 & Base==1)
+remain <- tazs %>% 
+  filter(INWINDOW==0)
 
+# Orange polys
+tm_shape(infocus) + tm_fill(col=rpg_cols("orange"), alpha=0.5, group="Focus Area") +
+tm_shape(inwindow) + tm_fill(col=rpg_cols("green"), alpha=0.5, group="Window Area") +
+tm_shape(remain) + tm_fill(col=rpg_cols("gray"), alpha=0.5, group="Remainder Area") +
+# White borders
+tm_shape(zones) +
+tm_borders(col="#FFFFFF", lwd=0.5, group="Block borders") +
+tm_shape(tazs) +
+tm_borders(col="#FFFFFF", lwd=2, group="TAZ borders") +
+tm_basemap(leaflet::providers$Esri.WorldImagery)
 ```
 
 
@@ -126,7 +143,7 @@ given mode (especially relative to other modes) indicate higher likelihoods
 that the mode will be used in daily travel.
 
 Details of the sketch travel model developed for the Boston region using
-accessibility are provided in the [Model Documentation](./travel.html). The
+accessibility are provided in the [Model Documentation](./overview.html). The
 model estimates *trip generation*, *mode choice*, and *trip distribution* to 
 assess travel impacts in a localized study area under alternative land use
 and transportation scenarios.

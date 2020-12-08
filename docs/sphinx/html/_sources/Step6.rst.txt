@@ -1,0 +1,79 @@
+.. module:: wsa.distribution
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Contents:
+
+
+Step 6 - Trip Distribution
+============================
+This script models trip distribution in five steps:
+
+1. Creates empty trip tables for each trip purpose. Each table has an axis
+   for each travel mode in addition to `From` and `To` axes.
+
+2. Seeds each purpose's trip tables using production and attraction
+   estimates produced for each mode by the mode choice model and the
+   `weightedInteractions` method in emma. In this step, period factors
+   are applied to adjust daily trip estimates down to period estimates.
+
+3. Setup shadowing - this forges a relationship between the block-level
+   trip table and the TAZ-level trip table. Factors applied to trips at
+   TAZ level are mimicked at the block level. This allows block-level
+   detail to influence mode shares and distribution to reflect travel
+   opportunities beyond the window area.
+
+4. Apply k factors - these factors adjust the raw mode choice estimates
+   to better match an observed or modeled condition in a specific scenario.
+   A preferred set of factors should be establsihed and used for all
+   other scenarios for meaningful cross-scenario comparisons.
+
+5. Balance the trip tables using iterative proporational fitting (IPF).
+   The balancing process focuses on total person trip productions and 
+   attractions in the selected travel period. Trips by mode can fluctuate
+   during the balancing process.
+
+After the balancing step is complete, results are reported in csv files.
+
+  - **trips_by_mode_and_purpose_dist_{period}.csv**: csv
+      Summarizes trips by mode and pupose to and from the key broad reporting
+      geographies: focus area, window area, remainder area.
+
+  - **trip_len_dist_{period}.csv**: csv
+      A summary of trips, person miles of travel, and average trip length to
+      and from each TAZ. Can be summarized for arbitray collections of TAZs,
+      including built-in groupings for zones in the focus and window areas.
+      When summarizing, average trip length should be calculated based on the
+      sum of person miles of travel divided by the sum of trips.
+
+  -  **trip_dur_dist_{period}.csv**: csv
+      Same as `trip_len_dist.csv`, but focused on trip duration (in minutes).
+
+   **trip_cost_dist_{period}.csv**: csv
+      Same as `trip_len_dist.csv`, but focused on trip generalized costs
+      (in dollars).
+
+
+Functions
+----------
+The following functions are referenced in this script, from the 
+`wsa.distribution` submodule:
+
+
+.. autofunction:: initTripTable
+
+.. autofunction:: applyKFactors
+
+.. autofunction:: tripEndsByMode
+
+.. autofunction:: seedTripTable
+
+.. autofunction:: tripTargetsByZone
+
+.. autofunction:: summarizeTripAttributes
+
+
+
+* :ref:`genindex`
+* :ref:`modindex`
+* :ref:`search`

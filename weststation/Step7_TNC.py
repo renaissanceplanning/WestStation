@@ -4,32 +4,34 @@ Created 2020
 
 @ Author: Aaron Weinstock, Alex Bell
 
-What does it do?
-For an individual trip, obtain the ratio of TNC probability / observed trip probability
+This script estimates the number of TNC trips by TAZ based on a trip table,
+modal skims (to understand costs by the estimated mode and estimate costs
+for a potential TNC trip), and *alpha* values. The probability for taking a
+TNC trip given its generalized cost must exceed the probability of taking the
+same trip by the original estimated mode by a factor that exceeds the alpha
+value set for that mode and travel purpose.
 
-Parameters:
-1. purpose: trip purpose -- "HBW", "HBO", "HBSch", or "NHB" (character)
-2. mode: mode of the trip -- "Walk", "Bike", "Driver", "Passenger", "WAT", or "DAT" (character)
-3. obs_cost: the observed generalized cost of the trip (numeric)
-4. distance: distance of the trip in miles (numeric)
-5. duration: duration of the trip in minutes (numeric)
-6. cost_per_mile: cost per mile of a TNC trip (number, default 14/12 from Fare Choices)
-7. method: units for TNC GC construction -- "time" or "dollars" (character, default "time")
+This is a post-processing step that ingests ouptuts from previous steps to
+provide insight into the number of TNC trips made and what those trips
+imply for mode shifts.
 
-Returns:
-A dictionary with the following elements:
-1. constructed TNC cost
-2. TNC trip probability
-3. Observed trip probability
-4. Ratio value of TNC probability / Observed trip probability
+TNC trip cost parameters are specified as global parameters: `TNC_BASE_FARE`,
+`TNC_SERVICE_FEE`, `TNC_COST_PER_MILE`.
 
-TNC_array = estimated TNC cost and trip probability by purpose
+Alpha values may be calculated when the script is run to calibrate them to
+targets for aggregate TNC trips by purpose and mode replaced. Once calibrated
+to a base condition, the same values should be run for alternative scenarios
+or alternative TNC cost constructions to gauge the impact on TNC utilization.
 
-ESTIMATE_TNC_COSTS – this uses auto skim data to prepare TNC generalized cost skims using assumptions about charges. If these have already been calculated for a scenario, you can set this to false since that work takes a little time.
-CALC_ALPHAS – if True, the script will calculate alpha values to calibrate the TNC process to the TNC_target_setting.xlsx input file. This has already been done for the Base scenario, so you shouldn’t need to recalculate anything for the other scenarios. But if you had new TNC data in a year that would alter the target setting assumptions, this is how to generate fresh alpha values.
-ALPHAS – basically, see above. What’s currently there is what’s needed to bring the base in line with the target setting assumptions. These values then are applied to other scenarios to estimate TNC change by scenario.
-TNC_BASE_FARE/TNC_SERVICE_FEE/TNC_COST_PER_MILE – These are the cost parameters for TNC trips. To test a scenario involving price changes update these variables and ensure `ESTIMATE_TNC_COSTS` is set to True. The base fare and service fee combine into a flat cost that expands based on estimated trip mileage and cost per mile. 
+The script summarizes TNC estimates in two csv tables:
 
+- **TNC_flow_summary_{period}.csv**: reports TNC trips by purpose and mode
+replaced for generalized reporting geographies (focus, window, and remainder
+areas). Summarizes TNC trips, total trips (in the original trip tables), and
+percent switchted to TNC.
+
+- **TNC_zone_summary_{period}.csv**: similar to `TNC_flow_summary`, but
+broken down on a TAZ-by-TAZ basis.
 
 """
 

@@ -9,7 +9,6 @@
 <meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
 
 
-<meta name="author" content="Renaissance Planning" />
 
 
 <title>MODE CHOICE MODEL SENSITIVITIES</title>
@@ -20,9 +19,6 @@
 <script src="site_libs/bootstrap-3.3.5/js/bootstrap.min.js"></script>
 <script src="site_libs/bootstrap-3.3.5/shim/html5shiv.min.js"></script>
 <script src="site_libs/bootstrap-3.3.5/shim/respond.min.js"></script>
-<script src="site_libs/jqueryui-1.11.4/jquery-ui.min.js"></script>
-<link href="site_libs/tocify-1.9.1/jquery.tocify.css" rel="stylesheet" />
-<script src="site_libs/tocify-1.9.1/jquery.tocify.js"></script>
 <script src="site_libs/navigation-1.1/tabsets.js"></script>
 <link href="site_libs/highlightjs-9.12.0/default.css" rel="stylesheet" />
 <script src="site_libs/highlightjs-9.12.0/highlight.js"></script>
@@ -266,69 +262,6 @@ $(document).ready(function () {
 
 
 
-<style type="text/css">
-
-#TOC {
-  margin: 25px 0px 20px 0px;
-}
-@media (max-width: 768px) {
-#TOC {
-  position: relative;
-  width: 100%;
-}
-}
-
-@media print {
-.toc-content {
-  /* see https://github.com/w3c/csswg-drafts/issues/4434 */
-  float: right;
-}
-}
-
-.toc-content {
-  padding-left: 30px;
-  padding-right: 40px;
-}
-
-div.main-container {
-  max-width: 1200px;
-}
-
-div.tocify {
-  width: 20%;
-  max-width: 260px;
-  max-height: 85%;
-}
-
-@media (min-width: 768px) and (max-width: 991px) {
-  div.tocify {
-    width: 25%;
-  }
-}
-
-@media (max-width: 767px) {
-  div.tocify {
-    width: 100%;
-    max-width: none;
-  }
-}
-
-.tocify ul, .tocify li {
-  line-height: 20px;
-}
-
-.tocify-subheader .tocify-item {
-  font-size: 0.90em;
-}
-
-.tocify .list-group-item {
-  border-radius: 0px;
-}
-
-
-</style>
-
-
 
 </head>
 
@@ -336,16 +269,6 @@ div.tocify {
 
 
 <div class="container-fluid main-container">
-
-
-<!-- setup 3col/9col grid for toc_float and main content  -->
-<div class="row-fluid">
-<div class="col-xs-12 col-sm-4 col-md-3">
-<div id="TOC" class="tocify">
-</div>
-</div>
-
-<div class="toc-content col-xs-12 col-sm-8 col-md-9">
 
 
 
@@ -378,24 +301,47 @@ div.tocify {
     <span class="caret"></span>
   </a>
   <ul class="dropdown-menu" role="menu">
-    <li class="dropdown-header">Overview</li>
     <li>
-      <a href="ModelOverview.html"></a>
-    </li>
-    <li>
-      <a href="WhitePaper_TripGenAndBuiltEnviron.pdf">Trip Generation</a>
+      <a href="overview.html">Overview</a>
     </li>
     <li>
       <a href="NaiveEstimatorsV1.html">Decay Rate Estimation</a>
     </li>
-    <li>
-      <a href="Model_Sensitivities_Report.html">Model Sensitivities</a>
+    <li class="dropdown-submenu">
+      <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">Trip Generation</a>
+      <ul class="dropdown-menu" role="menu">
+        <li>
+          <a href="TripGen.html">Trip generation rates</a>
+        </li>
+        <li>
+          <a href="WhitePaper_TripGenAndBuiltEnviron.pdf">Literature review</a>
+        </li>
+      </ul>
+    </li>
+    <li class="dropdown-submenu">
+      <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">Mode choice</a>
+      <ul class="dropdown-menu" role="menu">
+        <li>
+          <a href="Model_Sensitivities_Report.html">Model Sensitivities</a>
+        </li>
+        <li>
+          <a href="Mode_Choice_Report.html">Mode choice model</a>
+        </li>
+      </ul>
+    </li>
+    <li class="dropdown-submenu">
+      <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">Distribution</a>
+      <ul class="dropdown-menu" role="menu">
+        <li>
+          <a href="Kfactors.html">K Factors</a>
+        </li>
+        <li>
+          <a href="TripDecayV2.html">Survival Decay Concept</a>
+        </li>
+      </ul>
     </li>
     <li>
-      <a href="Mode_Choice_Report.html">Mode choice model</a>
-    </li>
-    <li>
-      <a href="TripDecayV2.html">Survival Decay Concept</a>
+      <a href="TNC_Report.html">TNC Trip Estimation</a>
     </li>
   </ul>
 </li>
@@ -427,8 +373,6 @@ div.tocify {
 
 
 <h1 class="title toc-ignore">MODE CHOICE MODEL SENSITIVITIES</h1>
-<h4 class="author">Renaissance Planning</h4>
-<h4 class="date">August 2020</h4>
 
 </div>
 
@@ -448,15 +392,221 @@ p.caption {
  font-weight: bold;
 }
 </style>
-<div id="introduction" class="section level1">
-<h1><span class="header-section-number">1</span> Introduction</h1>
-<p>The tables that follow will detail the sensitivities of the mode choice models used in the MAPC accessibility-based trip modeling process. For more detail on the mode choice modeling approach or model specifics, please see <em>Mode choice modeling in Massachusetts: approach and production end results</em>.</p>
-<div style="page-break-after: always;"></div>
+<p>This page highlights the factors that influence accessibility scores and mode choice model outputs. The roster of key variables includes general indications of their impact on model results. For more details on mode choice model variables, see the <a href="./Mode_Choice_Report.html">mode choice model report</a></p>
+<p>Four tables are presented in the tabs below:</p>
+<ul>
+<li><strong>Access scores</strong> are sensitive to the locations of jobs and households as well as the travel networks for each analyzed mode. This table focuses on the network attributes that influence accessibility scores. Since these scores are used in the mode choice models, these factors have a downstream impact on estimated mode shares.</li>
+<li><strong>Production end mode choice</strong> models combine access scores with household characteristics to estimate mode choice for the HBW, HBO, and HBSch purposes.</li>
+<li><strong>Attraction end mode choice</strong> models focus primarily on accessibility scores, with some consideration of the characteristics of households that can access a given zone alongside built environment variables.</li>
+<li><strong>Non-home-based mode choice</strong> models rely on access scores and the outputs of the attraction end mode choice models. When analyzing NHB trips, the mode of travel used to reach the non-home location is an important determinant of the likely mode of travel.</li>
+</ul>
+<div id="section" class="section level1 tabset">
+<h1></h1>
+<div id="access-scores" class="section level2">
+<h2>Access scores</h2>
+<table class="table table-striped table-hover table-responsive table-bordered" style="margin-left: auto; margin-right: auto;">
+<caption>
+Network attributes and cost parameters impacting accessibility scores
+</caption>
+<thead>
+<tr>
+<th style="text-align:left;font-weight: bold;">
+Mode
+</th>
+<th style="text-align:left;font-weight: bold;">
+Cost Component
+</th>
+<th style="text-align:left;font-weight: bold;">
+Determinant of Cost
+</th>
+<th style="text-align:left;font-weight: bold;">
+Influence
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left;vertical-align: middle !important;" rowspan="2">
+Walk
+</td>
+<td style="text-align:left;">
+Time
+</td>
+<td style="text-align:left;">
+Walk network distances
+</td>
+<td style="text-align:left;">
+Shorter distances :: higher walk scores
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Time
+</td>
+<td style="text-align:left;">
+Average walk speed
+</td>
+<td style="text-align:left;">
+Shorter distances :: higher walk scores
+</td>
+</tr>
+<tr>
+<td style="text-align:left;vertical-align: middle !important;" rowspan="4">
+Bike
+</td>
+<td style="text-align:left;">
+Time
+</td>
+<td style="text-align:left;">
+Bike network distance
+</td>
+<td style="text-align:left;">
+Shorter distances :: higher bike scores
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Time
+</td>
+<td style="text-align:left;">
+Average bicycle speed
+</td>
+<td style="text-align:left;">
+Shorter distances :: higher bike scores
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Time
+</td>
+<td style="text-align:left;">
+Speed adjustment for cycleway facilities
+</td>
+<td style="text-align:left;">
+Greater proportion of path on cycleway :: higher bike scores
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Time
+</td>
+<td style="text-align:left;">
+Speed adjustment for uncomfortable cycling conditions
+</td>
+<td style="text-align:left;">
+Greater proportion of path on uncomfortable facilities :: lower bike scores
+</td>
+</tr>
+<tr>
+<td style="text-align:left;vertical-align: middle !important;" rowspan="4">
+Transit
+</td>
+<td style="text-align:left;">
+Time
+</td>
+<td style="text-align:left;">
+In vehicle time
+</td>
+<td style="text-align:left;">
+Shorter time on vehicle :: higher transit scores
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Time
+</td>
+<td style="text-align:left;">
+Out of vehicle time
+</td>
+<td style="text-align:left;">
+Shorter time walking to/from, waiting for vehicle :: higher transit scores
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Monetary Costs
+</td>
+<td style="text-align:left;">
+Fare
+</td>
+<td style="text-align:left;">
+Higher fares :: lower transit scores
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Monetary Costs
+</td>
+<td style="text-align:left;">
+Parking charges (DAT)
+</td>
+<td style="text-align:left;">
+Higher parking cost :: lower transit scores
+</td>
+</tr>
+<tr>
+<td style="text-align:left;vertical-align: middle !important;" rowspan="5">
+Auto
+</td>
+<td style="text-align:left;">
+Time
+</td>
+<td style="text-align:left;">
+Congested travel time
+</td>
+<td style="text-align:left;">
+More time/more congestion :: lower auto scores
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Time
+</td>
+<td style="text-align:left;">
+Terminal time
+</td>
+<td style="text-align:left;">
+Longer time to access vehicle :: lower auto scores
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Monetary Costs
+</td>
+<td style="text-align:left;">
+Operating costs
+</td>
+<td style="text-align:left;">
+Longer distances/higher costs :: lower auto scores
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Monetary Costs
+</td>
+<td style="text-align:left;">
+Tolls
+</td>
+<td style="text-align:left;">
+Higher charges :: lower auto scores
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Monetary Costs
+</td>
+<td style="text-align:left;">
+Parking charges at destination
+</td>
+<td style="text-align:left;">
+Higher charges :: lower auto scores
+</td>
+</tr>
+</tbody>
+</table>
 </div>
-<div id="results" class="section level1">
-<h1><span class="header-section-number">2</span> Results</h1>
-<div id="production-end-models-home-based" class="section level2">
-<h2><span class="header-section-number">2.1</span> Production end models: Home-based</h2>
+<div id="production-end-mode-choice" class="section level2">
+<h2>Production end mode choice</h2>
 <table class="table table-striped table-hover table-responsive table-bordered" style="margin-left: auto; margin-right: auto;">
 <caption>
 Mode choice model sensitivities for production end home-based models
@@ -487,7 +637,7 @@ Higher scores :: more walk
 </td>
 </tr>
 <tr>
-<td style="text-align:left;">
+<td style="text-align:left;vertical-align: middle !important;" rowspan="2">
 Bike access to jobs
 </td>
 <td style="text-align:left;">
@@ -498,9 +648,6 @@ Higher score :: more non-motorized
 </td>
 </tr>
 <tr>
-<td style="text-align:left;">
-Bike access to jobs
-</td>
 <td style="text-align:left;">
 Walk v. Bike (non-motorized)
 </td>
@@ -520,7 +667,7 @@ Higher scores relative to bike access to jobs :: more non-motorized (HBW only)
 </td>
 </tr>
 <tr>
-<td style="text-align:left;">
+<td style="text-align:left;vertical-align: middle !important;" rowspan="2">
 Transit (WAT) access to jobs
 </td>
 <td style="text-align:left;">
@@ -531,9 +678,6 @@ Higher scores :: more transit
 </td>
 </tr>
 <tr>
-<td style="text-align:left;">
-Transit (WAT) access to jobs
-</td>
 <td style="text-align:left;">
 WAT v. DAT (Transit)
 </td>
@@ -553,7 +697,7 @@ Higher scores :: more DAT
 </td>
 </tr>
 <tr>
-<td style="text-align:left;">
+<td style="text-align:left;vertical-align: middle !important;" rowspan="2">
 Auto access to jobs
 </td>
 <td style="text-align:left;">
@@ -565,9 +709,6 @@ Higher scores :: more motorized
 </tr>
 <tr>
 <td style="text-align:left;">
-Auto access to jobs
-</td>
-<td style="text-align:left;">
 Auto v. Transit (motorized)
 </td>
 <td style="text-align:left;">
@@ -575,7 +716,7 @@ Higher scores :: more auto
 </td>
 </tr>
 <tr>
-<td style="text-align:left;">
+<td style="text-align:left;vertical-align: middle !important;" rowspan="3">
 Vehicle ownership
 </td>
 <td style="text-align:left;">
@@ -587,9 +728,6 @@ More vehicles :: more motorized
 </tr>
 <tr>
 <td style="text-align:left;">
-Vehicle ownership
-</td>
-<td style="text-align:left;">
 Auto v. Transit (motorized)
 </td>
 <td style="text-align:left;">
@@ -598,9 +736,6 @@ More vehicles :: more auto
 </tr>
 <tr>
 <td style="text-align:left;">
-Vehicle ownership
-</td>
-<td style="text-align:left;">
 Driver v. passenger (auto)
 </td>
 <td style="text-align:left;">
@@ -608,7 +743,7 @@ More vehicles :: more driver
 </td>
 </tr>
 <tr>
-<td style="text-align:left;">
+<td style="text-align:left;vertical-align: middle !important;" rowspan="4">
 Income
 </td>
 <td style="text-align:left;">
@@ -620,9 +755,6 @@ Higher income :: more transit (HBW), more auto (other HB purposes)
 </tr>
 <tr>
 <td style="text-align:left;">
-Income
-</td>
-<td style="text-align:left;">
 Driver v. passenger (auto)
 </td>
 <td style="text-align:left;">
@@ -630,9 +762,6 @@ Higher income :: more auto
 </td>
 </tr>
 <tr>
-<td style="text-align:left;">
-Income
-</td>
 <td style="text-align:left;">
 WAT v. DAT (Transit)
 </td>
@@ -642,9 +771,6 @@ Higher income :: more DAT (HBW only)
 </tr>
 <tr>
 <td style="text-align:left;">
-Income
-</td>
-<td style="text-align:left;">
 Walk v. Bike (non-motorized)
 </td>
 <td style="text-align:left;">
@@ -652,7 +778,7 @@ Higher income :: more bike
 </td>
 </tr>
 <tr>
-<td style="text-align:left;">
+<td style="text-align:left;vertical-align: middle !important;" rowspan="3">
 Workers
 </td>
 <td style="text-align:left;">
@@ -664,9 +790,6 @@ More workers :: more transit (HBW only)
 </tr>
 <tr>
 <td style="text-align:left;">
-Workers
-</td>
-<td style="text-align:left;">
 Driver v. passenger (auto)
 </td>
 <td style="text-align:left;">
@@ -675,9 +798,6 @@ More workers :: more passenger (HBW only)
 </tr>
 <tr>
 <td style="text-align:left;">
-Workers
-</td>
-<td style="text-align:left;">
 WAT v. DAT (transit)
 </td>
 <td style="text-align:left;">
@@ -685,7 +805,7 @@ More workers :: more WAT (HBW only)
 </td>
 </tr>
 <tr>
-<td style="text-align:left;">
+<td style="text-align:left;vertical-align: middle !important;" rowspan="2">
 Walk time to transit
 </td>
 <td style="text-align:left;">
@@ -697,9 +817,6 @@ Closer to premium transit :: more transit
 </tr>
 <tr>
 <td style="text-align:left;">
-Walk time to transit
-</td>
-<td style="text-align:left;">
 WAT v. DAT (transit)
 </td>
 <td style="text-align:left;">
@@ -708,10 +825,254 @@ Closer to transit :: more WAT
 </tr>
 </tbody>
 </table>
-<div style="page-break-after: always;"></div>
 </div>
-<div id="production-end-models-non-home-based" class="section level2">
-<h2><span class="header-section-number">2.2</span> Production end models: Non-home-based</h2>
+<div id="attraction-end-mode-choice" class="section level2">
+<h2>Attraction end mode choice</h2>
+<table class="table table-striped table-hover table-responsive table-bordered" style="margin-left: auto; margin-right: auto;">
+<caption>
+Mode choice model sensitivities for attraction-end models
+</caption>
+<thead>
+<tr>
+<th style="text-align:left;font-weight: bold;">
+Factor
+</th>
+<th style="text-align:left;font-weight: bold;">
+Nest
+</th>
+<th style="text-align:left;font-weight: bold;">
+Influence
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left;vertical-align: middle !important;" rowspan="2">
+Walk access to jobs
+</td>
+<td style="text-align:left;">
+Walk v. Bike (non-motorized)
+</td>
+<td style="text-align:left;">
+Higher scores :: more walk
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Driver v. passenger (auto)
+</td>
+<td style="text-align:left;">
+Higher scores :: more passenger
+</td>
+</tr>
+<tr>
+<td style="text-align:left;vertical-align: middle !important;" rowspan="2">
+Bike access to jobs
+</td>
+<td style="text-align:left;">
+Non-motorized vs. motorized
+</td>
+<td style="text-align:left;">
+Higher score :: more non-motorized
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Walk v. Bike (non-motorized)
+</td>
+<td style="text-align:left;">
+Higher scores :: more bike
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Bike access from households
+</td>
+<td style="text-align:left;">
+Non-motorized vs. motorized
+</td>
+<td style="text-align:left;">
+Higher scores relative to bike access to jobs :: more non-motorized (HBW only)
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Transit (WAT) access to jobs
+</td>
+<td style="text-align:left;">
+Auto v. Transit (motorized)
+</td>
+<td style="text-align:left;">
+Higher scores :: more transit
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Transit access from households
+</td>
+<td style="text-align:left;">
+Auto v. Transit (motorized)
+</td>
+<td style="text-align:left;">
+Higher scores relative to transit access to jobs :: more transit (HBW), more auto (HBO, HBS)
+</td>
+</tr>
+<tr>
+<td style="text-align:left;vertical-align: middle !important;" rowspan="4">
+Auto access to jobs
+</td>
+<td style="text-align:left;">
+Non-motorized vs. motorized
+</td>
+<td style="text-align:left;">
+Higher scores :: more motorized
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Auto v. Transit (motorized)
+</td>
+<td style="text-align:left;">
+Higher scores :: more auto
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Driver v. passenger (auto)
+</td>
+<td style="text-align:left;">
+Higher scores :: more driver
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+WAT v. DAT (transit)
+</td>
+<td style="text-align:left;">
+Higher scores :: more DAT (regional centrality effect)
+</td>
+</tr>
+<tr>
+<td style="text-align:left;vertical-align: middle !important;" rowspan="3">
+Vehicle ownership
+</td>
+<td style="text-align:left;">
+Non-motorized vs. motorized
+</td>
+<td style="text-align:left;">
+Higher number of zero-vehicle HHs (as a share of all HHs) with bike access to this zone :: more non-motorized
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Driver v. passenger (auto)
+</td>
+<td style="text-align:left;">
+Higher number of vehicles (on average) for households with auto access to this zone :: more driver
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+WAT v. DAT (transit)
+</td>
+<td style="text-align:left;">
+Higher number of zero-vehicle HHs (as a share of all HHs) with WAT access to this zone :: more WAT
+</td>
+</tr>
+<tr>
+<td style="text-align:left;vertical-align: middle !important;" rowspan="4">
+Income
+</td>
+<td style="text-align:left;">
+Auto v. transit (motorized)
+</td>
+<td style="text-align:left;">
+Higher number of low-income households with transit access to this zone :: more transit (HBW)
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Driver v. passenger (auto)
+</td>
+<td style="text-align:left;">
+Higher number of high-income households with auto access to this zone :: more driver (HBW)
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+WAT v. DAT (Transit)
+</td>
+<td style="text-align:left;">
+Higher number of low-income households with WAT access to this zone :: more transit (HBW, HBO)
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Walk v. Bike (non-motorized)
+</td>
+<td style="text-align:left;">
+Higher share of high-income households with bike  access to this zone :: more bike
+</td>
+</tr>
+<tr>
+<td style="text-align:left;vertical-align: middle !important;" rowspan="4">
+Walk time to transit
+</td>
+<td style="text-align:left;">
+Non-motorized v. motorized
+</td>
+<td style="text-align:left;">
+Closer to premium transit :: more transit (NHB uses non-premium)
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Auto v. Transit (motorized)
+</td>
+<td style="text-align:left;">
+Closer to transit :: more transit (different effect sizes for prem, non-prem)
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Driver v. passenger (auto)
+</td>
+<td style="text-align:left;">
+Closer to non-premium transit :: more passenger (HBW only)
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+WAT v. DAT (transit)
+</td>
+<td style="text-align:left;">
+Closer to premium transit :: more WAT
+</td>
+</tr>
+<tr>
+<td style="text-align:left;vertical-align: middle !important;" rowspan="2">
+Parking charges
+</td>
+<td style="text-align:left;">
+Non-motorized v motorized
+</td>
+<td style="text-align:left;">
+Higher parking charges :: more motorized attractions
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Auto v Transit (motorized)
+</td>
+<td style="text-align:left;">
+Higher parking chares :: more transit attractions
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div id="non-home-based-mode-choice" class="section level2">
+<h2>Non-home-based mode choice</h2>
 <table class="table table-striped table-hover table-responsive table-bordered" style="margin-left: auto; margin-right: auto;">
 <caption>
 Mode choice model sensitivities for production end non-home-based models
@@ -742,7 +1103,7 @@ Higher scores :: more walk
 </td>
 </tr>
 <tr>
-<td style="text-align:left;">
+<td style="text-align:left;vertical-align: middle !important;" rowspan="2">
 Bike access to jobs
 </td>
 <td style="text-align:left;">
@@ -754,9 +1115,6 @@ Higher score :: more non-motorized
 </tr>
 <tr>
 <td style="text-align:left;">
-Bike access to jobs
-</td>
-<td style="text-align:left;">
 Walk v. Bike (non-motorized)
 </td>
 <td style="text-align:left;">
@@ -764,7 +1122,7 @@ Higher scores :: more bike
 </td>
 </tr>
 <tr>
-<td style="text-align:left;">
+<td style="text-align:left;vertical-align: middle !important;" rowspan="2">
 Transit (WAT) access to jobs
 </td>
 <td style="text-align:left;">
@@ -775,9 +1133,6 @@ Higher scores :: more transit
 </td>
 </tr>
 <tr>
-<td style="text-align:left;">
-Transit (WAT) access to jobs
-</td>
 <td style="text-align:left;">
 WAT v. DAT (Transit)
 </td>
@@ -797,7 +1152,7 @@ Higher scores :: more DAT
 </td>
 </tr>
 <tr>
-<td style="text-align:left;">
+<td style="text-align:left;vertical-align: middle !important;" rowspan="2">
 Auto access to jobs
 </td>
 <td style="text-align:left;">
@@ -808,9 +1163,6 @@ Higher scores :: more motorized
 </td>
 </tr>
 <tr>
-<td style="text-align:left;">
-Auto access to jobs
-</td>
 <td style="text-align:left;">
 Auto v. Transit (motorized)
 </td>
@@ -874,7 +1226,7 @@ Higher share of passenger trips to zone of origin :: more non-driver NHB trips
 </td>
 </tr>
 <tr>
-<td style="text-align:left;">
+<td style="text-align:left;vertical-align: middle !important;" rowspan="2">
 Walk time to transit
 </td>
 <td style="text-align:left;">
@@ -886,9 +1238,6 @@ Closer to premium or non-premium transit :: more transit
 </tr>
 <tr>
 <td style="text-align:left;">
-Walk time to transit
-</td>
-<td style="text-align:left;">
 WAT v. DAT (transit)
 </td>
 <td style="text-align:left;">
@@ -897,301 +1246,11 @@ Closer to premium transit :: more WAT
 </tr>
 </tbody>
 </table>
-<div style="page-break-after: always;"></div>
-</div>
-<div id="attraction-end-models" class="section level2">
-<h2><span class="header-section-number">2.3</span> Attraction end models</h2>
-<table class="table table-striped table-hover table-responsive table-bordered" style="margin-left: auto; margin-right: auto;">
-<caption>
-Mode choice model sensitivities for production end non-home-based models
-</caption>
-<thead>
-<tr>
-<th style="text-align:left;font-weight: bold;">
-
-</th>
-<th style="text-align:left;font-weight: bold;">
-
-</th>
-<th style="text-align:left;font-weight: bold;">
-
-</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td style="text-align:left;">
-Walk access to jobs
-</td>
-<td style="text-align:left;">
-Walk v. Bike (non-motorized)
-</td>
-<td style="text-align:left;">
-Higher scores :: more walk
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-Walk access to jobs
-</td>
-<td style="text-align:left;">
-Driver v. passenger (auto)
-</td>
-<td style="text-align:left;">
-Higher scores :: more passenger
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-Bike access to jobs
-</td>
-<td style="text-align:left;">
-Non-motorized vs. motorized
-</td>
-<td style="text-align:left;">
-Higher score :: more non-motorized
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-Bike access to jobs
-</td>
-<td style="text-align:left;">
-Walk v. Bike (non-motorized)
-</td>
-<td style="text-align:left;">
-Higher scores :: more bike
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-Bike access from households
-</td>
-<td style="text-align:left;">
-Non-motorized vs. motorized
-</td>
-<td style="text-align:left;">
-Higher scores relative to bike access to jobs :: more non-motorized (HBW only)
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-Transit (WAT) access to jobs
-</td>
-<td style="text-align:left;">
-Auto v. Transit (motorized)
-</td>
-<td style="text-align:left;">
-Higher scores :: more transit
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-Transit access from households
-</td>
-<td style="text-align:left;">
-Auto v. Transit (motorized)
-</td>
-<td style="text-align:left;">
-Higher scores relative to transit access to jobs :: more transit (HBW), more auto (HBO, HBS)
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-Auto access to jobs
-</td>
-<td style="text-align:left;">
-Non-motorized vs. motorized
-</td>
-<td style="text-align:left;">
-Higher scores :: more motorized
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-Auto access to jobs
-</td>
-<td style="text-align:left;">
-Auto v. Transit (motorized)
-</td>
-<td style="text-align:left;">
-Higher scores :: more auto
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-Auto access to jobs
-</td>
-<td style="text-align:left;">
-Driver v. passenger (auto)
-</td>
-<td style="text-align:left;">
-Higher scores :: more driver
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-Auto access to jobs
-</td>
-<td style="text-align:left;">
-WAT v. DAT (transit)
-</td>
-<td style="text-align:left;">
-Higher scores :: more DAT (regional centrality effect)
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-Vehicle ownership
-</td>
-<td style="text-align:left;">
-Non-motorized vs. motorized
-</td>
-<td style="text-align:left;">
-Higher number of zero-vehicle HHs (as a share of all HHs) with bike access to this zone :: more non-motorized
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-Vehicle ownership
-</td>
-<td style="text-align:left;">
-Driver v. passenger (auto)
-</td>
-<td style="text-align:left;">
-Higher number of vehicles (on average) for households with auto access to this zone :: more driver
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-Vehicle ownership
-</td>
-<td style="text-align:left;">
-WAT v. DAT (transit)
-</td>
-<td style="text-align:left;">
-Higher number of zero-vehicle HHs (as a share of all HHs) with WAT access to this zone :: more WAT
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-Income
-</td>
-<td style="text-align:left;">
-Auto v. transit (motorized)
-</td>
-<td style="text-align:left;">
-Higher number of low-income households with transit access to this zone :: more transit (HBW)
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-Income
-</td>
-<td style="text-align:left;">
-Driver v. passenger (auto)
-</td>
-<td style="text-align:left;">
-Higher number of high-income households with auto access to this zone :: more driver (HBW)
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-Income
-</td>
-<td style="text-align:left;">
-WAT v. DAT (Transit)
-</td>
-<td style="text-align:left;">
-Higher number of low-income households with WAT access to this zone :: more transit (HBW, HBO)
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-Income
-</td>
-<td style="text-align:left;">
-Walk v. Bike (non-motorized)
-</td>
-<td style="text-align:left;">
-Higher share of high-income households with bike  access to this zone :: more bike
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-Walk time to transit
-</td>
-<td style="text-align:left;">
-Non-motorized v. motorized
-</td>
-<td style="text-align:left;">
-Closer to premium transit :: more transit (NHB uses non-premium)
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-Walk time to transit
-</td>
-<td style="text-align:left;">
-Auto v. Transit (motorized)
-</td>
-<td style="text-align:left;">
-Closer to transit :: more transit (different effect sizes for prem, non-prem)
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-Walk time to transit
-</td>
-<td style="text-align:left;">
-Driver v. passenger (auto)
-</td>
-<td style="text-align:left;">
-Closer to non-premium transit :: more passenger (HBW only)
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-Walk time to transit
-</td>
-<td style="text-align:left;">
-WAT v. DAT (transit)
-</td>
-<td style="text-align:left;">
-Closer to premium transit :: more WAT
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-Parking charges
-</td>
-<td style="text-align:left;">
-Non-motorized v motorized
-</td>
-<td style="text-align:left;">
-Higher parking charges :: more motorized attractions
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-Parking charges
-</td>
-<td style="text-align:left;">
-Auto v Transit (motorized)
-</td>
-<td style="text-align:left;">
-Higher parking chares :: more transit attractions
-</td>
-</tr>
-</tbody>
-</table>
 </div>
 </div>
 
 
 
-</div>
-</div>
 
 </div>
 
@@ -1224,32 +1283,6 @@ $(document).ready(function () {
 
 <!-- code folding -->
 
-<script>
-$(document).ready(function ()  {
-
-    // move toc-ignore selectors from section div to header
-    $('div.section.toc-ignore')
-        .removeClass('toc-ignore')
-        .children('h1,h2,h3,h4,h5').addClass('toc-ignore');
-
-    // establish options
-    var options = {
-      selectors: "h1,h2",
-      theme: "bootstrap3",
-      context: '.toc-content',
-      hashGenerator: function (text) {
-        return text.replace(/[.\\/?&!#<>]/g, '').replace(/\s/g, '_');
-      },
-      ignoreSelector: ".toc-ignore",
-      scrollTo: 0
-    };
-    options.showAndHide = true;
-    options.smoothScroll = true;
-
-    // tocify
-    var toc = $("#TOC").tocify(options).data("toc-tocify");
-});
-</script>
 
 <!-- dynamically load mathjax for compatibility with self-contained -->
 <script>
