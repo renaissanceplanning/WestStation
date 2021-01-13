@@ -69,7 +69,7 @@ distribution in the West Station analysis.
   household characteristics beyond what can be obtained using the generalized
   cost constructs used in the pilot project application.
 
-- **[TNC Trips](./TNC_report.html):** This report describes the data and methods used
+- **[TNC Trips](./TNC_Report.html):** This report describes the data and methods used
 in developing estimates of TNC trip-making based on the sketch model trip table
 outputs. The approach focuses on assessing which OD pairs are likely to have
 trips (by a given mode and for a given travel purpose) replaced by TNC trips
