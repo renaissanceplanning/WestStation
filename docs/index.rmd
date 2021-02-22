@@ -66,9 +66,7 @@ tm_basemap(leaflet::providers$Esri.WorldImagery)
 ```
 
 
-## What is multimodal accessibility?
-
-## {.tabset}
+## What is multimodal accessibility? {.tabset}
 
 ### Analysis components
 
@@ -96,7 +94,7 @@ simple metric, comprised of a few key components:
  vary by mode and travel purpose.
  
  These components feature prominently in the [summary analysis of existing
- conditions in the West Station Area](./travel.html).
+ conditions in the West Station Area](./west_station_exec.html).
 
 ### Basic processing steps
 

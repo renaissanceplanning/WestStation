@@ -22,19 +22,8 @@
 <script src="site_libs/navigation-1.1/tabsets.js"></script>
 <link href="site_libs/highlightjs-9.12.0/default.css" rel="stylesheet" />
 <script src="site_libs/highlightjs-9.12.0/highlight.js"></script>
-<link href="site_libs/anchor-sections-1.0/anchor-sections.css" rel="stylesheet" />
-<script src="site_libs/anchor-sections-1.0/anchor-sections.js"></script>
 <script src="site_libs/kePrint-0.0.1/kePrint.js"></script>
 <link href="site_libs/lightable-0.0.1/lightable.css" rel="stylesheet" />
-
-<style type="text/css">
-  code{white-space: pre-wrap;}
-  span.smallcaps{font-variant: small-caps;}
-  span.underline{text-decoration: underline;}
-  div.column{display: inline-block; vertical-align: top; width: 50%;}
-  div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
-  ul.task-list{list-style: none;}
-    </style>
 
 <style type="text/css">code{white-space: pre;}</style>
 <style type="text/css">
@@ -400,8 +389,8 @@ p.caption {
 <li><strong>Attraction end mode choice</strong> models focus primarily on accessibility scores, with some consideration of the characteristics of households that can access a given zone alongside built environment variables.</li>
 <li><strong>Non-home-based mode choice</strong> models rely on access scores and the outputs of the attraction end mode choice models. When analyzing NHB trips, the mode of travel used to reach the non-home location is an important determinant of the likely mode of travel.</li>
 </ul>
-<div id="section" class="section level1 tabset">
-<h1></h1>
+<div id="model-component-details" class="section level1 tabset">
+<h1>Model component details</h1>
 <div id="access-scores" class="section level2">
 <h2>Access scores</h2>
 <table class="table table-striped table-hover table-responsive table-bordered" style="margin-left: auto; margin-right: auto;">
@@ -1258,7 +1247,7 @@ Closer to premium transit :: more WAT
 
 // add bootstrap table styles to pandoc tables
 function bootstrapStylePandocTables() {
-  $('tr.odd').parent('tbody').parent('table').addClass('table table-condensed');
+  $('tr.header').parent('thead').parent('table').addClass('table table-condensed');
 }
 $(document).ready(function () {
   bootstrapStylePandocTables();

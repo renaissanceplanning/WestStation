@@ -79,7 +79,7 @@ above each column to search and sort the tables. Note that rates are specified
 for impossible household types - like one-person households with two workers - 
 but these are precluded in the cross-classification process.
 
-# {.tabset}
+# Rate details {.tabset}
 ## Productions
 The table below presents trip generation rates for person trip productions by
 travel purpose:

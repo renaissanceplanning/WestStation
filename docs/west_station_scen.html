@@ -22,17 +22,6 @@
 <script src="site_libs/navigation-1.1/tabsets.js"></script>
 <link href="site_libs/highlightjs-9.12.0/default.css" rel="stylesheet" />
 <script src="site_libs/highlightjs-9.12.0/highlight.js"></script>
-<link href="site_libs/anchor-sections-1.0/anchor-sections.css" rel="stylesheet" />
-<script src="site_libs/anchor-sections-1.0/anchor-sections.js"></script>
-
-<style type="text/css">
-  code{white-space: pre-wrap;}
-  span.smallcaps{font-variant: small-caps;}
-  span.underline{text-decoration: underline;}
-  div.column{display: inline-block; vertical-align: top; width: 50%;}
-  div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
-  ul.task-list{list-style: none;}
-    </style>
 
 <style type="text/css">code{white-space: pre;}</style>
 <style type="text/css">
@@ -386,8 +375,8 @@ $(document).ready(function () {
 <li><p>BRT-Alt B - Reflects modified long term forecasts in the focus area and potential bus rapid transit services.</p></li>
 </ol>
 <p>Use the tabs below to compare scenario outputs across key model steps.</p>
-<div id="section" class="section level2 tabset">
-<h2></h2>
+<div id="explore-scenario-results" class="section level2 tabset">
+<h2>Explore scenario results</h2>
 <div id="trip-generation" class="section level3">
 <h3>Trip generation</h3>
 <p>In the trip generation step, households, jobs, school enrollments, etc. are used to estimate how many trips begin or end in different zones. The charts below present example summary outputs for four alternative land use configurations. Base, LRTP, and FEIR are operative in the scenarios defined above. FEIR MAX is a potential alternative land use forecast in the focus area used in early model sensitivity testing, but it is not reflected in any reported scenarios.</p>
@@ -491,7 +480,7 @@ TRUE
 
 // add bootstrap table styles to pandoc tables
 function bootstrapStylePandocTables() {
-  $('tr.odd').parent('tbody').parent('table').addClass('table table-condensed');
+  $('tr.header').parent('thead').parent('table').addClass('table table-condensed');
 }
 $(document).ready(function () {
   bootstrapStylePandocTables();

@@ -54,7 +54,7 @@ Four tables are presented in the tabs below:
  travel used to reach the non-home location is an important determinant of the
  likely mode of travel.
 
-# {.tabset}
+# Model component details {.tabset}
 
 ## Access scores
 ```{r access}

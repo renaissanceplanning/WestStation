@@ -56,7 +56,7 @@ potential bus rapid transit services.
 
 Use the tabs below to compare scenario outputs across key model steps.
 
-## {.tabset}
+## Explore scenario results {.tabset}
 ### Trip generation
 In the trip generation step, households, jobs, school enrollments, etc. are used
 to estimate how many trips begin or end in different zones. The charts below
@@ -76,7 +76,7 @@ of the window area. The share of trips by each purpose is roughly consistent
 accross all scenarios as well, with the most common travel purpose for productions
 and attractions being home-based other trips.
 
-```{r, eval = TRUE}
+```{r }
 # Trips by Purpose and End for each scenario
 dir_names <- list.dirs(tg_path, recursive=FALSE)
 
@@ -119,7 +119,7 @@ Vehicle ownership is also an important factor in mode choice decisions. Having
 high numbers of zero-car or one-car households will result in more non-auto
 trips, all else being equal.
 
-```{r, eval = TRUE}
+```{r}
 # HH totals by vehicle ownership category
 dir_names <- list.dirs(tg_path, recursive=FALSE)
 
@@ -163,7 +163,7 @@ households in the highest income bracket ($125,000 and higher) have the highest
 access scores in the window area in all scenarios. Middle-income households 
 ($35,000 - $125,000) have the lowest non-auto access scores.
 
-```{r, eval = TRUE}
+```{r}
 # HH access by income
 scens <- c("Base", "LRTP", "RailVision", "BRT_FEIR", "BRT_Scen_A", "BRT_Scen_B")
 lu_configs <- c("Base", "LRTP", "FEIR", "FEIR", "FEIR", "FEIR")
@@ -226,7 +226,7 @@ access_plot
 
 
 
-```{r, eval = TRUE}
+```{r }
 # HH access by income
 scens <- c("Base", "LRTP", "RailVision", "BRT_FEIR", "BRT_Scen_A", "BRT_Scen_B")
 lu_configs <- c("Base", "LRTP", "FEIR", "FEIR", "FEIR", "FEIR")
@@ -288,7 +288,7 @@ access_plot
 ```
 
 
-```{r, eval = TRUE}
+```{r }
 # HH access by income
 scens <- c("Base", "LRTP", "RailVision", "BRT_FEIR", "BRT_Scen_A", "BRT_Scen_B")
 lu_configs <- c("Base", "LRTP", "FEIR", "FEIR", "FEIR", "FEIR")
@@ -366,7 +366,7 @@ with shares highest in the RailVision scenario and lowest in the BRT-FEIR and
 BRT-Scen B runs.
 
 
-```{r, eval = TRUE}
+```{r }
 # Trips by Purpose and End for each scenario
 dir_names <- list.dirs(scen_path, recursive=FALSE)
 
@@ -413,7 +413,7 @@ window area. These destinations can be reached by both WAT and DAT modes, wherea
 DAT is less relevant to productions in the window area. Total expected transit
 utilization is highest in the RailVision scenario.
 
-```{r, eval = TRUE}
+```{r }
 # Trips by Purpose and End for each scenario
 dir_names <- list.dirs(scen_path, recursive=FALSE)
 
@@ -457,7 +457,7 @@ more travel to the window area by transit and auto modes from the remainder area
 The RailVision and BRT-Scen A scenarios have the greatest amount of non-motorized
 trip-making.
 
-```{r, eval = TRUE}
+```{r }
 # Trips by Purpose and End for each scenario
 dir_names <- list.dirs(scen_path, recursive=FALSE)
 
@@ -504,7 +504,7 @@ over the base year in all future year scenarios. This increase is more pronounce
 for trips produced in the window area than for those attracted there. VMT 
 estimates are highest in the BRT-FEIR and BRT-Scen B scenarios.
 
-```{r, eval = TRUE}
+```{r }
 # Trips by Purpose and End for each scenario
 dir_names <- list.dirs(scen_path, recursive=FALSE)
 
@@ -555,7 +555,7 @@ produced there to be relatively short) and its attractions-heavy character
 Overall, trip lengths appear to be longest in the BRT scenarios, though transit
 trips to the window are longest in the RailVision scenario.
 
-```{r, eval = TRUE}
+```{r }
 # Trips by Purpose and End for each scenario
 dir_names <- list.dirs(scen_path, recursive=FALSE)
 
@@ -614,7 +614,7 @@ BRT-Scen A scenarios suggest the highest TNC utilization, while the RailVision
 and BRT-Scen B scenarios are only slightly higher than the base estimates.
 
 
-```{r, eval = TRUE}
+```{r }
 # Trips by Purpose and End for each scenario
 dir_names <- list.dirs(scen_path, recursive=FALSE)
 
